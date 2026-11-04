@@ -1,6 +1,6 @@
 ---
 name: commit-and-review
-description: "Guides requested changes through branch selection, focused commits, and an optional pull-request review-and-fix loop. Use when the user asks to commit changes and have them reviewed."
+description: 'Guides requested changes through branch selection, focused commits, and an optional pull-request review-and-fix loop. Use when the user asks to commit changes and have them reviewed.'
 license: MIT
 ---
 

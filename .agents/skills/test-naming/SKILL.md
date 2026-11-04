@@ -1,6 +1,6 @@
 ---
 name: test-naming
-description: "Helps write, rename, and review precise test titles based on asserted behavior and local conventions in JavaScript and TypeScript suites, including Jest, Vitest, Playwright, and Cypress. Use when the user asks to name or improve test titles."
+description: 'Helps write, rename, and review precise test titles based on asserted behavior and local conventions in JavaScript and TypeScript suites, including Jest, Vitest, Playwright, and Cypress. Use when the user asks to name or improve test titles.'
 license: MIT
 ---
 

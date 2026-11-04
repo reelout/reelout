@@ -1,6 +1,6 @@
 ---
 name: merge-pull-request
-description: "Verifies and merges a pull request using a user-approved method, then safely cleans up its source branches. Use when the user asks to merge a PR."
+description: 'Verifies and merges a pull request using a user-approved method, then safely cleans up its source branches. Use when the user asks to merge a PR.'
 license: MIT
 ---
 

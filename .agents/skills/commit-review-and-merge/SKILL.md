@@ -1,6 +1,6 @@
 ---
 name: commit-review-and-merge
-description: "Coordinates the commit-and-review and merge-pull-request workflows in sequence. Use when the user asks to commit changes, have a PR reviewed, and merge it once it is ready."
+description: 'Coordinates the commit-and-review and merge-pull-request workflows in sequence. Use when the user asks to commit changes, have a PR reviewed, and merge it once it is ready.'
 license: MIT
 ---
 
