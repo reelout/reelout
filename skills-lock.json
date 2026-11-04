@@ -5,7 +5,19 @@
       "source": "reelout/skills",
       "sourceType": "github",
       "skillPath": "skills/commit-and-review/SKILL.md",
-      "computedHash": "f90da71cdc372539bb93538e2a1d69feab0bca39f1ea41c1609ca0809623a955"
+      "computedHash": "86395be0fdc247359c43a74801ef08b8dc1bfaebc7fb2e4f1305b39ab14456a0"
+    },
+    "commit-review-and-merge": {
+      "source": "reelout/skills",
+      "sourceType": "github",
+      "skillPath": "skills/commit-review-and-merge/SKILL.md",
+      "computedHash": "1de51de5d05b474f0c0e47006dfa383b4da255e84dacae25a3343d7caa663c8f"
+    },
+    "merge-pull-request": {
+      "source": "reelout/skills",
+      "sourceType": "github",
+      "skillPath": "skills/merge-pull-request/SKILL.md",
+      "computedHash": "7c93b73a42874f717b5a38be8bc655f8d9263c9196e63d888dcc600d8b1d039f"
     },
     "test-naming": {
       "source": "reelout/skills",
