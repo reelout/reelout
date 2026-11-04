@@ -1,0 +1,5 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "git remote add origin https://github.com/reelout/reelout.git && typedoc --out generated",
+  "outputDirectory": "generated"
+}
