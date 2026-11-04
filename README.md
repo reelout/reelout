@@ -3,7 +3,7 @@
 [![NPM Version](https://img.shields.io/npm/v/reelout)](https://www.npmjs.com/package/reelout)
 [![Codecov](https://img.shields.io/codecov/c/github/reelout/reelout?token=FSP5JC9E16)](https://app.codecov.io/github/reelout/reelout)
 
-ReelOut is a plugin-driven release automation tool engineered specifically for monorepos. By analyzing [Conventional Commits](https://conventionalcommits.org), it autonomously calculates version bumps, updates package manifests, generates changelogs, creates tags, and publishes packages to your registry.
+ReelOut is a plugin-driven release automation tool for monorepos. It analyzes [Conventional Commits](https://conventionalcommits.org) to determine version bumps, update package manifests, generate changelogs, create tags, and publish packages to your registry.
 
 ## Features
 
@@ -27,9 +27,25 @@ pnpm add -D reelout
 yarn add -D reelout
 ```
 
-## Usage
+## Quick Start
 
-### View available options
+Preview a release first:
+
+```sh
+npx reelout --dry-run
+```
+
+When the preview looks right, run the release:
+
+```sh
+npx reelout
+```
+
+By default, ReelOut analyzes commits, updates package versions and changelogs, creates tags and a release commit, and publishes packages. See [Getting Started](./docs/getting-started.md) for prerequisites and details.
+
+## CLI
+
+View all available options:
 
 ```sh
 npx reelout --help
@@ -41,48 +57,38 @@ Usage: reelout [options]
 Monorepo release CLI and toolkit.
 
 Options:
-  --cwd <string>                    Working directory in which to run the release process.
-  --dry-run                         Preview the planned release without updating files, creating commits, or publishing packages.
-  --prerelease [boolean or string]  Enable prerelease mode and optionally provide a label (for example, "alpha" or "beta").
-  --promote [boolean]               Promote development versions to stable production releases.
-  --channel [boolean or string]     Publish packages to the specified release channel.
-  --version                         Display the version number.
-  --help                            Display help for this command.
+  --type <string>                  Specify the release type, bypassing automatic commit analysis. (choices: "auto", "major", "minor", "patch")
+  --qualifier <boolean or string>  Set or override the version qualifier (e.g., `alpha`, `beta`); pass `false` to disable.
+  --channel <boolean or string>    Set or override the release channel (e.g., `stable`, `canary`); pass `false` to disable.
+  --allow-empty                    Proceed with the release workflow even if no qualifying changes are detected.
+  --dry-run                        Simulate the release workflow without modifying files or publishing artifacts.
+  --debug                          Enable verbose logging for detailed troubleshooting. (default: false)
+  -v, --version                    Display the version number.
+  -h, --help                       Display command usage and options.
 ```
 
-### Preview a release
+### Prereleases and channels
 
-Preview version bumps without modifying files, staging tags, or publishing:
+Ship pre-production builds with a version qualifier:
 
 ```sh
-npx reelout --dry-run
+npx reelout --qualifier beta
 ```
 
-### Execute a release
-
-Run a production release to parse commits, bump versions, update manifests, generate changelogs, tag, and publish:
-
-```sh
-npx reelout
-```
-
-### Prereleases and promotions
-
-Ship pre-production builds with a custom prerelease identifier:
-
-```sh
-npx reelout --prerelease beta
-```
-
-Once a prerelease version is validated, upgrade it to a stable production release without requiring new commits:
-
-```sh
-npx reelout --promote
-```
+Releasing from an `alpha`, `beta`, or `next` branch applies the matching qualifier and channel automatically. See [Configuration](./docs/config.md) to define custom branch rules.
 
 ## Documentation
 
-View the full documentation at https://reelout.overview.vercel.app/.
+- [Getting Started](./docs/getting-started.md) — install ReelOut, preview a release, and ship your first production version.
+- [Configuration](./docs/config.md) — configure ReelOut for your monorepo.
+- [Continuous Integration](./docs/ci.md) — run ReelOut in GitHub Actions and CircleCI.
+- [Plugins](./docs/plugins.md) — extend ReelOut with custom release behavior.
+- [Programmatic API](./docs/api.md) — use ReelOut as a library.
+- [Troubleshooting](./docs/troubleshooting.md) — diagnose and resolve common problems.
+
+Browse the full API reference at <https://reelout.overview.vercel.app/>.
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for development setup and [CHANGELOG.md](./CHANGELOG.md) for release history.
 
 ## License
 

@@ -1,0 +1,120 @@
+# Continuous Integration
+
+Run ReelOut in CI to automate releases when changes land on your main branch. The examples below are adapted from ReelOut's own pipelines.
+
+## GitHub Actions
+
+Create `.github/workflows/release.yml`:
+
+```yaml
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      type:
+        description: 'Specify the release type, bypassing automatic commit analysis.'
+        type: choice
+        options:
+          - auto
+          - major
+          - minor
+          - patch
+        default: auto
+      qualifier:
+        description: 'Set or override the version qualifier (e.g., `alpha`, `beta`); pass `false` to disable.'
+        type: string
+      channel:
+        description: 'Set or override the release channel (e.g., `stable`, `canary`); pass `false` to disable.'
+        type: string
+      allow-empty:
+        description: 'Proceed with the release workflow even if no qualifying changes are detected.'
+        type: boolean
+        default: false
+      dry-run:
+        description: 'Simulate the release workflow without modifying files or publishing artifacts.'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 'lts/*'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: |
+          ARGS=()
+          [ -n "${{ inputs.type }}" ] && ARGS+=("--type" "${{ inputs.type }}")
+          [ -n "${{ inputs.qualifier }}" ] && ARGS+=("--qualifier" "${{ inputs.qualifier }}")
+          [ -n "${{ inputs.channel }}" ] && ARGS+=("--channel" "${{ inputs.channel }}")
+          [ "${{ inputs.allow-empty }}" = "true" ] && ARGS+=("--allow-empty")
+          [ "${{ inputs.dry-run }}" = "true" ] && ARGS+=("--dry-run")
+          npx reelout "${ARGS[@]}"
+```
+
+### Notes
+
+- **Permissions:** `contents: write` allows ReelOut to push tags and create releases. `id-token: write` enables npm provenance, and `packages: write` is needed when publishing to GitHub Packages.
+- **Secrets:** Add `NPM_TOKEN` to your repository secrets. GitHub Actions provides `GITHUB_TOKEN`.
+- **Using npm:** Replace the pnpm setup steps with `npm ci` and remove `cache: 'pnpm'`.
+
+## CircleCI
+
+Create `.circleci/config.yml`:
+
+```yaml
+version: 2.1
+orbs:
+  node: circleci/node@7
+
+jobs:
+  release:
+    macos:
+      xcode: '26.6'
+    resource_class: m4pro.medium
+    steps:
+      - checkout
+      - node/install:
+          node-version: '24'
+      - run: corepack enable
+      - node/install-packages:
+          pkg-manager: pnpm
+      - run: npx reelout
+
+workflows:
+  release:
+    jobs:
+      - release:
+          context: reelout
+          filters:
+            branches:
+              only: main
+```
+
+Set `NPM_TOKEN` and the appropriate hosting token (`GITHUB_TOKEN` or `GITLAB_TOKEN`) in a shared context or as project environment variables. You can replace the macOS executor with a Linux machine executor if preferred.
+
+## Shallow checkouts
+
+ReelOut detects shallow repositories and fetches the missing history and tags as needed, so the default `actions/checkout` configuration usually works without a `fetch-depth` override. If your CI environment restricts `git fetch`, use a full checkout with `fetch-depth: 0`.
+
+## Debugging in CI
+
+In GitHub Actions, ReelOut enables verbose logging when `RUNNER_DEBUG` or `ACTIONS_STEP_DEBUG` is truthy. In other CI environments, pass `--debug` to enable it. See [Troubleshooting](./troubleshooting.md).
