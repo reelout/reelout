@@ -37,7 +37,7 @@ ReelOut detects shallow repositories and fetches the missing history and tags au
 
 ## Dry runs
 
-`--dry-run` simulates the workflow and logs a `[DRY RUN] ...` line for each skipped side effect, including file and changelog writes, the release commit, tag pushes, and release creation.
+`--dry-run` simulates the workflow and logs a `[DRY RUN] ...` line for each skipped side effect, including file and changelog writes, the release commit, tag pushes, and GitHub release creation.
 
 ## Failure rollback
 

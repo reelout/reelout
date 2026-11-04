@@ -1,6 +1,6 @@
 # @reelout/cli
 
-Command-line interface for [ReelOut](https://github.com/reelout/reelout), a plugin-driven release automation toolkit for monorepos. This package provides the `reelout` executable and the factory for creating its Commander program.
+Command-line interface for [ReelOut](https://github.com/reelout/reelout), a plugin-driven release automation toolkit for monorepos. This package implements the Commander program behind the `reelout` executable and the factory for creating its Commander program.
 
 ## Installation
 
