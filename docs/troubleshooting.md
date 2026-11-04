@@ -29,8 +29,7 @@ If ReelOut cannot resolve a plugin's string specifier, the release fails with a 
 ReelOut reports "No packages are scheduled for release." when no commits since the last tags match the [classifier](./config.md#classifier). You can:
 
 - Land a qualifying commit (`feat:`, `fix:`, ...).
-- Force a bump with `--type major|minor|patch`.
-- Proceed regardless with `--allow-empty`.
+- Proceed via prerelease or 0.x promotion with `--allow-empty`; stable packages without changes are still skipped.
 
 ## Shallow clones in CI
 
@@ -38,7 +37,7 @@ ReelOut detects shallow repositories and fetches the missing history and tags au
 
 ## Dry runs
 
-`--dry-run` simulates the workflow and logs a `[DRY RUN] ...` line for each skipped side effect, including file and changelog writes, the release commit, tag pushes, package publishing, and release creation.
+`--dry-run` simulates the workflow and logs a `[DRY RUN] ...` line for each skipped side effect, including file and changelog writes, the release commit, tag pushes, and release creation.
 
 ## Failure rollback
 

@@ -43,7 +43,7 @@ Key exports include:
 - **Workspaces** — `resolveWorkspaceMembers`, `loadWorkspacePackages`, `loadPackages`, `loadRootPackage`.
 - **Package managers** — `resolvePackageManager`, `inspectPackageManager`, and `getPackageManagerVersion`.
 - **Registry** — `normalizeRegistry`, `getAuthTokenKey`, `resolveGitRepositoryFromPackage`.
-- **Provenance** — `hasAuth` (OIDC provenance detection).
+- **Registry auth** — `hasAuth` (registry authentication detection).
 
 ## Documentation
 

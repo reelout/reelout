@@ -6,13 +6,13 @@ ReelOut loads a configuration file through [cosmiconfig](https://github.com/cosm
 
 ReelOut searches upward from the current working directory and uses the first matching file:
 
-| Location                                                                                                         | Format            |
-| ---------------------------------------------------------------------------------------------------------------- | ----------------- |
-| `package.json`                                                                                                   | a `"reelout"` key |
-| `.reeloutrc`                                                                                                     | JSON or YAML      |
-| `.reeloutrc.json` / `.reeloutrc.yaml` / `.reeloutrc.yml` / `.reeloutrc.js` / `.reeloutrc.cjs` / `.reeloutrc.mjs` | JSON, YAML, or JS |
-| `.config/reeloutrc` (and the same extensions as above)                                                           | JSON, YAML, or JS |
-| `reelout.config.ts` / `reelout.config.js` / `reelout.config.cjs` / `reelout.config.mjs`                          | TypeScript or JS  |
+| Location                                                                                                                           | Format            |
+| ---------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `package.json`                                                                                                                     | a `"reelout"` key |
+| `.reeloutrc`                                                                                                                       | JSON or YAML      |
+| `.reeloutrc.json` / `.reeloutrc.yaml` / `.reeloutrc.yml` / `.reeloutrc.js` / `.reeloutrc.ts` / `.reeloutrc.cjs` / `.reeloutrc.mjs` | JSON, YAML, or JS |
+| `.config/reeloutrc` (and the same extensions as above)                                                                             | JSON, YAML, or JS |
+| `reelout.config.ts` / `reelout.config.js` / `reelout.config.cjs` / `reelout.config.mjs`                                            | TypeScript or JS  |
 
 ReelOut does not support `REELOUT_*` environment variables for configuration. Use a config file or the CLI flags listed below.
 
@@ -86,9 +86,9 @@ rules: [
 ]
 ```
 
-- A string shorthand sets `pattern`, `qualifier`, and `channel` to the same sanitized label.
-- `qualifier` and `channel` support `{{date}}` and `{{time}}` templates (for example, `alpha-{{date}}`).
-- `false` and `null` entries are ignored, allowing you to disable rules inherited from the defaults.
+- A string shorthand uses the label as `pattern` and its sanitized form as `qualifier` and `channel`.
+- `qualifier` and `channel` support `{date}` and `{time}` templates (for example, `alpha-{date}`).
+- `false` and `null` entries are dropped.
 
 ### plugins
 

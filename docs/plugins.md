@@ -10,15 +10,15 @@ Plugins register handlers for named hooks, which run in this order:
 configure → discover → analyze → build → write → publish → finalize
 ```
 
-| Hook        | Purpose                                                   | Built-in users            |
-| ----------- | --------------------------------------------------------- | ------------------------- |
-| `configure` | Adjust the release context before other hooks run         | npm (repository fallback) |
-| `discover`  | Collect workspace packages and resolve package tags       | npm, changelog            |
-| `analyze`   | Classify commits and derive per-package releases          | analyzer                  |
-| `build`     | Compute versions, tag names, and release notes            | builder, changelog        |
-| `write`     | Write manifests and changelogs, create the release commit | changelog, npm, git       |
-| `publish`   | Publish packages, push tags, create releases              | npm, git, github          |
-| `finalize`  | Send notifications or clean up                            | —                         |
+| Hook        | Purpose                                                   | Built-in users                 |
+| ----------- | --------------------------------------------------------- | ------------------------------ |
+| `configure` | Adjust the release context before other hooks run         | npm (repository fallback), git |
+| `discover`  | Collect workspace packages and resolve package tags       | npm, changelog                 |
+| `analyze`   | Classify commits and derive per-package releases          | analyzer                       |
+| `build`     | Compute versions, tag names, and release notes            | builder, changelog             |
+| `write`     | Write manifests and changelogs, create the release commit | changelog, npm, git            |
+| `publish`   | Publish packages, push tags, create releases              | npm, git, github, gitlab       |
+| `finalize`  | Send notifications or clean up                            | —                              |
 
 Every hook is optional; a plugin typically implements a subset.
 
@@ -101,7 +101,7 @@ export default {
 }
 ```
 
-ReelOut resolves string specifiers from the working directory first, so local paths are supported. It then searches from `@reelout/config`, where the default integration plugins are installed. Use `false` or `null` to disable a plugin inherited from the defaults.
+ReelOut resolves string specifiers from the working directory first, so local paths are supported. It then searches from `@reelout/config`, where the default integration plugins are installed. Entries set to `false` or `null` are dropped.
 
 ## Built-in plugins
 

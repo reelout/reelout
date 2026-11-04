@@ -16,7 +16,7 @@ Key exports include:
 
 - **Workflow** — `executeReleaseWorkflow(context, plugins)` runs the release workflow.
 - **Plugin system** — `HookManager`, `HookPriority`, `RELEASE_HOOK_NAMES`, `createPlugin`, `resolvePlugin`.
-- **Built-in plugins** — `analyzer`, `builder`, and `changelog` (also available as `@reelout/core/analyzer`, `@reelout/core/builder`, and `@reelout/core/changelog`).
+- **Built-in plugins** — available as the default exports of `@reelout/core/analyzer`, `@reelout/core/builder`, and `@reelout/core/changelog`.
 - **Versioning** — `bumpVersion`, `generateGitTagName`, `generateReleaseCommitMessage`, `buildReleaseNotes`.
 - **Git** — `parseGitCommit`, `pushGitChanges`, `restoreFullGitHistory`, and `ensureGitTag`.
 - **Configuration helpers** — `normalizeReleaseRule`, `normalizeCommitFilter`.

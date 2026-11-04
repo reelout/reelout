@@ -41,7 +41,7 @@ Simulate the release workflow without writing release files, creating the releas
 npx reelout --dry-run
 ```
 
-ReelOut prints a report showing each package it would release, its current and proposed versions, and the detected change type. Each skipped side effect is marked `[DRY RUN]`.
+ReelOut prints a report showing each package it would release, its current and proposed versions, and the detected change type. Skipped side effects—file and changelog writes, the release commit, tag pushes, and release creation—are marked `[DRY RUN]`, and package publishing runs in npm dry-run mode.
 
 ## Ship a release
 

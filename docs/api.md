@@ -51,7 +51,9 @@ import { resolveConfig, defaultConfig, mergeConfig } from 'reelout'
 const config = await resolveConfig(process.cwd())
 
 // Or merge a configuration object manually
-const merged = mergeConfig(defaultConfig, { classifier: { patch: ['fix'] } })
+const merged = mergeConfig(defaultConfig, {
+  classifier: { major: [], minor: ['feat'], patch: ['fix'] },
+})
 ```
 
 See the [Configuration](./config.md) guide for the config format and defaults.

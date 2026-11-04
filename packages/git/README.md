@@ -31,7 +31,7 @@ export default {
 The default export is the plugin itself:
 
 ```ts
-import { git } from '@reelout/git'
+import git from '@reelout/git'
 ```
 
 ## Documentation

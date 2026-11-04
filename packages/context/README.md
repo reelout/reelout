@@ -12,13 +12,19 @@ This ESM-only package requires Node.js >= 24.15.
 
 ## API
 
-- `createContext(options)` — resolve the repository, current commit, and branch; apply release rules; and create a context for `executeReleaseWorkflow`.
+- `createContext(options)` — resolve the repository, current commit, and branch; apply release rules; and create a context for `executeReleaseWorkflow`. `options` combines a resolved release configuration (from `resolveConfig`) with runtime options such as `cwd`, `env`, `stdout`, `stderr`, and `dryRun`.
 
 ```ts
+import { resolveConfig } from '@reelout/config'
 import { createContext } from '@reelout/context'
 
+const cwd = process.cwd()
+
+const config = await resolveConfig(cwd)
+
 const context = await createContext({
-  cwd: process.cwd(),
+  ...config,
+  cwd,
   env: process.env,
   stdout: process.stdout,
   stderr: process.stderr,
