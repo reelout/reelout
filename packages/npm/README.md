@@ -47,6 +47,6 @@ Key exports include:
 
 ## Documentation
 
-- [Getting Started guide](https://github.com/reelout/reelout/blob/main/docs/getting-started.md)
-- [Configuration guide](https://github.com/reelout/reelout/blob/main/docs/config.md)
+- [Getting Started guide](https://github.com/reelout/reelout/blob/main/docs/01-getting-started.md)
+- [Configuration guide](https://github.com/reelout/reelout/blob/main/docs/02-config.md)
 - [API reference](https://reelout.overview.vercel.app/)

@@ -82,7 +82,7 @@ export function createNotifyPlugin(options: {
 
 ## Registering plugins
 
-Reference your plugin in the `plugins` array of your [configuration](./config.md#plugins):
+Reference your plugin in the `plugins` array of your [configuration](./02-config.md#plugins):
 
 ```ts
 // reelout.config.ts
@@ -103,6 +103,16 @@ export default {
 
 ReelOut resolves string specifiers from the working directory first, so local paths are supported. It then searches from `@reelout/config`, where the default integration plugins are installed. Entries set to `false` or `null` are dropped.
 
+## Agent skill
+
+This repository ships an agent skill that teaches coding agents to create, extend, and review ReelOut plugins. It covers the plugin contract, lifecycle and priorities, dry-run and rollback safety, registration, and testing. Install it into your project with the [`skills`](https://skills.sh) CLI:
+
+```sh
+npx skills add reelout/reelout --skill write-reelout-plugin
+```
+
+The skill source lives at [`.agents/skills/write-reelout-plugin/SKILL.md`](https://github.com/reelout/reelout/blob/main/.agents/skills/write-reelout-plugin/SKILL.md).
+
 ## Built-in plugins
 
 | Plugin    | Package                   | What it does                                                                            |
@@ -117,4 +127,4 @@ ReelOut resolves string specifiers from the working directory first, so local pa
 
 ## Programmatic utilities
 
-For programmatic use, `reelout` exports `createPlugin`, `HookManager`, `HookPriority`, and `RELEASE_HOOK_NAMES`. See the [Programmatic API](./api.md) guide or the [API reference](https://reelout.overview.vercel.app/).
+For programmatic use, `reelout` exports `createPlugin`, `HookManager`, `HookPriority`, and `RELEASE_HOOK_NAMES`. See the [Programmatic API](./05-api.md) guide or the [API reference](https://reelout.overview.vercel.app/).

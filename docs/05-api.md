@@ -56,7 +56,7 @@ const merged = mergeConfig(defaultConfig, {
 })
 ```
 
-See the [Configuration](./config.md) guide for the config format and defaults.
+See the [Configuration](./02-config.md) guide for the config format and defaults.
 
 ## Building a custom CLI
 

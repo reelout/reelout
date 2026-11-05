@@ -40,6 +40,6 @@ Set the `GITLAB_TOKEN` environment variable to authenticate with GitLab.
 
 ## Documentation
 
-- [Getting Started guide](https://github.com/reelout/reelout/blob/main/docs/getting-started.md)
-- [Continuous Integration guide](https://github.com/reelout/reelout/blob/main/docs/ci.md)
+- [Getting Started guide](https://github.com/reelout/reelout/blob/main/docs/01-getting-started.md)
+- [Continuous Integration guide](https://github.com/reelout/reelout/blob/main/docs/03-ci.md)
 - [API reference](https://reelout.overview.vercel.app/)
