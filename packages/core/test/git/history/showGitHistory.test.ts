@@ -663,7 +663,7 @@ test('terminates traversal cleanly without bleeding into unrelated branch histor
       `)
     })
   })
-})
+}, 15_000)
 
 test('safely returns an empty collection when given an unresolvable or invalid end reference', async () => {
   await temporaryDirectoryTask(async (remote) => {

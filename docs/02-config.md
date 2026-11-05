@@ -120,11 +120,11 @@ does not override its default; a supplied array replaces the default array.
 
 ## CLI overrides
 
-| Flag                                 | Effect                                                    |
-| ------------------------------------ | --------------------------------------------------------- |
-| `--type <auto\|major\|minor\|patch>` | Use a fixed release type instead of analyzing commits     |
-| `--qualifier <id\|false>`            | Override the version qualifier or disable it with `false` |
-| `--channel <name\|false>`            | Override the npm dist-tag or disable it with `false`      |
-| `--allow-empty`                      | Continue when no qualifying changes are detected          |
-| `--dry-run`                          | Simulate the workflow without making changes              |
-| `--debug`                            | Enable verbose logging                                    |
+| Flag                                 | Effect                                                                             |
+| ------------------------------------ | ---------------------------------------------------------------------------------- |
+| `--type <auto\|major\|minor\|patch>` | Choose a release type, or use `auto` to analyze commits                            |
+| `--qualifier <id\|false>`            | Set the SemVer prerelease identifier, follow branch rules, or disable it           |
+| `--channel <name\|false>`            | Set the npm dist-tag, follow branch rules, or disable it                           |
+| `--allow-empty`                      | Run the workflow even when no releasable changes are detected                      |
+| `--dry-run`                          | Preview the release without writing files or creating or publishing release assets |
+| `--debug`                            | Enable verbose logging for troubleshooting                                         |

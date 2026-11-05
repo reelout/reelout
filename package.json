@@ -1,15 +1,17 @@
 {
   "name": "reelout",
   "version": "0.2.0",
-  "description": "Monorepo release CLI and toolkit.",
+  "description": "Plugin-driven release automation for JavaScript and TypeScript monorepos.",
   "keywords": [
     "release",
     "monorepo",
     "versioning",
     "changelog",
+    "conventional-commits",
     "npm",
     "git",
     "github",
+    "gitlab",
     "cli"
   ],
   "repository": {

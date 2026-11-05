@@ -1,7 +1,7 @@
 {
   "name": "@reelout/cli",
   "version": "0.4.1",
-  "description": "CLI for running release workflows.",
+  "description": "Command-line interface for configuring and running ReelOut release workflows.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/reelout/reelout.git",
