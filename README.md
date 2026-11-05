@@ -3,17 +3,19 @@
 [![NPM Version](https://img.shields.io/npm/v/reelout)](https://www.npmjs.com/package/reelout)
 [![Codecov](https://img.shields.io/codecov/c/github/reelout/reelout?token=FSP5JC9E16)](https://app.codecov.io/github/reelout/reelout)
 
-ReelOut is a plugin-driven release automation tool for monorepos. It analyzes [Conventional Commits](https://conventionalcommits.org) to determine version bumps, update package manifests, generate changelogs, create tags, and publish packages to your registry.
+ReelOut automates releases across JavaScript and TypeScript monorepos. It
+analyzes [Conventional Commits](https://conventionalcommits.org) to calculate
+package version changes, update manifests and changelogs, create Git tags, and
+publish packages through an extensible plugin system.
 
 ## Features
 
-| Feature                           |  Semantic Release  | Changesets | Release Please |      ReelOut       |
-| :-------------------------------- | :----------------: | :--------: | :------------: | :----------------: |
-| Monorepo support                  |         ❌         |     ✅     |       ✅       |         ✅         |
-| No extra log files required       |         ✅         |     ❌     |       ✅       |         ✅         |
-| No release pull requests required |         ✅         |     ✅     |       ❌       |         ✅         |
-| Prerelease mode                   |         ✅         |     ✅     |       ✅       |         ✅         |
-| Multi-ecosystem compatibility     | ✅ (plugin-driven) |     ❌     | ✅ (built-in)  | ✅ (plugin-driven) |
+- Calculates independent release plans for workspace packages.
+- Uses Conventional Commits to determine `major`, `minor`, and `patch` releases.
+- Supports prerelease branches and configurable release channels.
+- Extends the workflow with plugins for changelogs, npm publishing, Git tags,
+  and GitHub or GitLab releases.
+- Provides a dry run so you can inspect a release before publishing.
 
 ## Installation
 
@@ -29,7 +31,7 @@ yarn add -D reelout
 
 ## Quick Start
 
-Preview a release first:
+Preview the proposed release first:
 
 ```sh
 npx reelout --dry-run
@@ -41,7 +43,10 @@ When the preview looks right, run the release:
 npx reelout
 ```
 
-By default, ReelOut analyzes commits, updates package versions and changelogs, creates tags and a release commit, and publishes packages. See [Getting Started](./docs/01-getting-started.md) for prerequisites and details.
+With the default plugins, ReelOut analyzes commits, updates package versions and
+changelogs, creates a release commit and tags, publishes eligible packages to
+npm, and creates a GitHub release. See
+[Getting Started](./docs/01-getting-started.md) for prerequisites and details.
 
 ## CLI
 
@@ -67,19 +72,21 @@ Options:
   -h, --help                       Display command usage and options.
 ```
 
-### Prereleases and channels
+### Prereleases
 
-Ship pre-production builds with a version qualifier:
+Ship prereleases with a version qualifier:
 
 ```sh
 npx reelout --qualifier beta
 ```
 
-Releasing from an `alpha`, `beta`, or `next` branch applies the matching qualifier and channel automatically. See [Configuration](./docs/02-config.md) to define custom branch rules.
+Releasing from an `alpha`, `beta`, or `next` branch applies the matching
+qualifier and npm channel automatically. See
+[Configuration](./docs/02-config.md) to define custom branch rules.
 
 ## Documentation
 
-- [Getting Started](./docs/01-getting-started.md) — install ReelOut, preview a release, and ship your first production version.
+- [Getting Started](./docs/01-getting-started.md) — install ReelOut, preview a release, and publish your first version.
 - [Configuration](./docs/02-config.md) — configure ReelOut for your monorepo.
 - [Continuous Integration](./docs/03-ci.md) — run ReelOut in GitHub Actions and CircleCI.
 - [Plugins](./docs/04-plugins.md) — extend ReelOut with custom release behavior.

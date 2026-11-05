@@ -5,7 +5,8 @@ description: 'Guidelines and rules for writing clear, actionable, and secure err
 
 # Logging and Error Message Guidelines
 
-This document outlines standards and rules for writing clear, actionable, and secure error messages and logs, including formatting, syntax, and tooling expectations.
+Use these standards to write clear, actionable, and secure error messages and
+logs, and to search for and validate them consistently.
 
 ## Principles
 
@@ -65,7 +66,7 @@ logger.warn(
   3. Preserve standard prefixes unless explicitly requested to remove them.
   4. Verify that localized translations preserve placeholders and sentence structure.
 
-## Scope and tooling
+## Search and validation
 
 - Candidate search patterns: Use ripgrep or GNU grep to find candidate messages. Example commands:
 
