@@ -82,7 +82,7 @@ export function createNotifyPlugin(options: {
 
 ## Registering plugins
 
-Reference your plugin in the `plugins` array of your [configuration](./config.md#plugins):
+Reference your plugin in the `plugins` array of your [configuration](./02-config.md#plugins):
 
 ```ts
 // reelout.config.ts
@@ -117,4 +117,4 @@ ReelOut resolves string specifiers from the working directory first, so local pa
 
 ## Programmatic utilities
 
-For programmatic use, `reelout` exports `createPlugin`, `HookManager`, `HookPriority`, and `RELEASE_HOOK_NAMES`. See the [Programmatic API](./api.md) guide or the [API reference](https://reelout.overview.vercel.app/).
+For programmatic use, `reelout` exports `createPlugin`, `HookManager`, `HookPriority`, and `RELEASE_HOOK_NAMES`. See the [Programmatic API](./05-api.md) guide or the [API reference](https://reelout.overview.vercel.app/).

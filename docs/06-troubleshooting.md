@@ -22,11 +22,11 @@ Pass `--debug` for verbose output. In GitHub Actions, ReelOut enables debug logg
 
 ## A plugin could not be resolved
 
-If ReelOut cannot resolve a plugin's string specifier, the release fails with a module-not-found error. The integration plugins—`@reelout/npm`, `@reelout/git`, `@reelout/github`, and `@reelout/gitlab`—resolve through `@reelout/config`. For an unresolved third-party plugin, install the package or remove its entry from [`plugins`](./config.md#plugins).
+If ReelOut cannot resolve a plugin's string specifier, the release fails with a module-not-found error. The integration plugins—`@reelout/npm`, `@reelout/git`, `@reelout/github`, and `@reelout/gitlab`—resolve through `@reelout/config`. For an unresolved third-party plugin, install the package or remove its entry from [`plugins`](./02-config.md#plugins).
 
 ## No packages are scheduled for release
 
-ReelOut reports "No packages are scheduled for release." when no commits since the last tags match the [classifier](./config.md#classifier). You can:
+ReelOut reports "No packages are scheduled for release." when no commits since the last tags match the [classifier](./02-config.md#classifier). You can:
 
 - Land a qualifying commit (`feat:`, `fix:`, ...).
 - Proceed via prerelease or 0.x promotion with `--allow-empty`; stable packages without changes are still skipped.

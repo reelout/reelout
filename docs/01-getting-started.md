@@ -31,7 +31,7 @@ The default configuration uses the integration plugins below. They are installed
 | `@reelout/github` | Creates GitHub releases                                           |
 | `@reelout/gitlab` | Creates GitLab releases                                           |
 
-For GitLab, replace `@reelout/github` with `@reelout/gitlab` in the `plugins` list of your [configuration](./config.md#plugins).
+For GitLab, replace `@reelout/github` with `@reelout/gitlab` in the `plugins` list of your [configuration](./02-config.md#plugins).
 
 ## Preview a release
 
@@ -51,14 +51,14 @@ npx reelout
 
 Running without `--dry-run` performs the release. With the default plugins, ReelOut:
 
-1. **Analyze** commits since each package's last tag. Breaking changes trigger a `major` bump, `feat` triggers `minor`, and `fix`, `perf`, or `revert` triggers `patch` (see [Configuration](./config.md#classifier)).
+1. **Analyze** commits since each package's last tag. Breaking changes trigger a `major` bump, `feat` triggers `minor`, and `fix`, `perf`, or `revert` triggers `patch` (see [Configuration](./02-config.md#classifier)).
 2. **Build** new versions, tag names (`v<version>` for the workspace root and `<name>@<version>` for workspace packages), and release notes.
 3. **Write** changelogs, update package versions and internal dependency ranges, and create a release commit.
 4. **Publish** packages to npm, push tags, and create a GitHub release for each tag.
 
 ## Prereleases and channels
 
-On a branch named `alpha`, `beta`, or `next`, ReelOut creates a prerelease (for example, `1.2.0-beta.1`) and publishes it under the matching npm dist-tag. Override these values with `--qualifier` and `--channel`, or define custom branch rules (see [Configuration](./config.md#rules)):
+On a branch named `alpha`, `beta`, or `next`, ReelOut creates a prerelease (for example, `1.2.0-beta.1`) and publishes it under the matching npm dist-tag. Override these values with `--qualifier` and `--channel`, or define custom branch rules (see [Configuration](./02-config.md#rules)):
 
 ```sh
 npx reelout --qualifier beta --channel beta
@@ -66,7 +66,7 @@ npx reelout --qualifier beta --channel beta
 
 ## Next steps
 
-- [Configuration](./config.md) — config files, release rules, and plugin options.
-- [Continuous Integration](./ci.md) — automate releases when changes reach `main`.
-- [Plugins](./plugins.md) — extend the release lifecycle.
-- [Troubleshooting](./troubleshooting.md) — when something goes wrong.
+- [Configuration](./02-config.md) — config files, release rules, and plugin options.
+- [Continuous Integration](./03-ci.md) — automate releases when changes reach `main`.
+- [Plugins](./04-plugins.md) — extend the release lifecycle.
+- [Troubleshooting](./06-troubleshooting.md) — when something goes wrong.

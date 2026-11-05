@@ -4,12 +4,12 @@ ReelOut automates monorepo releases by analyzing [Conventional Commits](https://
 
 ## Guides
 
-- [Getting Started](./getting-started.md) — install ReelOut, preview a release, and publish your first version.
-- [Configuration](./config.md) — configure release rules, plugins, and other options.
-- [Continuous Integration](./ci.md) — automate releases with GitHub Actions or CircleCI.
-- [Plugins](./plugins.md) — learn about the release lifecycle and create custom plugins.
-- [Programmatic API](./api.md) — use ReelOut from JavaScript or TypeScript.
-- [Troubleshooting](./troubleshooting.md) — investigate common errors and warnings.
+- [Getting Started](./01-getting-started.md) — install ReelOut, preview a release, and publish your first version.
+- [Configuration](./02-config.md) — configure release rules, plugins, and other options.
+- [Continuous Integration](./03-ci.md) — automate releases with GitHub Actions or CircleCI.
+- [Plugins](./04-plugins.md) — learn about the release lifecycle and create custom plugins.
+- [Programmatic API](./05-api.md) — use ReelOut from JavaScript or TypeScript.
+- [Troubleshooting](./06-troubleshooting.md) — investigate common errors and warnings.
 
 ## API Reference
 

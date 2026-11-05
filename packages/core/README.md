@@ -28,7 +28,7 @@ import { executeReleaseWorkflow, type ReleasePlugin } from '@reelout/core'
 
 ## Documentation
 
-- [Plugins guide](https://github.com/reelout/reelout/blob/main/docs/plugins.md)
-- [Programmatic API guide](https://github.com/reelout/reelout/blob/main/docs/api.md)
+- [Plugins guide](https://github.com/reelout/reelout/blob/main/docs/04-plugins.md)
+- [Programmatic API guide](https://github.com/reelout/reelout/blob/main/docs/05-api.md)
 - [Guides](https://github.com/reelout/reelout/tree/main/docs)
 - [API reference](https://reelout.overview.vercel.app/)

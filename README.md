@@ -41,7 +41,7 @@ When the preview looks right, run the release:
 npx reelout
 ```
 
-By default, ReelOut analyzes commits, updates package versions and changelogs, creates tags and a release commit, and publishes packages. See [Getting Started](./docs/getting-started.md) for prerequisites and details.
+By default, ReelOut analyzes commits, updates package versions and changelogs, creates tags and a release commit, and publishes packages. See [Getting Started](./docs/01-getting-started.md) for prerequisites and details.
 
 ## CLI
 
@@ -75,16 +75,16 @@ Ship pre-production builds with a version qualifier:
 npx reelout --qualifier beta
 ```
 
-Releasing from an `alpha`, `beta`, or `next` branch applies the matching qualifier and channel automatically. See [Configuration](./docs/config.md) to define custom branch rules.
+Releasing from an `alpha`, `beta`, or `next` branch applies the matching qualifier and channel automatically. See [Configuration](./docs/02-config.md) to define custom branch rules.
 
 ## Documentation
 
-- [Getting Started](./docs/getting-started.md) — install ReelOut, preview a release, and ship your first production version.
-- [Configuration](./docs/config.md) — configure ReelOut for your monorepo.
-- [Continuous Integration](./docs/ci.md) — run ReelOut in GitHub Actions and CircleCI.
-- [Plugins](./docs/plugins.md) — extend ReelOut with custom release behavior.
-- [Programmatic API](./docs/api.md) — use ReelOut as a library.
-- [Troubleshooting](./docs/troubleshooting.md) — diagnose and resolve common problems.
+- [Getting Started](./docs/01-getting-started.md) — install ReelOut, preview a release, and ship your first production version.
+- [Configuration](./docs/02-config.md) — configure ReelOut for your monorepo.
+- [Continuous Integration](./docs/03-ci.md) — run ReelOut in GitHub Actions and CircleCI.
+- [Plugins](./docs/04-plugins.md) — extend ReelOut with custom release behavior.
+- [Programmatic API](./docs/05-api.md) — use ReelOut as a library.
+- [Troubleshooting](./docs/06-troubleshooting.md) — diagnose and resolve common problems.
 
 Browse the full API reference at <https://reelout.overview.vercel.app/>.
 

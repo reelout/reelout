@@ -102,7 +102,7 @@ The ordered list of plugins to run during a release. Entries may be:
 | Plugin object                | `{ name: 'my-plugin', version: '1.0.0', ... }`             |
 | Disabled entry               | `false` / `null` (dropped)                                 |
 
-ReelOut resolves string specifiers from the working directory first, then from the context of `@reelout/config`. An unresolved specifier causes the release to fail. See [Plugins](./plugins.md) for the plugin lifecycle.
+ReelOut resolves string specifiers from the working directory first, then from the context of `@reelout/config`. An unresolved specifier causes the release to fail. See [Plugins](./04-plugins.md) for the plugin lifecycle.
 
 ## Merging behavior
 

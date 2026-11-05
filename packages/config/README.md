@@ -25,6 +25,6 @@ const config = await resolveConfig(process.cwd())
 
 ## Documentation
 
-- [Configuration guide](https://github.com/reelout/reelout/blob/main/docs/config.md)
+- [Configuration guide](https://github.com/reelout/reelout/blob/main/docs/02-config.md)
 - [Guides](https://github.com/reelout/reelout/tree/main/docs)
 - [API reference](https://reelout.overview.vercel.app/)
