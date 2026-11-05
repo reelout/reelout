@@ -1,12 +1,17 @@
 # Programmatic API
 
-The `reelout` package re-exports the APIs from `@reelout/cli`, `@reelout/config`, `@reelout/context`, and `@reelout/core`. Import integration plugins such as `@reelout/npm`, `@reelout/git`, `@reelout/github`, and `@reelout/gitlab` from their respective packages.
+The `reelout` package re-exports APIs from `@reelout/cli`, `@reelout/config`,
+`@reelout/context`, and `@reelout/core`. Import integration plugins such as
+`@reelout/npm`, `@reelout/git`, `@reelout/github`, and `@reelout/gitlab` from
+their respective packages.
 
 ReelOut is ESM-only and requires Node.js >= 24.15.
 
 ## Running a release
 
-The CLI combines a resolved configuration, a release context, instantiated plugins, and the workflow executor. The following example runs the same workflow in dry-run mode:
+The CLI combines resolved configuration, a release context, instantiated
+plugins, and the workflow executor. This example runs that workflow in dry-run
+mode:
 
 ```ts
 // run-release.ts
@@ -40,7 +45,10 @@ for (const definition of config.plugins) {
 await executeReleaseWorkflow(context, plugins)
 ```
 
-`createContext` accepts the options the CLI derives from flags—`type`, `qualifier`, `channel`, `allowEmpty`, `dryRun`, and `debug`—as well as an optional `signal` (`AbortSignal`) for cancellation. Set `dryRun: false` or omit it to perform a real release.
+`createContext` accepts the options the CLI derives from flags: `type`,
+`qualifier`, `channel`, `allowEmpty`, `dryRun`, and `debug`. Pass an optional
+`signal` (`AbortSignal`) to cancel the workflow. Set `dryRun: false` or omit it
+to perform a real release.
 
 ## Resolving configuration
 
@@ -60,7 +68,8 @@ See the [Configuration](./02-config.md) guide for the config format and defaults
 
 ## Building a custom CLI
 
-`createProgram` creates the Commander program used by the `reelout` binary. Use it to embed the CLI in another application or customize its identity:
+`createProgram` creates the Commander program used by the `reelout` binary. Use
+it to embed the CLI in another application or customize its name and metadata:
 
 ```ts
 // my-cli.ts
@@ -80,7 +89,8 @@ const program = await createProgram({
 await program.parseAsync(process.argv)
 ```
 
-`createProcessAbortSignal` returns an `AbortSignal` that fires on `SIGINT` or `SIGTERM`, allowing the workflow to clean up gracefully.
+`createProcessAbortSignal` returns an `AbortSignal` that fires on `SIGINT` or
+`SIGTERM`, allowing the workflow to clean up gracefully.
 
 ## Standalone utilities
 

@@ -5,9 +5,10 @@ description: 'Guidelines for writing strict structural, formatting, and syntacti
 
 # TypeScript JSDoc Style Guidelines
 
-This document establishes strict structural, formatting, and syntactic standards to ensure clear, consistent, and readable JSDoc comments in TypeScript codebases.
+Use these structural, formatting, and syntax rules to keep JSDoc clear and
+consistent across TypeScript codebases.
 
-## Structure and Required Order
+## Required structure and order
 
 JSDoc comments must follow this exact order and spacing:
 
@@ -52,7 +53,7 @@ Adhere strictly to this order and the spacing rules above.
 - **Punctuation:** A period is not required at the end of the `@throws` description.
 - **Line length:** Ignore line length constraints for `@throws` tags and allow them to remain unwrapped.
 
-## General Formatting
+## General formatting
 
 - **Line length:** Wrap paragraphs and long descriptions at approximately **80 characters** per line.
 - **Code identifiers:** Enclose all code identifiers (variables, types, parameters, function names) in backticks (e.g., `payload`).

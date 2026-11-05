@@ -5,12 +5,17 @@ description: 'Helps create, extend, and review ReelOut release plugins and hook 
 
 # Write a ReelOut Plugin
 
-Use this skill to create, extend, or review a ReelOut release plugin. Plugins belong in the user's project—as a local module or workspace package—not in the ReelOut repository. Implement only the hooks needed for the plugin's behavior.
+Use this skill to create, extend, or review a ReelOut release plugin in the
+user's project—as a local module or workspace package, not in the ReelOut
+repository. Implement only the hooks required for the plugin's behavior.
 
 ## Workflow
 
-1. **Define the behavior.** Identify the plugin's purpose and the smallest set of lifecycle hooks that can implement it.
-2. **Check the contract and prior art.** Read the [plugin guide](https://github.com/reelout/reelout/blob/main/docs/04-plugins.md), then inspect the installed `@reelout/core` sources:
+1. **Define the behavior.** Identify the plugin's purpose and the smallest set
+   of lifecycle hooks that can implement it.
+2. **Check the contract and prior art.** Read the
+   [plugin guide](https://github.com/reelout/reelout/blob/main/docs/04-plugins.md),
+   then inspect the installed `@reelout/core` sources:
    - `src/types.ts` for plugin, context, and hook types
    - `src/plugin/HookManager.ts` for priorities and middleware
    - `src/config/resolvePlugin.ts` for plugin resolution
@@ -21,9 +26,9 @@ Use this skill to create, extend, or review a ReelOut release plugin. Plugins be
    - `packages/core/src/changelog.ts` or `packages/npm/src/npm.ts` for file and package operations
    - `packages/core/src/analyzer.ts` for release planning
 
-3. **Implement** the plugin using the contract and safety rules below.
+3. **Implement** the plugin according to the contract and safety rules below.
 4. **Test** it through the release workflow with the project's test runner.
-5. **Verify** with focused tests and the project's lint command.
+5. **Verify** the focused tests and run the project's lint command.
 
 ## Lifecycle and handlers
 
@@ -43,7 +48,8 @@ configure → discover → analyze → build → write → publish → finalize
 | `publish`   | Publish packages, push tags, and create releases              |
 | `finalize`  | Send notifications or clean up                                |
 
-Every hook is optional. A handler receives `(context, next)` and participates in an asynchronous middleware chain:
+Every hook is optional. A handler receives `(context, next)` and participates
+in an asynchronous middleware chain:
 
 ```ts
 const handler = async (context, next) => {
@@ -52,14 +58,21 @@ const handler = async (context, next) => {
 }
 ```
 
-- On a successful path, call `next(context)` exactly once. Omitting it stops the rest of the workflow—not just the current hook—yet the workflow can still resolve and report success. Repeated calls are guarded no-ops; do not rely on them.
+- On success, call `next(context)` exactly once. Omitting it stops the rest of
+  the workflow—not just the current hook—even though the workflow can still
+  resolve and report success. Repeated calls are guarded no-ops; do not rely
+  on them.
 - Higher `priority` values run first. A handler without an explicit priority uses `HookPriority.Normal` (`0`); use the object form to set one.
 - Keep `write` handlers that create files at normal priority. The Git plugin commits at `HookPriority.Low` (`-50`) so earlier handlers' changes are included. `HookPriority.High` is `50`.
-- If the plugin cannot safely continue, throw an actionable error identifying the missing prerequisite. The workflow aborts, records the failure, prints the release report, and rejects.
+- If the plugin cannot safely continue, throw an actionable error that
+  identifies the missing prerequisite. The workflow aborts, records the
+  failure, prints the release report, and rejects.
 
 ## Plugin contract and registration
 
-Implement `ReleasePlugin` from `reelout`. Every plugin needs a `name` and `version`; use a factory when callers need to supply options or create independent instances. A plain plugin object is also valid.
+Implement `ReleasePlugin` from `reelout`. Every plugin needs a `name` and
+`version`. Use a factory when callers need to supply options or create
+independent instances; a plain plugin object is also valid.
 
 ```ts
 import type { ReleasePlugin } from 'reelout'
@@ -121,7 +134,10 @@ Handlers receive a mutable `ReleaseContext`. Commonly used fields:
 
 Apply these rules to every handler:
 
-- **Dry-run:** When `context.dryRun` is true, do not perform real side effects. Log the action that would have occurred with `context.logger.debug('[DRY RUN] ...')`. Read-only work may still run; use a collaborator's dry-run option when it is supported.
+- **Dry run:** When `context.dryRun` is true, do not perform real side effects.
+  Log the action that would have occurred with
+  `context.logger.debug('[DRY RUN] ...')`. Read-only work may still run; use a
+  collaborator's dry-run option when supported.
 - **Prerequisites:** Validate only the repository and environment values required by the plugin, before starting side effects.
 - **Rollback:** If a downstream handler can fail after this plugin creates external state, undo only effects owned by this plugin and rethrow the original error. Put the side effects and `next(context)` inside `try`/`catch`; use `Promise.allSettled` for best-effort cleanup when appropriate. Built-in plugins remove tags or releases they created.
 
@@ -133,7 +149,8 @@ Apply these rules to every handler:
 
 ## Tests and completion
 
-Use the project's own test runner and drive the plugin through the release workflow:
+Use the project's test runner and exercise the plugin through the release
+workflow:
 
 - Run `executeReleaseWorkflow(context, [plugin()])` from `reelout` to exercise hook order, priority, error propagation, and report behavior.
 - Build a `ReleaseContext` with the fields the handlers read. At minimum, provide `cwd`, `env`, `logger`, `dryRun`, and any `packages` or `plans` data the plugin inspects.
@@ -143,4 +160,7 @@ Use the project's own test runner and drive the plugin through the release workf
 - Prefer assertions on mock calls and arguments; logger snapshots may contain ANSI color codes and can be unreliable outside a TTY.
 - For end-to-end examples, see ReelOut's workflow-level tests, such as [`packages/gitlab/test/gitlab.test.ts`](https://github.com/reelout/reelout/blob/main/packages/gitlab/test/gitlab.test.ts).
 
-Before finishing, confirm that successful handlers continue the chain once, failures report useful errors and clean up owned effects where applicable, exports and package metadata follow project conventions, and focused tests plus lint pass.
+Before finishing, confirm that successful handlers continue the chain once,
+failures report useful errors and clean up owned effects where applicable,
+exports and package metadata follow project conventions, and focused tests
+and lint pass.

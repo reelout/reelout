@@ -1,6 +1,8 @@
 # @reelout/cli
 
-Command-line interface for [ReelOut](https://github.com/reelout/reelout), a plugin-driven release automation toolkit for monorepos. This package implements the Commander program behind the `reelout` executable and the factory for creating its Commander program.
+Command-line interface for [ReelOut](https://github.com/reelout/reelout), a
+plugin-driven release automation toolkit for monorepos. This package provides
+the Commander program factory used by the `reelout` executable.
 
 ## Installation
 
@@ -8,11 +10,11 @@ Command-line interface for [ReelOut](https://github.com/reelout/reelout), a plug
 npm install @reelout/cli
 ```
 
-This ESM-only package requires Node.js >= 24.15.
+This ESM-only package requires Node.js `>=24.15`.
 
 ## API
 
-- `createProgram(options)` — create the Commander program with the release workflow configured.
+- `createProgram(options)` — create a Commander program configured to run the release workflow.
 - `createProcessAbortSignal()` — create an `AbortSignal` that fires on `SIGINT` or `SIGTERM`.
 
 ```ts
@@ -34,5 +36,5 @@ await program.parseAsync(process.argv)
 
 ## Documentation
 
-- [Guides](https://github.com/reelout/reelout/tree/main/docs)
+- [CLI and configuration guides](https://github.com/reelout/reelout/tree/main/docs)
 - [API reference](https://reelout.overview.vercel.app/)

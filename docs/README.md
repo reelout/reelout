@@ -1,16 +1,22 @@
-# ReelOut Documentation
+# ReelOut documentation
 
-ReelOut automates monorepo releases by analyzing [Conventional Commits](https://conventionalcommits.org), calculating version bumps, updating package manifests, generating changelogs, creating tags, and publishing packages to your registry.
+ReelOut automates monorepo releases by analyzing
+[Conventional Commits](https://conventionalcommits.org), planning package
+version changes, updating manifests and changelogs, creating tags, and
+publishing through plugins.
 
-## Guides
+## Start here
 
-- [Getting Started](./01-getting-started.md) — install ReelOut, preview a release, and publish your first version.
-- [Configuration](./02-config.md) — configure release rules, plugins, and other options.
-- [Continuous Integration](./03-ci.md) — automate releases with GitHub Actions or CircleCI.
-- [Plugins](./04-plugins.md) — learn about the release lifecycle and create custom plugins.
-- [Programmatic API](./05-api.md) — use ReelOut from JavaScript or TypeScript.
-- [Troubleshooting](./06-troubleshooting.md) — investigate common errors and warnings.
+1. [Getting started](./01-getting-started.md) — install ReelOut and preview a release.
+2. [Configuration](./02-config.md) — set release rules and choose plugins.
+3. [Continuous integration](./03-ci.md) — automate releases in CI.
+4. [Plugins](./04-plugins.md) — extend the release lifecycle.
+5. [Programmatic API](./05-api.md) — run workflows from JavaScript or TypeScript.
+6. [Troubleshooting](./06-troubleshooting.md) — diagnose common errors and warnings.
 
 ## API Reference
 
-The [TypeDoc](https://typedoc.org) API reference, including these guides, is published at <https://reelout.overview.vercel.app/>. The `projectDocuments` setting in [`typedoc.json`](https://github.com/reelout/reelout/blob/main/typedoc.json) includes the Markdown files in this directory.
+The [TypeDoc](https://typedoc.org) API reference includes these guides and is
+published at <https://reelout.overview.vercel.app/>. The `projectDocuments`
+setting in [`typedoc.json`](https://github.com/reelout/reelout/blob/main/typedoc.json)
+includes the Markdown files in this directory.

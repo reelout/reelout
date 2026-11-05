@@ -1,6 +1,8 @@
 # @reelout/core
 
-Release engine for [ReelOut](https://github.com/reelout/reelout), providing the plugin architecture, workflow executor, and Git, versioning, and configuration utilities used across the `@reelout/*` packages.
+Release engine for [ReelOut](https://github.com/reelout/reelout). This package
+provides the plugin architecture, workflow executor, and shared Git,
+versioning, and configuration utilities.
 
 ## Installation
 
@@ -8,15 +10,15 @@ Release engine for [ReelOut](https://github.com/reelout/reelout), providing the 
 npm install @reelout/core
 ```
 
-This ESM-only package requires Node.js >= 24.15.
+This ESM-only package requires Node.js `>=24.15`.
 
 ## API
 
-Key exports include:
+Key exports:
 
 - **Workflow** — `executeReleaseWorkflow(context, plugins)` runs the release workflow.
 - **Plugin system** — `HookManager`, `HookPriority`, `RELEASE_HOOK_NAMES`, `createPlugin`, `resolvePlugin`.
-- **Built-in plugins** — available as the default exports of `@reelout/core/analyzer`, `@reelout/core/builder`, and `@reelout/core/changelog`.
+- **Built-in plugins** — default exports from `@reelout/core/analyzer`, `@reelout/core/builder`, and `@reelout/core/changelog`.
 - **Versioning** — `bumpVersion`, `generateGitTagName`, `generateReleaseCommitMessage`, `buildReleaseNotes`.
 - **Git** — `parseGitCommit`, `pushGitChanges`, `restoreFullGitHistory`, and `ensureGitTag`.
 - **Configuration helpers** — `normalizeReleaseRule`, `normalizeCommitFilter`.
@@ -30,5 +32,4 @@ import { executeReleaseWorkflow, type ReleasePlugin } from '@reelout/core'
 
 - [Plugins guide](https://github.com/reelout/reelout/blob/main/docs/04-plugins.md)
 - [Programmatic API guide](https://github.com/reelout/reelout/blob/main/docs/05-api.md)
-- [Guides](https://github.com/reelout/reelout/tree/main/docs)
 - [API reference](https://reelout.overview.vercel.app/)
