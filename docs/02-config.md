@@ -1,26 +1,23 @@
 # Configuration
 
-ReelOut uses [cosmiconfig](https://github.com/cosmiconfig/cosmiconfig) to find
-configuration, merges it with the built-in defaults, and then applies CLI
-overrides.
+ReelOut discovers configuration with
+[cosmiconfig](https://github.com/cosmiconfig), combines it with built-in
+defaults, then applies command-line options. Configuration values are not read
+from `REELOUT_*` environment variables.
 
-## Config file discovery
+## Find a configuration file
 
 ReelOut searches upward from the current working directory and uses the first
-matching file:
+configuration it finds. Supported locations are:
 
-| Location                                                                                                                           | Format            |
-| ---------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| `package.json`                                                                                                                     | a `"reelout"` key |
-| `.reeloutrc`                                                                                                                       | JSON or YAML      |
-| `.reeloutrc.json` / `.reeloutrc.yaml` / `.reeloutrc.yml` / `.reeloutrc.js` / `.reeloutrc.ts` / `.reeloutrc.cjs` / `.reeloutrc.mjs` | JSON, YAML, or JS |
-| `.config/reeloutrc` (and the same extensions as above)                                                                             | JSON, YAML, or JS |
-| `reelout.config.ts` / `reelout.config.js` / `reelout.config.cjs` / `reelout.config.mjs`                                            | TypeScript or JS  |
+- `package.json`, under the `"reelout"` key
+- `.reeloutrc` or `.config/reeloutrc` (JSON or YAML)
+- `.reeloutrc.{json,yaml,yml,js,ts,cjs,mjs}` or
+  `.config/reeloutrc.{json,yaml,yml,js,ts,cjs,mjs}`
+- `reelout.config.{js,ts,cjs,mjs}`
 
-Configuration is not read from `REELOUT_*` environment variables. Use a config
-file or the CLI flags listed below.
-
-## Example
+JavaScript and TypeScript config files should export the configuration as their
+default export. For example:
 
 ```ts
 // reelout.config.ts
@@ -48,83 +45,127 @@ export default {
 } satisfies ReleaseConfig
 ```
 
-## Defaults
+## Configuration options
 
-By default, ReelOut is configured for an npm monorepo hosted on GitHub:
+All options are optional. If omitted, ReelOut uses the defaults described
+below.
 
-- **author** — the `github-actions[bot]` identity for the release commit.
-- **classifier** — breaking changes bump `major`; `feat` bumps `minor`; `fix`, `perf`, and `revert` bump `patch`.
-- **rules** — the `alpha`, `beta`, and `next` branches release with a matching qualifier and channel.
-- **plugins** — `@reelout/core/analyzer`, `@reelout/core/builder`, `@reelout/core/changelog`, `@reelout/npm`, `@reelout/git`, and `@reelout/github`.
+### `author`
 
-## Options
-
-All options are optional; any you leave `undefined` fall back to the defaults.
-
-### author
-
-The Git author for the release commit, specified as `{ name, email }`. If either field is missing, ReelOut uses the default author.
-
-### classifier
-
-Maps Conventional Commit types to release types:
+The Git author for the release commit:
 
 ```ts
-classifier: {
-  major: [],                        // commit types that bump major
-  minor: ['feat'],                  // commit types that bump minor
-  patch: ['fix', 'perf', 'revert'], // commit types that bump patch
+author: {
+  name: 'Release Bot',
+  email: 'release@example.com',
 }
 ```
 
-Breaking changes (a `!` after the type or a `BREAKING CHANGE` footer) always
-bump `major`, regardless of the classifier.
+Provide both `name` and `email`. If either is missing, ReelOut uses the default
+GitHub Actions bot identity.
 
-### rules
+### `classifier`
 
-Controls branch-based prereleases. When the current branch matches a rule's `pattern`, ReelOut applies its qualifier (the SemVer prerelease identifier) and channel (the npm dist-tag):
+Maps Conventional Commit types to release types. The default mapping is:
+
+```ts
+classifier: {
+  major: [],
+  minor: ['feat'],
+  patch: ['fix', 'perf', 'revert'],
+}
+```
+
+You can change the mapping or provide a classifier function. Breaking changes
+always trigger a `major` release, regardless of the classifier: ReelOut detects
+them from a `!` after the commit type or a `BREAKING CHANGE` footer.
+
+### `rules`
+
+Rules match the current branch and set the prerelease qualifier and npm channel.
+ReelOut checks them in order and uses the first match. A rule's `pattern` is a
+glob; `type` is optional and defaults to `branch`.
 
 ```ts
 rules: [
   { type: 'branch', pattern: 'beta', qualifier: 'beta', channel: 'beta' },
-  'next', // string shorthand: pattern, qualifier, and channel all become 'next'
+  'next',
 ]
 ```
 
-- A string shorthand uses the label as `pattern` and its sanitized form as the
-  `qualifier` and `channel`.
-- `qualifier` and `channel` support `{date}` and `{time}` templates (for
-  example, `alpha-{date}`).
-- `false` and `null` entries are dropped.
+A string is shorthand for a rule whose pattern, qualifier, and channel use that
+string; its qualifier and channel are sanitized for use as a SemVer prerelease
+identifier and npm dist-tag. Use an object to define a glob pattern or when the
+qualifier or channel should differ from the pattern:
 
-### plugins
+```ts
+rules: [{ pattern: 'release/*', qualifier: 'rc', channel: 'candidate' }]
+```
 
-The ordered list of plugins to run during a release. Entries may be:
+For object rules, qualifier and channel values are used as provided rather than
+sanitized.
 
-| Form                         | Example                                                    |
-| ---------------------------- | ---------------------------------------------------------- |
-| Module specifier             | `'@reelout/npm'`                                           |
-| `[specifier, options]` tuple | `['@reelout/npm', { access: 'public', provenance: true }]` |
-| Plugin factory               | `createMyPlugin({ verbose: true })`                        |
-| Plugin object                | `{ name: 'my-plugin', version: '1.0.0', ... }`             |
-| Disabled entry               | `false` / `null` (dropped)                                 |
+Qualifier and channel strings support `{date}` and `{time}` templates, for
+example, `alpha-{date}`. Rules without a `pattern`, as well as `false`, `null`,
+and `undefined` entries, are ignored.
 
-ReelOut resolves string specifiers from the working directory first, then from
-the context of `@reelout/config`. An unresolved specifier causes the release to
-fail. See [Plugins](./04-plugins.md) for the plugin lifecycle.
+By default, the `alpha`, `beta`, and `next` branches each use the same label for
+their prerelease qualifier and npm channel.
 
-## Merging behavior
+### `plugins`
 
-ReelOut merges user configuration over the defaults. An `undefined` property
-does not override its default; a supplied array replaces the default array.
+An ordered list of plugins to run during the release. By default, ReelOut runs
+the analyzer, builder, and changelog plugins, followed by npm publishing, Git
+operations, and GitHub releases.
 
-## CLI overrides
+Entries can be module specifiers, plugin factories or objects, or tuples that
+pass options to a plugin factory:
 
-| Flag                                 | Effect                                                                             |
-| ------------------------------------ | ---------------------------------------------------------------------------------- |
-| `--type <auto\|major\|minor\|patch>` | Choose a release type, or use `auto` to analyze commits                            |
-| `--qualifier <id\|false>`            | Set the SemVer prerelease identifier, follow branch rules, or disable it           |
-| `--channel <name\|false>`            | Set the npm dist-tag, follow branch rules, or disable it                           |
-| `--allow-empty`                      | Run the workflow even when no releasable changes are detected                      |
-| `--dry-run`                          | Preview the release without writing files or creating or publishing release assets |
-| `--debug`                            | Enable verbose logging for troubleshooting                                         |
+```ts
+plugins: [
+  '@reelout/core/analyzer',
+  ['@reelout/npm', { access: 'public', provenance: true }],
+  createMyPlugin({ verbose: true }),
+  { name: 'my-plugin', version: '1.0.0', finalize: myHandler },
+]
+```
+
+Set an entry to `false` or `null` to omit it. ReelOut resolves string
+specifiers from the working directory first, then from the context of
+`@reelout/config`. An unresolved plugin causes configuration loading to fail.
+See the [Plugins guide](./04-plugins.md) for plugin authoring and registration
+details.
+
+## Defaults and merging
+
+ReelOut's default configuration targets an npm monorepo hosted on GitHub:
+
+| Option       | Default                                                                             |
+| ------------ | ----------------------------------------------------------------------------------- |
+| `author`     | The `github-actions[bot]` identity                                                  |
+| `classifier` | Breaking changes → `major`; `feat` → `minor`; `fix`, `perf`, and `revert` → `patch` |
+| `rules`      | `alpha`, `beta`, and `next` branches use matching qualifiers and channels           |
+| `plugins`    | Analyzer, builder, changelog, npm, Git, and GitHub plugins, in that order           |
+
+ReelOut merges user configuration over these defaults at the top level.
+Unspecified values retain their defaults; a supplied array replaces the
+default array rather than appending to it. For example, setting `plugins`
+replaces the full default plugin list, so include any built-ins you still need.
+
+## Command-line overrides
+
+CLI options override the corresponding release settings for a run:
+
+| Flag                                 | Effect                                                                                       |
+| ------------------------------------ | -------------------------------------------------------------------------------------------- |
+| `--type <auto\|major\|minor\|patch>` | Choose a release type; `auto` derives it from commits                                        |
+| `--qualifier <id\|true\|false>`      | Set the SemVer prerelease identifier, use the matching branch rule, or disable the qualifier |
+| `--channel <name\|true\|false>`      | Set the npm dist-tag, use the matching branch rule, or disable the channel                   |
+| `--allow-empty`                      | Run the workflow even when no releasable changes are detected                                |
+| `--dry-run`                          | Preview the release without writing files or creating or publishing release assets           |
+| `--debug`                            | Enable verbose logging for troubleshooting                                                   |
+
+For `--qualifier` and `--channel`, `true` uses the matching rule's value when
+one is defined. Without a rule value, `--qualifier true` creates a prerelease
+without an explicit identifier, while `--channel true` uses the sanitized
+current branch name. Pass `false` to disable only the corresponding setting.
