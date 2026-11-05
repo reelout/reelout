@@ -1,7 +1,7 @@
 {
   "name": "@reelout/git",
   "version": "0.4.1",
-  "description": "Git integration for committing version changes.",
+  "description": "Git plugin for creating release commits, pushing tags, and rolling back tags on failure.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/reelout/reelout.git",

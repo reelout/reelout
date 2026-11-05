@@ -59,15 +59,15 @@ npx reelout --help
 ```text
 Usage: reelout [options]
 
-Monorepo release CLI and toolkit.
+Plugin-driven release automation for JavaScript and TypeScript monorepos.
 
 Options:
-  --type <string>                  Specify the release type, bypassing automatic commit analysis. (choices: "auto", "major", "minor", "patch")
-  --qualifier <boolean or string>  Set or override the version qualifier (e.g., `alpha`, `beta`); pass `false` to disable.
-  --channel <boolean or string>    Set or override the release channel (e.g., `stable`, `canary`); pass `false` to disable.
-  --allow-empty                    Proceed with the release workflow even if no qualifying changes are detected.
-  --dry-run                        Simulate the release workflow without modifying files or publishing artifacts.
-  --debug                          Enable verbose logging for detailed troubleshooting. (default: false)
+  --type <string>                  Choose a release type instead of deriving it from commits; use `auto` to analyze commits. (choices: "auto", "major", "minor", "patch")
+  --qualifier <boolean or string>  Set the SemVer prerelease identifier (for example, `beta`); use `false` to disable it or `true` to follow branch rules.
+  --channel <boolean or string>    Set the npm dist-tag (for example, `beta`); use `false` to disable it or `true` to follow branch rules.
+  --allow-empty                    Run the release workflow even when no releasable changes are detected.
+  --dry-run                        Preview the release without writing files, creating commits or tags, or publishing packages or releases.
+  --debug                          Enable verbose logging for troubleshooting. (default: false)
   -v, --version                    Display the version number.
   -h, --help                       Display command usage and options.
 ```

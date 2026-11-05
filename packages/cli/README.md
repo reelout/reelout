@@ -23,7 +23,8 @@ import { createProgram, createProcessAbortSignal } from '@reelout/cli'
 const program = await createProgram({
   name: 'reelout',
   version: '1.0.0',
-  description: 'Monorepo release CLI and toolkit.',
+  description:
+    'Plugin-driven release automation for JavaScript and TypeScript monorepos.',
   cwd: process.cwd(),
   env: process.env,
   stdout: process.stdout,

@@ -1,7 +1,7 @@
 {
   "name": "@reelout/core",
   "version": "0.5.0",
-  "description": "Core release lifecycle orchestration.",
+  "description": "Release engine for commit analysis, version planning, lifecycle hooks, and release notes.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/reelout/reelout.git",
