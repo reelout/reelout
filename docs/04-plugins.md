@@ -103,6 +103,16 @@ export default {
 
 ReelOut resolves string specifiers from the working directory first, so local paths are supported. It then searches from `@reelout/config`, where the default integration plugins are installed. Entries set to `false` or `null` are dropped.
 
+## Agent skill
+
+This repository ships an agent skill that teaches coding agents to create, extend, and review ReelOut plugins. It covers the plugin contract, lifecycle and priorities, dry-run and rollback safety, registration, and testing. Install it into your project with the [`skills`](https://skills.sh) CLI:
+
+```sh
+npx skills add reelout/reelout --skill write-reelout-plugin
+```
+
+The skill source lives at [`.agents/skills/write-reelout-plugin/SKILL.md`](https://github.com/reelout/reelout/blob/main/.agents/skills/write-reelout-plugin/SKILL.md).
+
 ## Built-in plugins
 
 | Plugin    | Package                   | What it does                                                                            |
