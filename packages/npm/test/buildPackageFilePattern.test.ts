@@ -15,9 +15,9 @@ beforeEach(() => {
 test('returns default pattern for root', () => {
   const info = { location: '.', root: true } as Package
   const files = buildPackageFilePattern({
-    workspace,
     root: info.root,
     dir: info.location,
+    workspace,
     packageManager: 'npm',
   })
 
@@ -30,9 +30,9 @@ test('returns workspace pattern when configured', () => {
 
   const info = { location: '.', root: true } as Package
   const files = buildPackageFilePattern({
-    workspace,
     root: info.root,
     dir: info.location,
+    workspace,
     packageManager: 'npm',
   })
 
@@ -48,9 +48,9 @@ test('returns package-specific pattern', () => {
   const dir = path.join('packages', 'foo')
   const info = { location: dir, root: false } as Package
   const files = buildPackageFilePattern({
-    workspace,
     root: info.root,
     dir: info.location,
+    workspace,
     packageManager: 'npm',
   })
 
@@ -62,9 +62,9 @@ test('includes the pnpm workspace manifest in member patterns when managed by pn
   workspace.members = ['packages/*']
 
   const files = buildPackageFilePattern({
-    workspace,
     root: false,
     dir: 'packages/foo',
+    workspace,
     packageManager: 'pnpm',
   })
 
@@ -78,9 +78,9 @@ test('keeps member patterns unchanged for other package managers', () => {
   for (const packageManager of ['npm', 'yarn'] as const) {
     expect(
       buildPackageFilePattern({
-        workspace,
         root: false,
         dir: 'packages/foo',
+        workspace,
         packageManager,
       })
     ).toBe('packages/foo/**/*')
@@ -92,9 +92,9 @@ test('ignores the package manager for workspace root patterns', () => {
   workspace.members = ['packages/*']
 
   const files = buildPackageFilePattern({
-    workspace,
     root: true,
     dir: '.',
+    workspace,
     packageManager: 'pnpm',
   })
 

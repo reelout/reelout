@@ -25,9 +25,9 @@ test('returns true if file matches pattern', () => {
       package: {
         location: '.',
         files: buildPackageFilePattern({
-          workspace,
           root: true,
           dir: '.',
+          workspace,
           packageManager: 'npm',
         }),
       },
@@ -42,9 +42,9 @@ test('returns true if file matches pattern', () => {
       package: {
         location: 'packages/foo',
         files: buildPackageFilePattern({
-          workspace,
           root: false,
           dir: 'packages/foo',
+          workspace,
           packageManager: 'npm',
         }),
       },
@@ -123,9 +123,9 @@ test('matches the pnpm workspace manifest for members managed by pnpm', () => {
       package: {
         location: 'packages/foo',
         files: buildPackageFilePattern({
-          workspace,
           root: false,
           dir: 'packages/foo',
+          workspace,
           packageManager: 'pnpm',
         }),
       },
@@ -134,9 +134,9 @@ test('matches the pnpm workspace manifest for members managed by pnpm', () => {
       package: {
         location: 'packages/foo',
         files: buildPackageFilePattern({
-          workspace,
           root: false,
           dir: 'packages/foo',
+          workspace,
           packageManager: 'npm',
         }),
       },

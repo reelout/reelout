@@ -324,9 +324,9 @@ test('updates dependency versions in package manifests when release plans are pr
       package: {
         ...(await buildPackage({
           rootDir: cwd,
-          packageManager: 'npm',
           packageDir: 'a',
           workspace,
+          packageManager: 'npm',
         })),
         provider: PLUGIN_NAME,
       },
@@ -337,9 +337,9 @@ test('updates dependency versions in package manifests when release plans are pr
       package: {
         ...(await buildPackage({
           rootDir: cwd,
-          packageManager: 'npm',
           packageDir: 'b',
           workspace,
+          packageManager: 'npm',
         })),
         provider: PLUGIN_NAME,
       },
@@ -350,9 +350,9 @@ test('updates dependency versions in package manifests when release plans are pr
       package: {
         ...(await buildPackage({
           rootDir: cwd,
-          packageManager: 'npm',
           packageDir: 'c',
           workspace,
+          packageManager: 'npm',
         })),
         provider: PLUGIN_NAME,
       },

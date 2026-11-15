@@ -92,27 +92,27 @@ test('resolves missing package tags for workspace packages during discovery stag
 
     const rootPkg = await buildPackage({
       rootDir: context.cwd,
-      packageManager: 'npm',
       packageDir: '.',
       workspace,
+      packageManager: 'npm',
     })
     const pkgA = await buildPackage({
       rootDir: context.cwd,
-      packageManager: 'npm',
       packageDir: 'pkgA',
       workspace,
+      packageManager: 'npm',
     })
     const pkgB = await buildPackage({
       rootDir: context.cwd,
-      packageManager: 'npm',
       packageDir: 'pkgB',
       workspace,
+      packageManager: 'npm',
     })
     const pkgC = await buildPackage({
       rootDir: context.cwd,
-      packageManager: 'npm',
       packageDir: 'pkgC',
       workspace,
+      packageManager: 'npm',
     })
 
     context.packages = [

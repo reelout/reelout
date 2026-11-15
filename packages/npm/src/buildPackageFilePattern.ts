@@ -15,9 +15,9 @@ const LOCK_FILES = [
 const PNPM_WORKSPACE_FILE = 'pnpm-workspace.yaml'
 
 export interface BuildPackageFilePatternOptions {
-  workspace: Workspace
   root: boolean
   dir: string
+  workspace: Workspace
   packageManager: PackageManager
 }
 
@@ -37,7 +37,7 @@ export interface BuildPackageFilePatternOptions {
 export function buildPackageFilePattern(
   options: BuildPackageFilePatternOptions
 ): string | string[] {
-  const { workspace, root, dir, packageManager } = options
+  const { root, dir, workspace, packageManager } = options
 
   const { members } = workspace
 

@@ -56,9 +56,9 @@ test('returns top tag when the latest changelog entry is a stable release', asyn
 
     const pkg = await buildPackage({
       rootDir: cwd,
-      packageManager: 'npm',
       packageDir: '.',
       workspace,
+      packageManager: 'npm',
     })
 
     expect(await resolvePackageStableTag(cwd, pkg)).toEqual({
@@ -80,9 +80,9 @@ test('skips leading prerelease versions to find the most recent stable tag', asy
 
     const pkg = await buildPackage({
       rootDir: cwd,
-      packageManager: 'npm',
       packageDir: '.',
       workspace,
+      packageManager: 'npm',
     })
 
     expect(await resolvePackageStableTag(cwd, pkg)).toEqual({
@@ -104,9 +104,9 @@ test('skips patch-level prereleases to find the most recent stable tag', async (
 
     const pkg = await buildPackage({
       rootDir: cwd,
-      packageManager: 'npm',
       packageDir: '.',
       workspace,
+      packageManager: 'npm',
     })
 
     expect(await resolvePackageStableTag(cwd, pkg)).toEqual({
@@ -129,9 +129,9 @@ test('skips prereleases across major or minor boundaries to find the most recent
 
     const pkg = await buildPackage({
       rootDir: cwd,
-      packageManager: 'npm',
       packageDir: '.',
       workspace,
+      packageManager: 'npm',
     })
 
     expect(await resolvePackageStableTag(cwd, pkg)).toEqual({
@@ -155,9 +155,9 @@ test('ignores commits and version bumps not documented in the changelog', async 
 
     const pkg = await buildPackage({
       rootDir: cwd,
-      packageManager: 'npm',
       packageDir: '.',
       workspace,
+      packageManager: 'npm',
     })
 
     expect(await resolvePackageStableTag(cwd, pkg)).toEqual({
@@ -176,9 +176,9 @@ test('resolves tag using custom changelog path specified in package config', asy
     const pkg: Package = {
       ...(await buildPackage({
         rootDir: cwd,
-        packageManager: 'npm',
         packageDir: '.',
         workspace,
+        packageManager: 'npm',
       })),
       changelogFile: 'HISTORY.md',
     }
@@ -200,9 +200,9 @@ test('returns null when changelog file does not exist', async () => {
 
     const pkg = await buildPackage({
       rootDir: cwd,
-      packageManager: 'npm',
       packageDir: '.',
       workspace,
+      packageManager: 'npm',
     })
 
     expect(await resolvePackageStableTag(cwd, pkg)).toBeNull()
@@ -220,9 +220,9 @@ test('returns null when changelog file contains no content', async () => {
 
     const pkg = await buildPackage({
       rootDir: cwd,
-      packageManager: 'npm',
       packageDir: '.',
       workspace,
+      packageManager: 'npm',
     })
 
     expect(await resolvePackageStableTag(cwd, pkg)).toBeNull()
@@ -239,9 +239,9 @@ test('returns null when changelog contains only prerelease versions', async () =
 
     const pkg = await buildPackage({
       rootDir: cwd,
-      packageManager: 'npm',
       packageDir: '.',
       workspace,
+      packageManager: 'npm',
     })
 
     expect(await resolvePackageStableTag(cwd, pkg)).toBeNull()
@@ -258,9 +258,9 @@ test('returns null for 0.x.x stable releases when preceding version lacks a prer
 
     const pkg = await buildPackage({
       rootDir: cwd,
-      packageManager: 'npm',
       packageDir: '.',
       workspace,
+      packageManager: 'npm',
     })
 
     expect(await resolvePackageStableTag(cwd, pkg)).toBeNull()
@@ -276,9 +276,9 @@ test('throws an error when changelog versions are out of descending semver order
 
     const pkg = await buildPackage({
       rootDir: cwd,
-      packageManager: 'npm',
       packageDir: '.',
       workspace,
+      packageManager: 'npm',
     })
 
     await expect(
@@ -300,9 +300,9 @@ test('throws an error when the resolved stable tag does not exist in Git', async
 
     const pkg = await buildPackage({
       rootDir: cwd,
-      packageManager: 'npm',
       packageDir: '.',
       workspace,
+      packageManager: 'npm',
     })
 
     await expect(
@@ -324,9 +324,9 @@ test('includes package name in error message when Git tag verification fails', a
 
     const pkg = await buildPackage({
       rootDir: cwd,
-      packageManager: 'npm',
       packageDir: '.',
       workspace,
+      packageManager: 'npm',
     })
 
     await expect(

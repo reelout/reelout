@@ -45,9 +45,9 @@ test('yields all commits when targeting the root directory', async () => {
 
     const pkg = await buildPackage({
       rootDir: cwd,
-      packageManager: 'npm',
       packageDir: '.',
       workspace,
+      packageManager: 'npm',
     })
 
     expect(await showCommits(cwd, pkg)).toMatchInlineSnapshot(`
@@ -81,15 +81,15 @@ test('isolates commits belonging to specific subpackages', async () => {
 
     const pkg1 = await buildPackage({
       rootDir: cwd,
-      packageManager: 'npm',
       packageDir: 'pkg1',
       workspace,
+      packageManager: 'npm',
     })
     const pkg2 = await buildPackage({
       rootDir: cwd,
-      packageManager: 'npm',
       packageDir: 'pkg2',
       workspace,
+      packageManager: 'npm',
     })
 
     expect(await showCommits(cwd, pkg1)).toMatchInlineSnapshot(`
@@ -152,9 +152,9 @@ test('filters commits by custom file path', async () => {
 
     const pkg = await buildPackage({
       rootDir: cwd,
-      packageManager: 'npm',
       packageDir: '.',
       workspace,
+      packageManager: 'npm',
     })
 
     expect(await showCommits(cwd, pkg, { filePath: 'index.js' }))
@@ -199,15 +199,15 @@ test('stops yielding commits at specified revision tag', async () => {
 
     const pkg1 = await buildPackage({
       rootDir: cwd,
-      packageManager: 'npm',
       packageDir: 'pkg1',
       workspace,
+      packageManager: 'npm',
     })
     const pkg2 = await buildPackage({
       rootDir: cwd,
-      packageManager: 'npm',
       packageDir: 'pkg2',
       workspace,
+      packageManager: 'npm',
     })
 
     expect(await showCommits(cwd, pkg1, { until: 'pkg1@1.0.0' }))

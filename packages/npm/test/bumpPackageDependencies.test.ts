@@ -31,9 +31,9 @@ test('does early exit and skips modifying package.json when version map is empty
     {
       package: await buildPackage({
         rootDir: cwd,
-        packageManager: 'npm',
         packageDir: 'packages/foo',
         workspace,
+        packageManager: 'npm',
       }),
       history: [],
       release: null,
@@ -73,9 +73,9 @@ test('bumps dependencies based on the version map and updates package.json accor
     {
       package: await buildPackage({
         rootDir: cwd,
-        packageManager: 'npm',
         packageDir: 'packages/foo',
         workspace,
+        packageManager: 'npm',
       }),
       history: [],
       release: { type: 'patch', version: '1.0.1' },
@@ -83,9 +83,9 @@ test('bumps dependencies based on the version map and updates package.json accor
     {
       package: await buildPackage({
         rootDir: cwd,
-        packageManager: 'npm',
         packageDir: 'packages/bar',
         workspace,
+        packageManager: 'npm',
       }),
       history: [],
       release: null,
@@ -151,9 +151,9 @@ test('bumps dependencies and handles non-semver strings correctly', async () => 
     {
       package: await buildPackage({
         rootDir: cwd,
-        packageManager: 'npm',
         packageDir: 'packages/foo',
         workspace,
+        packageManager: 'npm',
       }),
       history: [],
       release: { type: 'patch', version: '1.0.1' },
@@ -161,9 +161,9 @@ test('bumps dependencies and handles non-semver strings correctly', async () => 
     {
       package: await buildPackage({
         rootDir: cwd,
-        packageManager: 'npm',
         packageDir: 'packages/bar',
         workspace,
+        packageManager: 'npm',
       }),
       history: [],
       release: { type: 'patch', version: '2.0.1' },
@@ -171,9 +171,9 @@ test('bumps dependencies and handles non-semver strings correctly', async () => 
     {
       package: await buildPackage({
         rootDir: cwd,
-        packageManager: 'npm',
         packageDir: 'packages/baz',
         workspace,
+        packageManager: 'npm',
       }),
       history: [],
       release: { type: 'minor', version: '3.1.0' },
@@ -181,9 +181,9 @@ test('bumps dependencies and handles non-semver strings correctly', async () => 
     {
       package: await buildPackage({
         rootDir: cwd,
-        packageManager: 'npm',
         packageDir: 'packages/qux',
         workspace,
+        packageManager: 'npm',
       }),
       history: [],
       release: null,

@@ -30,9 +30,9 @@ test('prefers explicit tag over generated', async () => {
 
     const pkg = await buildPackage({
       rootDir: cwd,
-      packageManager: 'npm',
       packageDir: '.',
       workspace,
+      packageManager: 'npm',
     })
     const tag = { name: 'v1' }
 
@@ -68,29 +68,29 @@ test('returns null when package name or version is missing', async () => {
 
     const pkg0 = await buildPackage({
       rootDir: cwd,
-      packageManager: 'npm',
       packageDir: '.',
       workspace,
+      packageManager: 'npm',
     })
     const pkg1 = await buildPackage({
       rootDir: cwd,
-      packageManager: 'npm',
       packageDir: 'packages/pkg1',
       workspace,
+      packageManager: 'npm',
     })
     const pkg2 = await buildPackage({
       rootDir: cwd,
-      packageManager: 'npm',
       packageDir: 'packages/pkg2',
       workspace,
+      packageManager: 'npm',
     })
 
     await expect(
       buildPackage({
         rootDir: cwd,
-        packageManager: 'npm',
         packageDir: 'packages/pkg3',
         workspace,
+        packageManager: 'npm',
       })
     ).rejects.toMatchInlineSnapshot(
       `[Error: Package version "undefined" in "packages/pkg3" is not a valid semantic version.]`
@@ -129,9 +129,9 @@ test('returns null when no tag exists', async () => {
 
     let pkg = await buildPackage({
       rootDir: cwd,
-      packageManager: 'npm',
       packageDir: '.',
       workspace,
+      packageManager: 'npm',
     })
 
     expect(await resolvePackageTag(cwd, pkg)).toEqual({ name: 'v1.6.0-rc.1' })
@@ -142,9 +142,9 @@ test('returns null when no tag exists', async () => {
 
     pkg = await buildPackage({
       rootDir: cwd,
-      packageManager: 'npm',
       packageDir: '.',
       workspace,
+      packageManager: 'npm',
     })
 
     expect(await resolvePackageTag(cwd, pkg)).toBe(null)
@@ -170,15 +170,15 @@ test('returns null when tag is unrelated to package', async () => {
 
     const pkg1 = await buildPackage({
       rootDir: cwd,
-      packageManager: 'npm',
       packageDir: 'packages/pkg1',
       workspace,
+      packageManager: 'npm',
     })
     const pkg2 = await buildPackage({
       rootDir: cwd,
-      packageManager: 'npm',
       packageDir: 'packages/pkg2',
       workspace,
+      packageManager: 'npm',
     })
 
     expect(await resolvePackageTag(cwd, pkg1)).toBe(null)
@@ -232,9 +232,9 @@ test('resolves release tag after sequential pushes', async () => {
 
       const pkg = await buildPackage({
         rootDir: cwd,
-        packageManager: 'npm',
         packageDir: '.',
         workspace,
+        packageManager: 'npm',
       })
 
       expect(await resolvePackageTag(cwd, pkg)).toMatchInlineSnapshot(`
@@ -273,9 +273,9 @@ test('resolves release tag after sequential pushes', async () => {
 
       const pkg = await buildPackage({
         rootDir: cwd,
-        packageManager: 'npm',
         packageDir: '.',
         workspace,
+        packageManager: 'npm',
       })
 
       expect(await resolvePackageTag(cwd, pkg)).toMatchInlineSnapshot(`
@@ -313,9 +313,9 @@ test('resolves release tag after sequential pushes', async () => {
 
       const pkg = await buildPackage({
         rootDir: cwd,
-        packageManager: 'npm',
         packageDir: '.',
         workspace,
+        packageManager: 'npm',
       })
 
       expect(await resolvePackageTag(cwd, pkg)).toBe(null)
@@ -391,9 +391,9 @@ test('aborts tag discovery when no latest package present', async () => {
 
       const pkg = await buildPackage({
         rootDir: cwd,
-        packageManager: 'npm',
         packageDir: '.',
         workspace,
+        packageManager: 'npm',
       })
 
       expect(await resolvePackageTag(cwd, pkg)).toBe(null)
@@ -404,9 +404,9 @@ test('aborts tag discovery when no latest package present', async () => {
 
       const pkg = await buildPackage({
         rootDir: cwd,
-        packageManager: 'npm',
         packageDir: '.',
         workspace,
+        packageManager: 'npm',
       })
 
       expect(await resolvePackageTag(cwd, pkg)).toMatchInlineSnapshot(`
@@ -481,9 +481,9 @@ test('returns null when tag is unreachable', async () => {
 
       const pkg = await buildPackage({
         rootDir: cwd,
-        packageManager: 'npm',
         packageDir: '.',
         workspace,
+        packageManager: 'npm',
       })
 
       expect(await resolvePackageTag(cwd, pkg)).toBe(null)
@@ -494,9 +494,9 @@ test('returns null when tag is unreachable', async () => {
 
       const pkg = await buildPackage({
         rootDir: cwd,
-        packageManager: 'npm',
         packageDir: '.',
         workspace,
+        packageManager: 'npm',
       })
 
       expect(await resolvePackageTag(cwd, pkg)).toMatchInlineSnapshot(`

@@ -42,9 +42,9 @@ test('prefers explicit tag over generated', async () => {
 
     const pkg = await buildPackage({
       rootDir: cwd,
-      packageManager: 'npm',
       packageDir: '.',
       workspace,
+      packageManager: 'npm',
     })
     const tag = { name: 'v1' }
 
@@ -73,9 +73,9 @@ test('returns null when changelog file is missing', async () => {
 
     const pkg = await buildPackage({
       rootDir: cwd,
-      packageManager: 'npm',
       packageDir: '.',
       workspace,
+      packageManager: 'npm',
     })
 
     expect(await discoverPackageTag(cwd, pkg)).toBe(null)
@@ -98,9 +98,9 @@ test('returns null when changelog version is malformed', async () => {
 
     const pkg = await buildPackage({
       rootDir: cwd,
-      packageManager: 'npm',
       packageDir: '.',
       workspace,
+      packageManager: 'npm',
     })
 
     expect(await discoverPackageTag(cwd, pkg)).toBe(null)
@@ -129,15 +129,15 @@ test('returns null when tag cannot be generated for package', async () => {
 
     const pkg1 = await buildPackage({
       rootDir: cwd,
-      packageManager: 'npm',
       packageDir: 'packages/pkg1',
       workspace,
+      packageManager: 'npm',
     })
     const pkg2 = await buildPackage({
       rootDir: cwd,
-      packageManager: 'npm',
       packageDir: 'packages/pkg2',
       workspace,
+      packageManager: 'npm',
     })
 
     expect(await discoverPackageTag(cwd, pkg1)).toEqual({ name: 'pkg1@1.0.0' })
@@ -160,9 +160,9 @@ test('returns null when expected release tag is absent from history', async () =
 
     const pkg = await buildPackage({
       rootDir: cwd,
-      packageManager: 'npm',
       packageDir: '.',
       workspace,
+      packageManager: 'npm',
     })
 
     expect(await discoverPackageTag(cwd, pkg)).toBe(null)
@@ -200,9 +200,9 @@ test('returns null when historical changelog file at tag commit is empty', async
 
     const pkg = await buildPackage({
       rootDir: cwd,
-      packageManager: 'npm',
       packageDir: '.',
       workspace,
+      packageManager: 'npm',
     })
 
     expect(await discoverPackageTag(cwd, pkg)).toBe(null)
@@ -240,9 +240,9 @@ test('returns null when historical changelog file at tag commit contains an olde
 
     const pkg = await buildPackage({
       rootDir: cwd,
-      packageManager: 'npm',
       packageDir: '.',
       workspace,
+      packageManager: 'npm',
     })
 
     expect(await discoverPackageTag(cwd, pkg)).toBe(null)
@@ -296,9 +296,9 @@ test('resolves changelog tag after tags are pushed sequentially', async () => {
 
       const pkg = await buildPackage({
         rootDir: cwd,
-        packageManager: 'npm',
         packageDir: '.',
         workspace,
+        packageManager: 'npm',
       })
 
       expect(await discoverPackageTag(cwd, pkg)).toMatchInlineSnapshot(`
@@ -338,9 +338,9 @@ test('resolves changelog tag after tags are pushed sequentially', async () => {
 
       const pkg = await buildPackage({
         rootDir: cwd,
-        packageManager: 'npm',
         packageDir: '.',
         workspace,
+        packageManager: 'npm',
       })
 
       expect(await discoverPackageTag(cwd, pkg)).toEqual({
@@ -376,9 +376,9 @@ test('resolves changelog tag after tags are pushed sequentially', async () => {
 
       const pkg = await buildPackage({
         rootDir: cwd,
-        packageManager: 'npm',
         packageDir: '.',
         workspace,
+        packageManager: 'npm',
       })
 
       expect(await discoverPackageTag(cwd, pkg)).toMatchInlineSnapshot(`
@@ -461,9 +461,9 @@ test('prefers changelog version when package and branch versions diverge', async
 
       const pkg = await buildPackage({
         rootDir: cwd,
-        packageManager: 'npm',
         packageDir: '.',
         workspace,
+        packageManager: 'npm',
       })
 
       expect(await discoverPackageTag(cwd, pkg)).toMatchInlineSnapshot(`
@@ -479,9 +479,9 @@ test('prefers changelog version when package and branch versions diverge', async
 
       const pkg = await buildPackage({
         rootDir: cwd,
-        packageManager: 'npm',
         packageDir: '.',
         workspace,
+        packageManager: 'npm',
       })
 
       expect(await discoverPackageTag(cwd, pkg)).toMatchInlineSnapshot(`
@@ -558,9 +558,9 @@ test('returns null when matching tag is unreachable from the current branch', as
 
       const pkg = await buildPackage({
         rootDir: cwd,
-        packageManager: 'npm',
         packageDir: '.',
         workspace,
+        packageManager: 'npm',
       })
 
       expect(await discoverPackageTag(cwd, pkg)).toBe(null)
@@ -571,9 +571,9 @@ test('returns null when matching tag is unreachable from the current branch', as
 
       const pkg = await buildPackage({
         rootDir: cwd,
-        packageManager: 'npm',
         packageDir: '.',
         workspace,
+        packageManager: 'npm',
       })
 
       expect(await discoverPackageTag(cwd, pkg)).toMatchInlineSnapshot(`

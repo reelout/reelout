@@ -23,9 +23,9 @@ test('throws Error when package version is not valid semver', async () => {
   await expect(
     buildPackage({
       rootDir: '/repo',
-      packageManager: 'npm',
       packageDir: '.',
       workspace,
+      packageManager: 'npm',
     })
   ).rejects.toThrow(
     'Package version "invalid" in "." is not a valid semantic version.'
@@ -34,9 +34,9 @@ test('throws Error when package version is not valid semver', async () => {
   await expect(
     buildPackage({
       rootDir: '/repo',
-      packageManager: 'npm',
       packageDir: 'packages/foo',
       workspace,
+      packageManager: 'npm',
     })
   ).rejects.toThrow(
     'Package version "undefined" in "packages/foo" is not a valid semantic version.'
@@ -51,9 +51,9 @@ test('returns package metadata when package.json contains valid version', async 
   expect(
     await buildPackage({
       rootDir: '/repo',
-      packageManager: 'npm',
       packageDir: '.',
       workspace,
+      packageManager: 'npm',
     })
   ).toMatchInlineSnapshot(`
     {
@@ -85,9 +85,9 @@ test('combines and sorts package dependencies when manifest includes dependency 
   expect(
     await buildPackage({
       rootDir: '/repo',
-      packageManager: 'npm',
       packageDir: '.',
       workspace,
+      packageManager: 'npm',
     })
   ).toMatchInlineSnapshot(`
     {
@@ -127,9 +127,9 @@ test('marks package as entry when package directory matches workspace entry', as
   expect(
     await buildPackage({
       rootDir: cwd,
-      packageManager: 'npm',
       packageDir: pkgDir0,
       workspace,
+      packageManager: 'npm',
     })
   ).toMatchInlineSnapshot(`
     {
@@ -147,9 +147,9 @@ test('marks package as entry when package directory matches workspace entry', as
   expect(
     await buildPackage({
       rootDir: cwd,
-      packageManager: 'npm',
       packageDir: pkgDir1,
       workspace,
+      packageManager: 'npm',
     })
   ).toMatchInlineSnapshot(`
     {
@@ -182,9 +182,9 @@ test('computes file exclusion patterns when package is at workspace entry', asyn
   expect(
     await buildPackage({
       rootDir: cwd,
-      packageManager: 'npm',
       packageDir: pkgDir0,
       workspace,
+      packageManager: 'npm',
     })
   ).toMatchInlineSnapshot(`
     {
@@ -202,9 +202,9 @@ test('computes file exclusion patterns when package is at workspace entry', asyn
   expect(
     await buildPackage({
       rootDir: cwd,
-      packageManager: 'npm',
       packageDir: pkgDir1,
       workspace,
+      packageManager: 'npm',
     })
   ).toMatchInlineSnapshot(`
     {
@@ -231,9 +231,9 @@ test('includes the workspace manifest in member file patterns for pnpm', async (
   expect(
     await buildPackage({
       rootDir: '/repo',
-      packageManager: 'pnpm',
       packageDir: '.',
       workspace,
+      packageManager: 'pnpm',
     })
   ).toMatchInlineSnapshot(`
     {
@@ -251,9 +251,9 @@ test('includes the workspace manifest in member file patterns for pnpm', async (
   expect(
     await buildPackage({
       rootDir: '/repo',
-      packageManager: 'pnpm',
       packageDir: 'packages/foo',
       workspace,
+      packageManager: 'pnpm',
     })
   ).toMatchInlineSnapshot(`
     {
@@ -283,9 +283,9 @@ test('keeps member file patterns unchanged for non-pnpm package managers', async
   expect(
     await buildPackage({
       rootDir: '/repo',
-      packageManager: 'yarn',
       packageDir: 'packages/foo',
       workspace,
+      packageManager: 'yarn',
     })
   ).toMatchInlineSnapshot(`
     {

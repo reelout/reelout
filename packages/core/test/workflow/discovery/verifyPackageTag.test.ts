@@ -33,9 +33,9 @@ test('returns true when tag exists and is connected to repository history', asyn
 
     const pkg = await buildPackage({
       rootDir: cwd,
-      packageManager: 'npm',
       packageDir: '.',
       workspace,
+      packageManager: 'npm',
     })
 
     expect(await verifyPackageTag(cwd, pkg, 'v1.0.0')).toBe(true)
@@ -57,9 +57,9 @@ test('returns false when tag does not exist in repository', async () => {
 
     const pkg = await buildPackage({
       rootDir: cwd,
-      packageManager: 'npm',
       packageDir: '.',
       workspace,
+      packageManager: 'npm',
     })
 
     expect(await verifyPackageTag(cwd, pkg, 'v1.0.0')).toBe(false)
@@ -86,15 +86,15 @@ test('returns false when tag targets a different package', async () => {
 
     const pkg1 = await buildPackage({
       rootDir: cwd,
-      packageManager: 'npm',
       packageDir: 'packages/pkg1',
       workspace,
+      packageManager: 'npm',
     })
     const pkg2 = await buildPackage({
       rootDir: cwd,
-      packageManager: 'npm',
       packageDir: 'packages/pkg2',
       workspace,
+      packageManager: 'npm',
     })
 
     expect(await verifyPackageTag(cwd, pkg1, 'pkg1@1.0.0')).toBe(true)
@@ -135,9 +135,9 @@ test('returns false when tag is disconnected from current repository history', a
 
       const pkg = await buildPackage({
         rootDir: cwd,
-        packageManager: 'npm',
         packageDir: '.',
         workspace,
+        packageManager: 'npm',
       })
 
       expect(await verifyPackageTag(cwd, pkg, 'v1.1.0')).toBe(false)

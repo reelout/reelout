@@ -80,9 +80,9 @@ test('preserves pre-existing release plans and formats changelog entries', async
       {
         package: await buildPackage({
           rootDir: context.cwd,
-          packageManager: 'npm',
           packageDir: '.',
           workspace,
+          packageManager: 'npm',
         }),
         history: [await createMockCommit('hash1', 'build: update deps')],
         release: {
@@ -215,9 +215,9 @@ test('derives release plans for packages missing an explicit version', async () 
     context.packages = [
       await buildPackage({
         rootDir: context.cwd,
-        packageManager: 'npm',
         packageDir: '.',
         workspace,
+        packageManager: 'npm',
       }),
     ]
 
@@ -318,9 +318,9 @@ test('derives release plans for packages with an existing version', async () => 
     context.packages = [
       await buildPackage({
         rootDir: context.cwd,
-        packageManager: 'npm',
         packageDir: '.',
         workspace,
+        packageManager: 'npm',
       }),
     ]
 
@@ -413,9 +413,9 @@ test('ignores version mismatches between package context and repository tags', a
       {
         ...(await buildPackage({
           rootDir: context.cwd,
-          packageManager: 'npm',
           packageDir: '.',
           workspace,
+          packageManager: 'npm',
         })),
         version: '9.9.9',
       },
@@ -605,33 +605,33 @@ test('identifies package changes across a multi-package workspace', async () => 
     context.packages = [
       await buildPackage({
         rootDir: context.cwd,
-        packageManager: 'npm',
         packageDir: '.',
         workspace,
+        packageManager: 'npm',
       }),
       await buildPackage({
         rootDir: context.cwd,
-        packageManager: 'npm',
         packageDir: 'foo',
         workspace,
+        packageManager: 'npm',
       }),
       await buildPackage({
         rootDir: context.cwd,
-        packageManager: 'npm',
         packageDir: 'bar',
         workspace,
+        packageManager: 'npm',
       }),
       await buildPackage({
         rootDir: context.cwd,
-        packageManager: 'npm',
         packageDir: 'baz',
         workspace,
+        packageManager: 'npm',
       }),
       await buildPackage({
         rootDir: context.cwd,
-        packageManager: 'npm',
         packageDir: 'qux',
         workspace,
+        packageManager: 'npm',
       }),
     ]
 
@@ -927,51 +927,51 @@ test('promotes prerelease and zero-major versions when allowEmpty is true', asyn
     context.packages = [
       await buildPackage({
         rootDir: context.cwd,
-        packageManager: 'npm',
         packageDir: 'pkg1',
         workspace,
+        packageManager: 'npm',
       }),
       await buildPackage({
         rootDir: context.cwd,
-        packageManager: 'npm',
         packageDir: 'pkg2',
         workspace,
+        packageManager: 'npm',
       }),
       await buildPackage({
         rootDir: context.cwd,
-        packageManager: 'npm',
         packageDir: 'pkg3',
         workspace,
+        packageManager: 'npm',
       }),
       await buildPackage({
         rootDir: context.cwd,
-        packageManager: 'npm',
         packageDir: 'pkg4',
         workspace,
+        packageManager: 'npm',
       }),
       await buildPackage({
         rootDir: context.cwd,
-        packageManager: 'npm',
         packageDir: 'pkg5',
         workspace,
+        packageManager: 'npm',
       }),
       await buildPackage({
         rootDir: context.cwd,
-        packageManager: 'npm',
         packageDir: 'pkg6',
         workspace,
+        packageManager: 'npm',
       }),
       await buildPackage({
         rootDir: context.cwd,
-        packageManager: 'npm',
         packageDir: 'pkg7',
         workspace,
+        packageManager: 'npm',
       }),
       await buildPackage({
         rootDir: context.cwd,
-        packageManager: 'npm',
         packageDir: 'pkg8',
         workspace,
+        packageManager: 'npm',
       }),
     ]
 
@@ -1157,27 +1157,27 @@ test('propagates release plans to dependent packages on workspace updates', asyn
     context.packages = [
       await buildPackage({
         rootDir: context.cwd,
-        packageManager: 'npm',
         packageDir: '.',
         workspace,
+        packageManager: 'npm',
       }),
       await buildPackage({
         rootDir: context.cwd,
-        packageManager: 'npm',
         packageDir: 'foo',
         workspace,
+        packageManager: 'npm',
       }),
       await buildPackage({
         rootDir: context.cwd,
-        packageManager: 'npm',
         packageDir: 'bar',
         workspace,
+        packageManager: 'npm',
       }),
       await buildPackage({
         rootDir: context.cwd,
-        packageManager: 'npm',
         packageDir: 'baz',
         workspace,
+        packageManager: 'npm',
       }),
     ]
 

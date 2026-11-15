@@ -24,9 +24,9 @@ export async function loadRootPackage(
       status: 'fulfilled',
       value: await buildPackage({
         rootDir: cwd,
-        packageManager: await resolvePackageManager(cwd),
         packageDir: '.',
         workspace,
+        packageManager: await resolvePackageManager(cwd),
       }),
     }
   } catch (err) {

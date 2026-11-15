@@ -9,9 +9,9 @@ import type { PackageManager } from './resolvePackageManager'
 
 export interface BuildPackageOptions {
   rootDir: string
-  packageManager: PackageManager
   packageDir: string
   workspace: Workspace
+  packageManager: PackageManager
 }
 
 /**
@@ -28,7 +28,7 @@ export interface BuildPackageOptions {
 export async function buildPackage(
   options: BuildPackageOptions
 ): Promise<Package> {
-  const { rootDir, packageManager, workspace } = options
+  const { rootDir, workspace, packageManager } = options
 
   const resolvedPackageDir = path.resolve(rootDir, options.packageDir)
 
@@ -61,9 +61,9 @@ export async function buildPackage(
     }).sort(),
     location: packageDir,
     files: buildPackageFilePattern({
-      workspace,
       root,
       dir: packageDir,
+      workspace,
       packageManager,
     }),
   }

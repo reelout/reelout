@@ -41,9 +41,9 @@ export async function loadWorkspacePackages(
       .map((filePath) =>
         buildPackage({
           rootDir: cwd,
-          packageManager,
           packageDir: path.dirname(filePath),
           workspace,
+          packageManager,
         })
       )
   )
