@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.1](https://github.com/reelout/reelout/compare/v0.2.0...v0.2.1) (2026-11-15)
+
+### Bug Fixes
+
+- **deps:** pin @yarnpkg/core to 4.9.1 and update dependencies ([#11](https://github.com/reelout/reelout/issues/11)) ([fe2845e](https://github.com/reelout/reelout/commit/fe2845e4b6409b37f2195b6fa94f19ff11c31570)), references [yarnpkg/berry#7282](https://github.com/reelout/reelout/issues/7282) [pnpm/pnpm#16590](https://github.com/reelout/reelout/issues/16590)
+
 ## [0.2.0](https://github.com/reelout/reelout/compare/v0.1.0...v0.2.0) (2026-10-31)
 
 ### Features
