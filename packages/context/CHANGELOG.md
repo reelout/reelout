@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.2](https://github.com/reelout/reelout/compare/%40reelout%2Fcontext%400.4.1...%40reelout%2Fcontext%400.4.2) (2026-11-15)
+
+### Bug Fixes
+
+- **npm:** release members when the pnpm workspace manifest changes ([#12](https://github.com/reelout/reelout/issues/12)) ([e885f31](https://github.com/reelout/reelout/commit/e885f319265d4662a7e704a592cc6a17eb289219))
+
 ## [0.4.1](https://github.com/reelout/reelout/compare/%40reelout%2Fcontext%400.4.0...%40reelout%2Fcontext%400.4.1) (2026-10-31)
 
 ### Features
