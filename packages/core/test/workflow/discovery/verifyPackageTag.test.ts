@@ -31,7 +31,12 @@ test('returns true when tag exists and is connected to repository history', asyn
     await execGit(cwd, ['commit', '-m', 'chore: release v2.0.0'])
     await execGit(cwd, ['tag', 'v2.0.0'])
 
-    const pkg = await buildPackage(cwd, '.', workspace)
+    const pkg = await buildPackage({
+      rootDir: cwd,
+      packageManager: 'npm',
+      packageDir: '.',
+      workspace,
+    })
 
     expect(await verifyPackageTag(cwd, pkg, 'v1.0.0')).toBe(true)
     expect(await verifyPackageTag(cwd, pkg, 'v2.0.0')).toBe(true)
@@ -50,7 +55,12 @@ test('returns false when tag does not exist in repository', async () => {
     await execGit(cwd, ['add', '.'])
     await execGit(cwd, ['commit', '-m', 'chore: add v2 base'])
 
-    const pkg = await buildPackage(cwd, '.', workspace)
+    const pkg = await buildPackage({
+      rootDir: cwd,
+      packageManager: 'npm',
+      packageDir: '.',
+      workspace,
+    })
 
     expect(await verifyPackageTag(cwd, pkg, 'v1.0.0')).toBe(false)
     expect(await verifyPackageTag(cwd, pkg, 'v2.0.0')).toBe(false)
@@ -74,8 +84,18 @@ test('returns false when tag targets a different package', async () => {
     await execGit(cwd, ['commit', '-m', 'chore(pkg2): release v2'])
     await execGit(cwd, ['tag', 'pkg2@2.0.0'])
 
-    const pkg1 = await buildPackage(cwd, 'packages/pkg1', workspace)
-    const pkg2 = await buildPackage(cwd, 'packages/pkg2', workspace)
+    const pkg1 = await buildPackage({
+      rootDir: cwd,
+      packageManager: 'npm',
+      packageDir: 'packages/pkg1',
+      workspace,
+    })
+    const pkg2 = await buildPackage({
+      rootDir: cwd,
+      packageManager: 'npm',
+      packageDir: 'packages/pkg2',
+      workspace,
+    })
 
     expect(await verifyPackageTag(cwd, pkg1, 'pkg1@1.0.0')).toBe(true)
     expect(await verifyPackageTag(cwd, pkg2, 'pkg1@1.0.0')).toBe(false)
@@ -113,7 +133,12 @@ test('returns false when tag is disconnected from current repository history', a
     await temporaryDirectoryTask(async (cwd) => {
       await cloneGitRepository(cwd, remote)
 
-      const pkg = await buildPackage(cwd, '.', workspace)
+      const pkg = await buildPackage({
+        rootDir: cwd,
+        packageManager: 'npm',
+        packageDir: '.',
+        workspace,
+      })
 
       expect(await verifyPackageTag(cwd, pkg, 'v1.1.0')).toBe(false)
       expect(await verifyPackageTag(cwd, pkg, 'v1.2.0-dev.0')).toBe(true)

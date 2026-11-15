@@ -29,7 +29,12 @@ test('does early exit and skips modifying package.json when version map is empty
 
   const plans: ReleasePlan[] = [
     {
-      package: await buildPackage(cwd, 'packages/foo', workspace),
+      package: await buildPackage({
+        rootDir: cwd,
+        packageManager: 'npm',
+        packageDir: 'packages/foo',
+        workspace,
+      }),
       history: [],
       release: null,
     },
@@ -66,12 +71,22 @@ test('bumps dependencies based on the version map and updates package.json accor
 
   const plans: ReleasePlan[] = [
     {
-      package: await buildPackage(cwd, 'packages/foo', workspace),
+      package: await buildPackage({
+        rootDir: cwd,
+        packageManager: 'npm',
+        packageDir: 'packages/foo',
+        workspace,
+      }),
       history: [],
       release: { type: 'patch', version: '1.0.1' },
     },
     {
-      package: await buildPackage(cwd, 'packages/bar', workspace),
+      package: await buildPackage({
+        rootDir: cwd,
+        packageManager: 'npm',
+        packageDir: 'packages/bar',
+        workspace,
+      }),
       history: [],
       release: null,
     },
@@ -134,22 +149,42 @@ test('bumps dependencies and handles non-semver strings correctly', async () => 
 
   const plans: ReleasePlan[] = [
     {
-      package: await buildPackage(cwd, 'packages/foo', workspace),
+      package: await buildPackage({
+        rootDir: cwd,
+        packageManager: 'npm',
+        packageDir: 'packages/foo',
+        workspace,
+      }),
       history: [],
       release: { type: 'patch', version: '1.0.1' },
     },
     {
-      package: await buildPackage(cwd, 'packages/bar', workspace),
+      package: await buildPackage({
+        rootDir: cwd,
+        packageManager: 'npm',
+        packageDir: 'packages/bar',
+        workspace,
+      }),
       history: [],
       release: { type: 'patch', version: '2.0.1' },
     },
     {
-      package: await buildPackage(cwd, 'packages/baz', workspace),
+      package: await buildPackage({
+        rootDir: cwd,
+        packageManager: 'npm',
+        packageDir: 'packages/baz',
+        workspace,
+      }),
       history: [],
       release: { type: 'minor', version: '3.1.0' },
     },
     {
-      package: await buildPackage(cwd, 'packages/qux', workspace),
+      package: await buildPackage({
+        rootDir: cwd,
+        packageManager: 'npm',
+        packageDir: 'packages/qux',
+        workspace,
+      }),
       history: [],
       release: null,
     },

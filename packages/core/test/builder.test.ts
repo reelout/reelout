@@ -1185,7 +1185,12 @@ test('derives release notes from commits since previous stable tag when allowEmp
 
     context.plans = [
       {
-        package: await buildPackage(cwd, '.', workspace),
+        package: await buildPackage({
+          rootDir: cwd,
+          packageManager: 'npm',
+          packageDir: '.',
+          workspace,
+        }),
         history: [] as GitCommit[],
         release: { type: 'minor' },
       },
@@ -1242,7 +1247,12 @@ test('derives release notes from all commits when allowEmpty is true and no prev
 
     context.plans = [
       {
-        package: await buildPackage(cwd, '.', workspace),
+        package: await buildPackage({
+          rootDir: cwd,
+          packageManager: 'npm',
+          packageDir: '.',
+          workspace,
+        }),
         history: [] as GitCommit[],
         release: { type: 'patch' },
       },
@@ -1297,7 +1307,12 @@ test('uses plan history for release notes when allowEmpty is true but release cy
 
     context.plans = [
       {
-        package: await buildPackage(cwd, '.', workspace),
+        package: await buildPackage({
+          rootDir: cwd,
+          packageManager: 'npm',
+          packageDir: '.',
+          workspace,
+        }),
         history: [] as GitCommit[],
         release: { type: 'minor', transition: 'advance' },
       },

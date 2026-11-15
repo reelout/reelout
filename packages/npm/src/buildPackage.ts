@@ -5,29 +5,36 @@ import { isSemVer, type Package, type Workspace } from '@reelout/core'
 import path from 'node:path'
 import { buildPackageFilePattern } from './buildPackageFilePattern'
 import { readPackageJson } from './readPackageJson'
+import type { PackageManager } from './resolvePackageManager'
+
+export interface BuildPackageOptions {
+  rootDir: string
+  packageManager: PackageManager
+  packageDir: string
+  workspace: Workspace
+}
 
 /**
  * Build metadata for a package within a workspace.
  *
- * Reads the package manifest and computes canonical fields used by the
- * release process, including normalized paths and file patterns.
+ * Reads the package manifest and computes canonical fields used by the release
+ * process, including normalized paths and file patterns.
  *
- * @param rootDir Current working directory
- * @param packageDir Package directory path (relative or absolute)
- * @param workspace Workspace metadata and configuration
+ * @param options Package build inputs including directories, workspace
+ * metadata, and package manager
  * @returns Package metadata object
  * @throws If the package version is not a valid semantic version
  */
 export async function buildPackage(
-  rootDir: string,
-  packageDir: string,
-  workspace: Workspace
+  options: BuildPackageOptions
 ): Promise<Package> {
-  packageDir = path.resolve(rootDir, packageDir)
+  const { rootDir, packageManager, workspace } = options
 
-  const manifest = await readPackageJson(packageDir)
+  const resolvedPackageDir = path.resolve(rootDir, options.packageDir)
 
-  packageDir = path.normalize(path.relative(rootDir, packageDir))
+  const manifest = await readPackageJson(resolvedPackageDir)
+
+  const packageDir = path.normalize(path.relative(rootDir, resolvedPackageDir))
 
   const root = packageDir === '.'
 
@@ -53,6 +60,11 @@ export async function buildPackage(
       ...manifest.optionalDependencies,
     }).sort(),
     location: packageDir,
-    files: buildPackageFilePattern(workspace, root, packageDir),
+    files: buildPackageFilePattern({
+      workspace,
+      root,
+      dir: packageDir,
+      packageManager,
+    }),
   }
 }

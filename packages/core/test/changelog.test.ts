@@ -90,10 +90,30 @@ test('resolves missing package tags for workspace packages during discovery stag
     await execGit(cwd, ['commit', '-m', 'chore(pkgA): release v0.1.0'])
     await execGit(cwd, ['tag', 'pkgA@0.1.0'])
 
-    const rootPkg = await buildPackage(context.cwd, '.', workspace)
-    const pkgA = await buildPackage(context.cwd, 'pkgA', workspace)
-    const pkgB = await buildPackage(context.cwd, 'pkgB', workspace)
-    const pkgC = await buildPackage(context.cwd, 'pkgC', workspace)
+    const rootPkg = await buildPackage({
+      rootDir: context.cwd,
+      packageManager: 'npm',
+      packageDir: '.',
+      workspace,
+    })
+    const pkgA = await buildPackage({
+      rootDir: context.cwd,
+      packageManager: 'npm',
+      packageDir: 'pkgA',
+      workspace,
+    })
+    const pkgB = await buildPackage({
+      rootDir: context.cwd,
+      packageManager: 'npm',
+      packageDir: 'pkgB',
+      workspace,
+    })
+    const pkgC = await buildPackage({
+      rootDir: context.cwd,
+      packageManager: 'npm',
+      packageDir: 'pkgC',
+      workspace,
+    })
 
     context.packages = [
       rootPkg,

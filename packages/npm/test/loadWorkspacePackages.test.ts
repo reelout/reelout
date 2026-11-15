@@ -114,3 +114,41 @@ test('skips invalid packages and rejects unparsable entries', async () => {
       ]
     `)
 })
+
+test('includes the pnpm workspace manifest for pnpm-managed members', async () => {
+  workspace.entry = '.'
+  workspace.members = ['packages/*']
+
+  vol.fromJSON({
+    '/repo/package.json': JSON.stringify({
+      version: '0.0.0',
+      packageManager: 'pnpm@10.0.0',
+    }),
+    '/repo/packages/pkg1/package.json': JSON.stringify({
+      name: 'pkg1',
+      version: '1.0.0',
+    }),
+  })
+
+  expect(await loadWorkspacePackages('/repo', workspace))
+    .toMatchInlineSnapshot(`
+      [
+        {
+          "status": "fulfilled",
+          "value": {
+            "dependencies": [],
+            "entry": false,
+            "files": [
+              "packages/pkg1/**/*",
+              "pnpm-workspace.yaml",
+            ],
+            "location": "packages/pkg1",
+            "name": "pkg1",
+            "private": undefined,
+            "root": false,
+            "version": "1.0.0",
+          },
+        },
+      ]
+    `)
+})

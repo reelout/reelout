@@ -6,6 +6,7 @@ import { glob } from 'glob'
 import fs from 'node:fs'
 import path from 'node:path'
 import { buildPackage } from './buildPackage'
+import { resolvePackageManager } from './resolvePackageManager'
 
 /**
  * Load all workspace packages defined in the workspace configuration.
@@ -32,9 +33,18 @@ export async function loadWorkspacePackages(
     { cwd, ignore: ['**/node_modules/**'], fs }
   )
 
+  const packageManager = await resolvePackageManager(cwd)
+
   return Promise.allSettled(
     packageJsonFiles
       .sort((a, b) => a.localeCompare(b))
-      .map((filePath) => buildPackage(cwd, path.dirname(filePath), workspace))
+      .map((filePath) =>
+        buildPackage({
+          rootDir: cwd,
+          packageManager,
+          packageDir: path.dirname(filePath),
+          workspace,
+        })
+      )
   )
 }

@@ -24,7 +24,12 @@ test('returns true if file matches pattern', () => {
     {
       package: {
         location: '.',
-        files: buildPackageFilePattern(workspace, true, '.'),
+        files: buildPackageFilePattern({
+          workspace,
+          root: true,
+          dir: '.',
+          packageManager: 'npm',
+        }),
       },
     },
     {
@@ -36,7 +41,12 @@ test('returns true if file matches pattern', () => {
     {
       package: {
         location: 'packages/foo',
-        files: buildPackageFilePattern(workspace, false, 'packages/foo'),
+        files: buildPackageFilePattern({
+          workspace,
+          root: false,
+          dir: 'packages/foo',
+          packageManager: 'npm',
+        }),
       },
     },
   ] as ReleasePlan[]
@@ -98,6 +108,78 @@ test('returns true if file matches pattern', () => {
       }).toEqual({
         file,
         root: index === 0,
+        isCommitForPackage: expected[index],
+      })
+    })
+  }
+})
+
+test('matches the pnpm workspace manifest for members managed by pnpm', () => {
+  workspace.entry = '.'
+  workspace.members = ['packages/*']
+
+  const plans = [
+    {
+      package: {
+        location: 'packages/foo',
+        files: buildPackageFilePattern({
+          workspace,
+          root: false,
+          dir: 'packages/foo',
+          packageManager: 'pnpm',
+        }),
+      },
+    },
+    {
+      package: {
+        location: 'packages/foo',
+        files: buildPackageFilePattern({
+          workspace,
+          root: false,
+          dir: 'packages/foo',
+          packageManager: 'npm',
+        }),
+      },
+    },
+  ] as ReleasePlan[]
+
+  expect(plans).toMatchInlineSnapshot(`
+    [
+      {
+        "package": {
+          "files": [
+            "packages/foo/**/*",
+            "pnpm-workspace.yaml",
+          ],
+          "location": "packages/foo",
+        },
+      },
+      {
+        "package": {
+          "files": "packages/foo/**/*",
+          "location": "packages/foo",
+        },
+      },
+    ]
+  `)
+
+  for (const [file, expected] of [
+    ['pnpm-workspace.yaml', [true, false]],
+    ['packages/foo/src/index.ts', [true, true]],
+    ['packages/foo/package.json', [true, true]],
+    ['pnpm-lock.yaml', [false, false]],
+    ['packages/bar/src/index.ts', [false, false]],
+  ] as const) {
+    const commit = { files: [file] as readonly string[] } as GitCommit
+
+    plans.forEach((plan, index) => {
+      expect({
+        file,
+        pnpm: index === 0,
+        isCommitForPackage: isCommitForPackage(plan.package, commit),
+      }).toEqual({
+        file,
+        pnpm: index === 0,
         isCommitForPackage: expected[index],
       })
     })
