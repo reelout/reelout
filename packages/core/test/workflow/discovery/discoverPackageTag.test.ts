@@ -40,7 +40,12 @@ test('prefers explicit tag over generated', async () => {
     await execGit(cwd, ['commit', '-m', 'chore: release v1'])
     await execGit(cwd, ['tag', 'v1.0.0'])
 
-    const pkg = await buildPackage(cwd, '.', workspace)
+    const pkg = await buildPackage({
+      rootDir: cwd,
+      packageDir: '.',
+      workspace,
+      packageManager: 'npm',
+    })
     const tag = { name: 'v1' }
 
     expect(await discoverPackageTag(cwd, { ...pkg, tag })).toEqual({
@@ -66,7 +71,12 @@ test('returns null when changelog file is missing', async () => {
     ])
     await execGit(cwd, ['tag', 'v1.0.0'])
 
-    const pkg = await buildPackage(cwd, '.', workspace)
+    const pkg = await buildPackage({
+      rootDir: cwd,
+      packageDir: '.',
+      workspace,
+      packageManager: 'npm',
+    })
 
     expect(await discoverPackageTag(cwd, pkg)).toBe(null)
   })
@@ -86,7 +96,12 @@ test('returns null when changelog version is malformed', async () => {
     ])
     await execGit(cwd, ['tag', 'v1.0.0'])
 
-    const pkg = await buildPackage(cwd, '.', workspace)
+    const pkg = await buildPackage({
+      rootDir: cwd,
+      packageDir: '.',
+      workspace,
+      packageManager: 'npm',
+    })
 
     expect(await discoverPackageTag(cwd, pkg)).toBe(null)
   })
@@ -112,8 +127,18 @@ test('returns null when tag cannot be generated for package', async () => {
     await execGit(cwd, ['tag', 'pkg1@1.0.0'])
     await execGit(cwd, ['tag', 'pkg2@1.0.0'])
 
-    const pkg1 = await buildPackage(cwd, 'packages/pkg1', workspace)
-    const pkg2 = await buildPackage(cwd, 'packages/pkg2', workspace)
+    const pkg1 = await buildPackage({
+      rootDir: cwd,
+      packageDir: 'packages/pkg1',
+      workspace,
+      packageManager: 'npm',
+    })
+    const pkg2 = await buildPackage({
+      rootDir: cwd,
+      packageDir: 'packages/pkg2',
+      workspace,
+      packageManager: 'npm',
+    })
 
     expect(await discoverPackageTag(cwd, pkg1)).toEqual({ name: 'pkg1@1.0.0' })
     expect(await discoverPackageTag(cwd, pkg2)).toBe(null)
@@ -133,7 +158,12 @@ test('returns null when expected release tag is absent from history', async () =
       'chore(release): register changelog entry — reg-4b6d',
     ])
 
-    const pkg = await buildPackage(cwd, '.', workspace)
+    const pkg = await buildPackage({
+      rootDir: cwd,
+      packageDir: '.',
+      workspace,
+      packageManager: 'npm',
+    })
 
     expect(await discoverPackageTag(cwd, pkg)).toBe(null)
   })
@@ -168,7 +198,12 @@ test('returns null when historical changelog file at tag commit is empty', async
       'docs(changelog): append release entry after tag — changelog-append-5e7c',
     ])
 
-    const pkg = await buildPackage(cwd, '.', workspace)
+    const pkg = await buildPackage({
+      rootDir: cwd,
+      packageDir: '.',
+      workspace,
+      packageManager: 'npm',
+    })
 
     expect(await discoverPackageTag(cwd, pkg)).toBe(null)
   })
@@ -203,7 +238,12 @@ test('returns null when historical changelog file at tag commit contains an olde
       'docs(changelog): append release entry after tag — changelog-append-5e7c',
     ])
 
-    const pkg = await buildPackage(cwd, '.', workspace)
+    const pkg = await buildPackage({
+      rootDir: cwd,
+      packageDir: '.',
+      workspace,
+      packageManager: 'npm',
+    })
 
     expect(await discoverPackageTag(cwd, pkg)).toBe(null)
   })
@@ -254,7 +294,12 @@ test('resolves changelog tag after tags are pushed sequentially', async () => {
     await temporaryDirectoryTask(async (cwd) => {
       await cloneGitRepository(cwd, remote)
 
-      const pkg = await buildPackage(cwd, '.', workspace)
+      const pkg = await buildPackage({
+        rootDir: cwd,
+        packageDir: '.',
+        workspace,
+        packageManager: 'npm',
+      })
 
       expect(await discoverPackageTag(cwd, pkg)).toMatchInlineSnapshot(`
         {
@@ -291,7 +336,12 @@ test('resolves changelog tag after tags are pushed sequentially', async () => {
     await temporaryDirectoryTask(async (cwd) => {
       await cloneGitRepository(cwd, remote)
 
-      const pkg = await buildPackage(cwd, '.', workspace)
+      const pkg = await buildPackage({
+        rootDir: cwd,
+        packageDir: '.',
+        workspace,
+        packageManager: 'npm',
+      })
 
       expect(await discoverPackageTag(cwd, pkg)).toEqual({
         name: 'v1.1.0',
@@ -324,7 +374,12 @@ test('resolves changelog tag after tags are pushed sequentially', async () => {
     await temporaryDirectoryTask(async (cwd) => {
       await cloneGitRepository(cwd, remote)
 
-      const pkg = await buildPackage(cwd, '.', workspace)
+      const pkg = await buildPackage({
+        rootDir: cwd,
+        packageDir: '.',
+        workspace,
+        packageManager: 'npm',
+      })
 
       expect(await discoverPackageTag(cwd, pkg)).toMatchInlineSnapshot(`
         {
@@ -404,7 +459,12 @@ test('prefers changelog version when package and branch versions diverge', async
     await temporaryDirectoryTask(async (cwd) => {
       await cloneGitRepository(cwd, remote)
 
-      const pkg = await buildPackage(cwd, '.', workspace)
+      const pkg = await buildPackage({
+        rootDir: cwd,
+        packageDir: '.',
+        workspace,
+        packageManager: 'npm',
+      })
 
       expect(await discoverPackageTag(cwd, pkg)).toMatchInlineSnapshot(`
         {
@@ -417,7 +477,12 @@ test('prefers changelog version when package and branch versions diverge', async
     await temporaryDirectoryTask(async (cwd) => {
       await cloneGitRepository(cwd, remote, 'release/v1.1.x')
 
-      const pkg = await buildPackage(cwd, '.', workspace)
+      const pkg = await buildPackage({
+        rootDir: cwd,
+        packageDir: '.',
+        workspace,
+        packageManager: 'npm',
+      })
 
       expect(await discoverPackageTag(cwd, pkg)).toMatchInlineSnapshot(`
         {
@@ -491,7 +556,12 @@ test('returns null when matching tag is unreachable from the current branch', as
     await temporaryDirectoryTask(async (cwd) => {
       await cloneGitRepository(cwd, remote)
 
-      const pkg = await buildPackage(cwd, '.', workspace)
+      const pkg = await buildPackage({
+        rootDir: cwd,
+        packageDir: '.',
+        workspace,
+        packageManager: 'npm',
+      })
 
       expect(await discoverPackageTag(cwd, pkg)).toBe(null)
     })
@@ -499,7 +569,12 @@ test('returns null when matching tag is unreachable from the current branch', as
     await temporaryDirectoryTask(async (cwd) => {
       await cloneGitRepository(cwd, remote, 'release/v1.1.x')
 
-      const pkg = await buildPackage(cwd, '.', workspace)
+      const pkg = await buildPackage({
+        rootDir: cwd,
+        packageDir: '.',
+        workspace,
+        packageManager: 'npm',
+      })
 
       expect(await discoverPackageTag(cwd, pkg)).toMatchInlineSnapshot(`
         {

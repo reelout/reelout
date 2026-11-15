@@ -43,7 +43,12 @@ test('yields all commits when targeting the root directory', async () => {
     await execGit(cwd, ['add', '.'])
     await execGit(cwd, ['commit', '-m', 'feat: add index file'])
 
-    const pkg = await buildPackage(cwd, '.', workspace)
+    const pkg = await buildPackage({
+      rootDir: cwd,
+      packageDir: '.',
+      workspace,
+      packageManager: 'npm',
+    })
 
     expect(await showCommits(cwd, pkg)).toMatchInlineSnapshot(`
       [
@@ -74,8 +79,18 @@ test('isolates commits belonging to specific subpackages', async () => {
     await execGit(cwd, ['add', '.'])
     await execGit(cwd, ['commit', '-m', 'feat(pkg2): add index module'])
 
-    const pkg1 = await buildPackage(cwd, 'pkg1', workspace)
-    const pkg2 = await buildPackage(cwd, 'pkg2', workspace)
+    const pkg1 = await buildPackage({
+      rootDir: cwd,
+      packageDir: 'pkg1',
+      workspace,
+      packageManager: 'npm',
+    })
+    const pkg2 = await buildPackage({
+      rootDir: cwd,
+      packageDir: 'pkg2',
+      workspace,
+      packageManager: 'npm',
+    })
 
     expect(await showCommits(cwd, pkg1)).toMatchInlineSnapshot(`
       [
@@ -135,7 +150,12 @@ test('filters commits by custom file path', async () => {
     await execGit(cwd, ['add', '.'])
     await execGit(cwd, ['commit', '-m', 'refactor: update index.js'])
 
-    const pkg = await buildPackage(cwd, '.', workspace)
+    const pkg = await buildPackage({
+      rootDir: cwd,
+      packageDir: '.',
+      workspace,
+      packageManager: 'npm',
+    })
 
     expect(await showCommits(cwd, pkg, { filePath: 'index.js' }))
       .toMatchInlineSnapshot(`
@@ -177,8 +197,18 @@ test('stops yielding commits at specified revision tag', async () => {
     await execGit(cwd, ['add', '.'])
     await execGit(cwd, ['commit', '-m', 'fix(pkg2): patch v1.0.1 update'])
 
-    const pkg1 = await buildPackage(cwd, 'pkg1', workspace)
-    const pkg2 = await buildPackage(cwd, 'pkg2', workspace)
+    const pkg1 = await buildPackage({
+      rootDir: cwd,
+      packageDir: 'pkg1',
+      workspace,
+      packageManager: 'npm',
+    })
+    const pkg2 = await buildPackage({
+      rootDir: cwd,
+      packageDir: 'pkg2',
+      workspace,
+      packageManager: 'npm',
+    })
 
     expect(await showCommits(cwd, pkg1, { until: 'pkg1@1.0.0' }))
       .toMatchInlineSnapshot(`

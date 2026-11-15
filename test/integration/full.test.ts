@@ -493,3 +493,110 @@ test('prints a dry-run report for workspace releases', async () => {
     })
   })
 }, 15_000)
+
+test('releases workspace packages when the pnpm workspace manifest changes', async () => {
+  await temporaryDirectoryTask(async (remote) => {
+    await temporaryDirectoryTask(async (cwd) => {
+      await initializeGitRepository(cwd, remote)
+
+      const pkgDir1 = path.join(cwd, 'packages/pkg1')
+      const pkgDir2 = path.join(cwd, 'packages/pkg2')
+
+      await mkdir(pkgDir1, { recursive: true })
+      await mkdir(pkgDir2, { recursive: true })
+
+      await writePackageJson(cwd, {
+        version: '0.0.0',
+        packageManager: 'pnpm@10.0.0',
+      })
+      await writeFile(
+        path.join(cwd, 'pnpm-workspace.yaml'),
+        'packages:\n  - packages/*'
+      )
+      await writePackageJson(pkgDir1, {
+        name: '@scope/pkg1',
+        version: '1.0.0',
+      })
+      await writePackageJson(pkgDir2, {
+        name: '@scope/pkg2',
+        version: '2.0.0',
+      })
+      await execGit(cwd, ['add', '.'])
+      await execGit(cwd, ['commit', '-m', 'chore: set up workspace'])
+
+      await writeFile(
+        path.join(cwd, 'pnpm-workspace.yaml'),
+        'packages:\n  - packages/*\n\ncatalog:\n  tslib: ^2.9.1'
+      )
+      await execGit(cwd, ['add', '.'])
+      await execGit(cwd, ['commit', '-m', 'fix(deps): bump catalog versions'])
+
+      const logger = vi.fn()
+
+      const config = await resolveConfig(cwd)
+
+      const context = await createContext({
+        ...config,
+        cwd,
+        env: process.env,
+        stdout: process.stdout,
+        stderr: process.stderr,
+        logger: createMockLogger(logger),
+      })
+
+      await executeReleaseWorkflow(
+        context,
+        compact(await Promise.all(config.plugins.map(createPlugin)))
+      )
+
+      expect(await getGitTags(cwd)).toMatchInlineSnapshot(`
+        [
+          "@scope/pkg1@1.0.1 ## Bug Fixes
+
+        - **deps:** bump catalog versions ([6556909](https://github.com/mock-owner/mock-repo/commit/6556909d3825b53a1da7c41b42bf69c31d74640b))",
+          "@scope/pkg2@2.0.1 ## Bug Fixes
+
+        - **deps:** bump catalog versions ([6556909](https://github.com/mock-owner/mock-repo/commit/6556909d3825b53a1da7c41b42bf69c31d74640b))",
+          "v0.0.1 ## Bug Fixes
+
+        - **deps:** bump catalog versions ([6556909](https://github.com/mock-owner/mock-repo/commit/6556909d3825b53a1da7c41b42bf69c31d74640b))",
+        ]
+      `)
+      expect(logger.mock.calls).toMatchInlineSnapshot(`
+        [
+          [
+            "Status: [32mSUCCESS[39m",
+          ],
+          [
+            "Release complete: [1m[32m3 released[39m[22m [90m(3)[39m
+
+        [42m 0.0.1 ← 0.0.0 [49m[90m patch [39m
+
+        [36m## 0.0.1 (2026-01-01)[39m
+
+        [36m### Bug Fixes[39m
+
+        - **deps:** bump catalog versions ([6556909](https://github.com/mock-owner/mock-repo/commit/6556909d3825b53a1da7c41b42bf69c31d74640b))
+
+        [44m @scope/pkg1 [49m[42m 1.0.1 ← 1.0.0 [49m[90m patch [39m
+
+        [36m## 1.0.1 (2026-01-01)[39m
+
+        [36m### Bug Fixes[39m
+
+        - **deps:** bump catalog versions ([6556909](https://github.com/mock-owner/mock-repo/commit/6556909d3825b53a1da7c41b42bf69c31d74640b))
+
+        [44m @scope/pkg2 [49m[42m 2.0.1 ← 2.0.0 [49m[90m patch [39m
+
+        [36m## 2.0.1 (2026-01-01)[39m
+
+        [36m### Bug Fixes[39m
+
+        - **deps:** bump catalog versions ([6556909](https://github.com/mock-owner/mock-repo/commit/6556909d3825b53a1da7c41b42bf69c31d74640b))
+        ",
+          ],
+        ]
+      `)
+    })
+  })
+}, 15_000)

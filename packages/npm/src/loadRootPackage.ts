@@ -3,6 +3,7 @@
 
 import type { Package, Workspace } from '@reelout/core'
 import { buildPackage } from './buildPackage'
+import { resolvePackageManager } from './resolvePackageManager'
 
 /**
  * Load the root package and return a settled result.
@@ -21,7 +22,12 @@ export async function loadRootPackage(
   try {
     return {
       status: 'fulfilled',
-      value: await buildPackage(cwd, '.', workspace),
+      value: await buildPackage({
+        rootDir: cwd,
+        packageDir: '.',
+        workspace,
+        packageManager: await resolvePackageManager(cwd),
+      }),
     }
   } catch (err) {
     return {

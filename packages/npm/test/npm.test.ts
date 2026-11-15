@@ -322,7 +322,12 @@ test('updates dependency versions in package manifests when release plans are pr
   context.plans = [
     {
       package: {
-        ...(await buildPackage(cwd, 'a', workspace)),
+        ...(await buildPackage({
+          rootDir: cwd,
+          packageDir: 'a',
+          workspace,
+          packageManager: 'npm',
+        })),
         provider: PLUGIN_NAME,
       },
       history: [],
@@ -330,7 +335,12 @@ test('updates dependency versions in package manifests when release plans are pr
     },
     {
       package: {
-        ...(await buildPackage(cwd, 'b', workspace)),
+        ...(await buildPackage({
+          rootDir: cwd,
+          packageDir: 'b',
+          workspace,
+          packageManager: 'npm',
+        })),
         provider: PLUGIN_NAME,
       },
       history: [],
@@ -338,7 +348,12 @@ test('updates dependency versions in package manifests when release plans are pr
     },
     {
       package: {
-        ...(await buildPackage(cwd, 'c', workspace)),
+        ...(await buildPackage({
+          rootDir: cwd,
+          packageDir: 'c',
+          workspace,
+          packageManager: 'npm',
+        })),
         provider: PLUGIN_NAME,
       },
       history: [],

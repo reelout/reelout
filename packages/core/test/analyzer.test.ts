@@ -78,7 +78,12 @@ test('preserves pre-existing release plans and formats changelog entries', async
 
     context.plans = [
       {
-        package: await buildPackage(context.cwd, '.', workspace),
+        package: await buildPackage({
+          rootDir: context.cwd,
+          packageDir: '.',
+          workspace,
+          packageManager: 'npm',
+        }),
         history: [await createMockCommit('hash1', 'build: update deps')],
         release: {
           type: 'major',
@@ -207,7 +212,14 @@ test('derives release plans for packages missing an explicit version', async () 
     await execGit(cwd, ['add', '.'])
     await execGit(cwd, ['commit', '-m', 'feat: add entry'])
 
-    context.packages = [await buildPackage(context.cwd, '.', workspace)]
+    context.packages = [
+      await buildPackage({
+        rootDir: context.cwd,
+        packageDir: '.',
+        workspace,
+        packageManager: 'npm',
+      }),
+    ]
 
     await executeReleaseWorkflow(context, [plugin()])
 
@@ -303,7 +315,14 @@ test('derives release plans for packages with an existing version', async () => 
     await execGit(cwd, ['add', '.'])
     await execGit(cwd, ['commit', '-m', 'feat: add entry'])
 
-    context.packages = [await buildPackage(context.cwd, '.', workspace)]
+    context.packages = [
+      await buildPackage({
+        rootDir: context.cwd,
+        packageDir: '.',
+        workspace,
+        packageManager: 'npm',
+      }),
+    ]
 
     await executeReleaseWorkflow(context, [plugin()])
 
@@ -392,7 +411,12 @@ test('ignores version mismatches between package context and repository tags', a
 
     context.packages = [
       {
-        ...(await buildPackage(context.cwd, '.', workspace)),
+        ...(await buildPackage({
+          rootDir: context.cwd,
+          packageDir: '.',
+          workspace,
+          packageManager: 'npm',
+        })),
         version: '9.9.9',
       },
     ]
@@ -579,11 +603,36 @@ test('identifies package changes across a multi-package workspace', async () => 
     await execGit(cwd, ['commit', '-m', 'docs: update readme'])
 
     context.packages = [
-      await buildPackage(context.cwd, '.', workspace),
-      await buildPackage(context.cwd, 'foo', workspace),
-      await buildPackage(context.cwd, 'bar', workspace),
-      await buildPackage(context.cwd, 'baz', workspace),
-      await buildPackage(context.cwd, 'qux', workspace),
+      await buildPackage({
+        rootDir: context.cwd,
+        packageDir: '.',
+        workspace,
+        packageManager: 'npm',
+      }),
+      await buildPackage({
+        rootDir: context.cwd,
+        packageDir: 'foo',
+        workspace,
+        packageManager: 'npm',
+      }),
+      await buildPackage({
+        rootDir: context.cwd,
+        packageDir: 'bar',
+        workspace,
+        packageManager: 'npm',
+      }),
+      await buildPackage({
+        rootDir: context.cwd,
+        packageDir: 'baz',
+        workspace,
+        packageManager: 'npm',
+      }),
+      await buildPackage({
+        rootDir: context.cwd,
+        packageDir: 'qux',
+        workspace,
+        packageManager: 'npm',
+      }),
     ]
 
     await executeReleaseWorkflow(context, [plugin()])
@@ -876,14 +925,54 @@ test('promotes prerelease and zero-major versions when allowEmpty is true', asyn
     await execGit(cwd, ['tag', 'pkg6@1.2.0-dev.0'])
 
     context.packages = [
-      await buildPackage(context.cwd, 'pkg1', workspace),
-      await buildPackage(context.cwd, 'pkg2', workspace),
-      await buildPackage(context.cwd, 'pkg3', workspace),
-      await buildPackage(context.cwd, 'pkg4', workspace),
-      await buildPackage(context.cwd, 'pkg5', workspace),
-      await buildPackage(context.cwd, 'pkg6', workspace),
-      await buildPackage(context.cwd, 'pkg7', workspace),
-      await buildPackage(context.cwd, 'pkg8', workspace),
+      await buildPackage({
+        rootDir: context.cwd,
+        packageDir: 'pkg1',
+        workspace,
+        packageManager: 'npm',
+      }),
+      await buildPackage({
+        rootDir: context.cwd,
+        packageDir: 'pkg2',
+        workspace,
+        packageManager: 'npm',
+      }),
+      await buildPackage({
+        rootDir: context.cwd,
+        packageDir: 'pkg3',
+        workspace,
+        packageManager: 'npm',
+      }),
+      await buildPackage({
+        rootDir: context.cwd,
+        packageDir: 'pkg4',
+        workspace,
+        packageManager: 'npm',
+      }),
+      await buildPackage({
+        rootDir: context.cwd,
+        packageDir: 'pkg5',
+        workspace,
+        packageManager: 'npm',
+      }),
+      await buildPackage({
+        rootDir: context.cwd,
+        packageDir: 'pkg6',
+        workspace,
+        packageManager: 'npm',
+      }),
+      await buildPackage({
+        rootDir: context.cwd,
+        packageDir: 'pkg7',
+        workspace,
+        packageManager: 'npm',
+      }),
+      await buildPackage({
+        rootDir: context.cwd,
+        packageDir: 'pkg8',
+        workspace,
+        packageManager: 'npm',
+      }),
     ]
 
     context.type = 'auto'
@@ -1066,10 +1155,30 @@ test('propagates release plans to dependent packages on workspace updates', asyn
     await execGit(cwd, ['commit', '-m', 'feat(bar): add entry'])
 
     context.packages = [
-      await buildPackage(context.cwd, '.', workspace),
-      await buildPackage(context.cwd, 'foo', workspace),
-      await buildPackage(context.cwd, 'bar', workspace),
-      await buildPackage(context.cwd, 'baz', workspace),
+      await buildPackage({
+        rootDir: context.cwd,
+        packageDir: '.',
+        workspace,
+        packageManager: 'npm',
+      }),
+      await buildPackage({
+        rootDir: context.cwd,
+        packageDir: 'foo',
+        workspace,
+        packageManager: 'npm',
+      }),
+      await buildPackage({
+        rootDir: context.cwd,
+        packageDir: 'bar',
+        workspace,
+        packageManager: 'npm',
+      }),
+      await buildPackage({
+        rootDir: context.cwd,
+        packageDir: 'baz',
+        workspace,
+        packageManager: 'npm',
+      }),
     ]
 
     await executeReleaseWorkflow(context, [plugin()])

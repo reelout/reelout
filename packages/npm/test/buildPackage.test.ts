@@ -20,12 +20,24 @@ test('throws Error when package version is not valid semver', async () => {
     '/repo/packages/foo/package.json': JSON.stringify({}),
   })
 
-  await expect(buildPackage('/repo', '.', workspace)).rejects.toThrow(
+  await expect(
+    buildPackage({
+      rootDir: '/repo',
+      packageDir: '.',
+      workspace,
+      packageManager: 'npm',
+    })
+  ).rejects.toThrow(
     'Package version "invalid" in "." is not a valid semantic version.'
   )
 
   await expect(
-    buildPackage('/repo', 'packages/foo', workspace)
+    buildPackage({
+      rootDir: '/repo',
+      packageDir: 'packages/foo',
+      workspace,
+      packageManager: 'npm',
+    })
   ).rejects.toThrow(
     'Package version "undefined" in "packages/foo" is not a valid semantic version.'
   )
@@ -36,7 +48,14 @@ test('returns package metadata when package.json contains valid version', async 
     '/repo/package.json': JSON.stringify({ version: '1.0.0' }),
   })
 
-  expect(await buildPackage('/repo', '.', workspace)).toMatchInlineSnapshot(`
+  expect(
+    await buildPackage({
+      rootDir: '/repo',
+      packageDir: '.',
+      workspace,
+      packageManager: 'npm',
+    })
+  ).toMatchInlineSnapshot(`
     {
       "dependencies": [],
       "entry": true,
@@ -63,7 +82,14 @@ test('combines and sorts package dependencies when manifest includes dependency 
     }),
   })
 
-  expect(await buildPackage('/repo', '.', workspace)).toMatchInlineSnapshot(`
+  expect(
+    await buildPackage({
+      rootDir: '/repo',
+      packageDir: '.',
+      workspace,
+      packageManager: 'npm',
+    })
+  ).toMatchInlineSnapshot(`
     {
       "dependencies": [
         "bar",
@@ -98,7 +124,14 @@ test('marks package as entry when package directory matches workspace entry', as
   const pkgDir0 = '.'
   const pkgDir1 = 'packages/foo'
 
-  expect(await buildPackage(cwd, pkgDir0, workspace)).toMatchInlineSnapshot(`
+  expect(
+    await buildPackage({
+      rootDir: cwd,
+      packageDir: pkgDir0,
+      workspace,
+      packageManager: 'npm',
+    })
+  ).toMatchInlineSnapshot(`
     {
       "dependencies": [],
       "entry": false,
@@ -111,7 +144,14 @@ test('marks package as entry when package directory matches workspace entry', as
     }
   `)
 
-  expect(await buildPackage(cwd, pkgDir1, workspace)).toMatchInlineSnapshot(`
+  expect(
+    await buildPackage({
+      rootDir: cwd,
+      packageDir: pkgDir1,
+      workspace,
+      packageManager: 'npm',
+    })
+  ).toMatchInlineSnapshot(`
     {
       "dependencies": [],
       "entry": true,
@@ -139,7 +179,14 @@ test('computes file exclusion patterns when package is at workspace entry', asyn
   const pkgDir0 = '.'
   const pkgDir1 = 'packages/foo'
 
-  expect(await buildPackage(cwd, pkgDir0, workspace)).toMatchInlineSnapshot(`
+  expect(
+    await buildPackage({
+      rootDir: cwd,
+      packageDir: pkgDir0,
+      workspace,
+      packageManager: 'npm',
+    })
+  ).toMatchInlineSnapshot(`
     {
       "dependencies": [],
       "entry": true,
@@ -152,7 +199,95 @@ test('computes file exclusion patterns when package is at workspace entry', asyn
     }
   `)
 
-  expect(await buildPackage(cwd, pkgDir1, workspace)).toMatchInlineSnapshot(`
+  expect(
+    await buildPackage({
+      rootDir: cwd,
+      packageDir: pkgDir1,
+      workspace,
+      packageManager: 'npm',
+    })
+  ).toMatchInlineSnapshot(`
+    {
+      "dependencies": [],
+      "entry": false,
+      "files": "packages/foo/**/*",
+      "location": "packages/foo",
+      "name": undefined,
+      "private": undefined,
+      "root": false,
+      "version": "1.0.0",
+    }
+  `)
+})
+
+test('includes the workspace manifest in member file patterns for pnpm', async () => {
+  workspace.members = ['packages/*']
+
+  vol.fromJSON({
+    '/repo/package.json': JSON.stringify({ version: '1.0.0' }),
+    '/repo/packages/foo/package.json': JSON.stringify({ version: '1.0.0' }),
+  })
+
+  expect(
+    await buildPackage({
+      rootDir: '/repo',
+      packageDir: '.',
+      workspace,
+      packageManager: 'pnpm',
+    })
+  ).toMatchInlineSnapshot(`
+    {
+      "dependencies": [],
+      "entry": true,
+      "files": "!{package-lock.json,npm-shrinkwrap.json,pnpm-lock.yaml,yarn.lock,packages/*/**/*}",
+      "location": ".",
+      "name": undefined,
+      "private": undefined,
+      "root": true,
+      "version": "1.0.0",
+    }
+  `)
+
+  expect(
+    await buildPackage({
+      rootDir: '/repo',
+      packageDir: 'packages/foo',
+      workspace,
+      packageManager: 'pnpm',
+    })
+  ).toMatchInlineSnapshot(`
+    {
+      "dependencies": [],
+      "entry": false,
+      "files": [
+        "packages/foo/**/*",
+        "pnpm-workspace.yaml",
+      ],
+      "location": "packages/foo",
+      "name": undefined,
+      "private": undefined,
+      "root": false,
+      "version": "1.0.0",
+    }
+  `)
+})
+
+test('keeps member file patterns unchanged for non-pnpm package managers', async () => {
+  workspace.members = ['packages/*']
+
+  vol.fromJSON({
+    '/repo/package.json': JSON.stringify({ version: '1.0.0' }),
+    '/repo/packages/foo/package.json': JSON.stringify({ version: '1.0.0' }),
+  })
+
+  expect(
+    await buildPackage({
+      rootDir: '/repo',
+      packageDir: 'packages/foo',
+      workspace,
+      packageManager: 'yarn',
+    })
+  ).toMatchInlineSnapshot(`
     {
       "dependencies": [],
       "entry": false,
