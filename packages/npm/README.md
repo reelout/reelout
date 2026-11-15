@@ -36,11 +36,11 @@ export default {
 
 The plugin accepts `workspace`, `access`, `provenance`, and `stage` options.
 
-By default, the plugin checks whether the repository is public and enables
-provenance for public repositories. It uses `GITHUB_TOKEN` on GitHub or
-`GITLAB_TOKEN` on GitLab for this check. When `provenance` is `true`, npm also
-requires a `repository` field in the published `package.json` to generate
-provenance attestations.
+By default, the plugin enables provenance only when `package.json` defines a
+valid `repository` that matches the current Git remote and the repository is
+public. It uses `GITHUB_TOKEN` on GitHub or `GITLAB_TOKEN` on GitLab for this
+check. When `provenance` is `true`, npm also requires a `repository` field in
+the published `package.json` to generate provenance attestations.
 
 ## API
 
