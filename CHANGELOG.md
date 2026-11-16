@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.4](https://github.com/reelout/reelout/compare/v0.2.3...v0.2.4) (2026-11-16)
+
+### Bug Fixes
+
+- **core:** update every package with --type patch ([#14](https://github.com/reelout/reelout/issues/14)) ([ea51cef](https://github.com/reelout/reelout/commit/ea51cef2ee78112b6b224024df628bc4337569da))
+
 ## [0.2.3](https://github.com/reelout/reelout/compare/v0.2.2...v0.2.3) (2026-11-16)
 
 ### Bug Fixes
