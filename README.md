@@ -85,19 +85,6 @@ Releasing from an `alpha`, `beta`, or `next` branch applies the matching
 qualifier and npm channel automatically. See
 [Configuration](./docs/02-config.md) to define custom branch rules.
 
-### Filtering packages
-
-Release a subset of packages by name with glob patterns:
-
-```sh
-npx reelout --filter '@scope/pkg-*' --filter '!@scope/pkg-experimental'
-```
-
-Patterns combine with `--filter` repeated and support `!` negation. Filtered
-runs analyze only matching packages, and each package reads history back to
-its own most recent release commit. Non-matching packages are left untouched
-and catch up on the next unfiltered run.
-
 ## Documentation
 
 - [Getting Started](./docs/01-getting-started.md) — install ReelOut, preview a release, and publish your first version.
