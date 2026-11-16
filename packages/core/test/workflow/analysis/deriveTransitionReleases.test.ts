@@ -179,9 +179,9 @@ test('derives patch transition releases when release hint is patch and target pr
       },
       {
         "from": "1.0.0-alpha.5",
-        "to": null,
-        "transition": undefined,
-        "type": undefined,
+        "to": "1.0.0",
+        "transition": "continue",
+        "type": "patch",
       },
       {
         "from": "1.0.0",
@@ -203,9 +203,9 @@ test('derives patch transition releases when release hint is patch and target pr
       },
       {
         "from": "1.4.0-alpha.8",
-        "to": null,
-        "transition": undefined,
-        "type": undefined,
+        "to": "1.4.0",
+        "transition": "continue",
+        "type": "patch",
       },
       {
         "from": "1.4.0",
@@ -423,9 +423,9 @@ test('derives patch transition releases when target prerelease tag matches exist
       },
       {
         "from": "1.0.0-alpha.5",
-        "to": null,
-        "transition": undefined,
-        "type": undefined,
+        "to": "1.0.0-alpha.6",
+        "transition": "continue",
+        "type": "patch",
       },
       {
         "from": "1.0.0",
@@ -447,9 +447,9 @@ test('derives patch transition releases when target prerelease tag matches exist
       },
       {
         "from": "1.4.0-alpha.8",
-        "to": null,
-        "transition": undefined,
-        "type": undefined,
+        "to": "1.4.0-alpha.9",
+        "transition": "continue",
+        "type": "patch",
       },
       {
         "from": "1.4.0",
@@ -667,9 +667,9 @@ test('derives patch transition releases when target prerelease tag differs from 
       },
       {
         "from": "1.0.0-alpha.5",
-        "to": null,
-        "transition": undefined,
-        "type": undefined,
+        "to": "1.0.0-beta.0",
+        "transition": "continue",
+        "type": "patch",
       },
       {
         "from": "1.0.0",
@@ -691,9 +691,9 @@ test('derives patch transition releases when target prerelease tag differs from 
       },
       {
         "from": "1.4.0-alpha.8",
-        "to": null,
-        "transition": undefined,
-        "type": undefined,
+        "to": "1.4.0-beta.0",
+        "transition": "continue",
+        "type": "patch",
       },
       {
         "from": "1.4.0",

@@ -1481,7 +1481,7 @@ test('releases stable packages when type is patch and allowEmpty is true', async
   })
 })
 
-test('continues pre-patch cycles when type is patch and allowEmpty is true', async () => {
+test('continues prerelease cycles when type is patch and allowEmpty is true', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     using _ = vi.spyOn(context, 'cwd', 'get').mockReturnValue(cwd)
     workspace.entry = '.'
@@ -1534,7 +1534,10 @@ test('continues pre-patch cycles when type is patch and allowEmpty is true', asy
             "root": false,
             "version": "1.0.0-dev.1",
           },
-          "release": null,
+          "release": {
+            "transition": "continue",
+            "type": "patch",
+          },
         },
         {
           "history": [],
