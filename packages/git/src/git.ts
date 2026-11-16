@@ -7,6 +7,7 @@ import {
   deleteGitTag,
   ensureGitUserConfig,
   generateReleaseCommitMessage,
+  GIT_TRAILER_RELEASE_FILTER,
   HookPriority,
   pushGitChanges,
   type ReleasePlugin,
@@ -21,6 +22,7 @@ import { version } from '../package.json'
  * **Lifecycle Stages:**
  * - `configure`: Ensures local Git user identity (`git config user.name`/`user.email`) is configured (skipped in dry-run).
  * - `commit`: Creates a consolidated Git release commit for planned package changes (skipped in dry-run).
+ *   Stamps a `Release-Filter` trailer when the run is scoped with `--filter`.
  * - `publish`: Creates Git tags for each release plan and pushes commits and tags to the remote repository.
  *   Provides automated rollback tag deletion if downstream publishing steps fail.
  *
@@ -51,7 +53,13 @@ const git = (): ReleasePlugin => ({
       } else {
         await createGitCommit(
           context.cwd,
-          await generateReleaseCommitMessage(context.cwd, context.plans, {})
+          await generateReleaseCommitMessage(
+            context.cwd,
+            context.plans,
+            context.filter.length > 0
+              ? { [GIT_TRAILER_RELEASE_FILTER]: context.filter.join(', ') }
+              : {}
+          )
         )
       }
 

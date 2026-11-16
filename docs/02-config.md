@@ -158,6 +158,7 @@ CLI options override the corresponding release settings for a run:
 
 | Flag                                 | Effect                                                                                       |
 | ------------------------------------ | -------------------------------------------------------------------------------------------- |
+| `--filter <pattern>`                 | Release only packages whose names match the glob patterns; repeatable, `!` excludes matches  |
 | `--type <auto\|major\|minor\|patch>` | Choose a release type; `auto` derives it from commits                                        |
 | `--qualifier <id\|true\|false>`      | Set the SemVer prerelease identifier, use the matching branch rule, or disable the qualifier |
 | `--channel <name\|true\|false>`      | Set the npm dist-tag, use the matching branch rule, or disable the channel                   |
@@ -169,3 +170,21 @@ For `--qualifier` and `--channel`, `true` uses the matching rule's value when
 one is defined. Without a rule value, `--qualifier true` creates a prerelease
 without an explicit identifier, while `--channel true` uses the sanitized
 current branch name. Pass `false` to disable only the corresponding setting.
+
+## Filtering packages
+
+`--filter` scopes a run to packages whose names match the given glob patterns.
+Repeat the flag to combine patterns and prefix one with `!` to exclude matches:
+
+```sh
+npx reelout --filter '@scope/pkg-*' --filter '!@scope/pkg-experimental'
+```
+
+Filtered runs release only matching packages: they skip analysis, version
+bumps, changelogs, and publishing for everything else, which stays untouched
+and catches up on the next unfiltered run. History is sliced per package, back
+to its own most recent release commit, so commits made before another
+package's release are still included. Filtered release commits carry a
+`Release-Filter` trailer; the next unfiltered run detects it and switches to
+per-package slicing for all packages, restoring lockstep releases. A filter
+that matches no packages logs a warning and proceeds with an empty run.

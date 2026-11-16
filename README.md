@@ -62,6 +62,7 @@ Usage: reelout [options]
 Plugin-driven release automation for JavaScript and TypeScript monorepos.
 
 Options:
+  --filter <pattern>               Release only packages whose names match the glob patterns (for example, `@scope/pkg-*`); repeat the flag to combine patterns or prefix with `!` to exclude matches.
   --type <string>                  Choose a release type instead of deriving it from commits; use `auto` to analyze commits. (choices: "auto", "major", "minor", "patch")
   --qualifier <boolean or string>  Set the SemVer prerelease identifier (for example, `beta`); use `false` to disable it or `true` to follow branch rules.
   --channel <boolean or string>    Set the npm dist-tag (for example, `beta`); use `false` to disable it or `true` to follow branch rules.
@@ -83,6 +84,19 @@ npx reelout --qualifier beta
 Releasing from an `alpha`, `beta`, or `next` branch applies the matching
 qualifier and npm channel automatically. See
 [Configuration](./docs/02-config.md) to define custom branch rules.
+
+### Filtering packages
+
+Release a subset of packages by name with glob patterns:
+
+```sh
+npx reelout --filter '@scope/pkg-*' --filter '!@scope/pkg-experimental'
+```
+
+Patterns combine with `--filter` repeated and support `!` negation. Filtered
+runs analyze only matching packages, and each package reads history back to
+its own most recent release commit. Non-matching packages are left untouched
+and catch up on the next unfiltered run.
 
 ## Documentation
 

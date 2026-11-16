@@ -26,6 +26,7 @@ export interface CreateProgramOptions {
 }
 
 interface Flags {
+  filter?: string[] | undefined
   type?: ReleaseTypeHint | undefined
   qualifier?: boolean | string | undefined
   channel?: boolean | string | undefined
@@ -59,6 +60,11 @@ export async function createProgram(
   }
 
   program
+    .option(
+      '--filter <pattern>',
+      'Release only packages whose names match the glob patterns (for example, `@scope/pkg-*`); repeat the flag to combine patterns or prefix with `!` to exclude matches.',
+      (value: string, previous: string[] = []) => previous.concat(value)
+    )
     .addOption(
       new Option(
         '--type <string>',

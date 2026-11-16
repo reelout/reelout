@@ -28,6 +28,7 @@ export interface CreateContextOptions extends Omit<
   stdout: NodeJS.WritableStream
   stderr: NodeJS.WritableStream
   logger?: ConsolaInstance | undefined
+  filter?: string[] | undefined
   type?: ReleaseTypeHint | undefined
   qualifier?: boolean | string | undefined
   channel?: boolean | string | undefined
@@ -119,6 +120,7 @@ export async function createContext(
     author: options.author,
     classifier: options.classifier,
     rules: options.rules,
+    filter: options.filter ?? [],
     type: options.type ?? 'auto',
     versionQualifier,
     releaseChannel,
