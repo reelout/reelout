@@ -161,9 +161,9 @@ test('derives patch transition releases when release hint is patch and target pr
     [
       {
         "from": "0.0.0",
-        "to": null,
-        "transition": undefined,
-        "type": undefined,
+        "to": "0.0.1",
+        "transition": "advance",
+        "type": "patch",
       },
       {
         "from": "0.1.2-alpha.1",
@@ -173,21 +173,21 @@ test('derives patch transition releases when release hint is patch and target pr
       },
       {
         "from": "0.1.2",
-        "to": null,
-        "transition": undefined,
-        "type": undefined,
+        "to": "0.1.3",
+        "transition": "advance",
+        "type": "patch",
       },
       {
         "from": "1.0.0-alpha.5",
-        "to": null,
-        "transition": undefined,
-        "type": undefined,
+        "to": "1.0.0",
+        "transition": "continue",
+        "type": "patch",
       },
       {
         "from": "1.0.0",
-        "to": null,
-        "transition": undefined,
-        "type": undefined,
+        "to": "1.0.1",
+        "transition": "advance",
+        "type": "patch",
       },
       {
         "from": "1.0.3-alpha.2",
@@ -197,21 +197,21 @@ test('derives patch transition releases when release hint is patch and target pr
       },
       {
         "from": "1.0.3",
-        "to": null,
-        "transition": undefined,
-        "type": undefined,
+        "to": "1.0.4",
+        "transition": "advance",
+        "type": "patch",
       },
       {
         "from": "1.4.0-alpha.8",
-        "to": null,
-        "transition": undefined,
-        "type": undefined,
+        "to": "1.4.0",
+        "transition": "continue",
+        "type": "patch",
       },
       {
         "from": "1.4.0",
-        "to": null,
-        "transition": undefined,
-        "type": undefined,
+        "to": "1.4.1",
+        "transition": "advance",
+        "type": "patch",
       },
     ]
   `)
@@ -411,9 +411,9 @@ test('derives patch transition releases when target prerelease tag matches exist
       },
       {
         "from": "0.1.2-alpha.1",
-        "to": null,
-        "transition": undefined,
-        "type": undefined,
+        "to": "0.1.2-alpha.2",
+        "transition": "continue",
+        "type": "patch",
       },
       {
         "from": "0.1.2",
@@ -423,9 +423,9 @@ test('derives patch transition releases when target prerelease tag matches exist
       },
       {
         "from": "1.0.0-alpha.5",
-        "to": null,
-        "transition": undefined,
-        "type": undefined,
+        "to": "1.0.0-alpha.6",
+        "transition": "continue",
+        "type": "patch",
       },
       {
         "from": "1.0.0",
@@ -435,9 +435,9 @@ test('derives patch transition releases when target prerelease tag matches exist
       },
       {
         "from": "1.0.3-alpha.2",
-        "to": null,
-        "transition": undefined,
-        "type": undefined,
+        "to": "1.0.3-alpha.3",
+        "transition": "continue",
+        "type": "patch",
       },
       {
         "from": "1.0.3",
@@ -447,9 +447,9 @@ test('derives patch transition releases when target prerelease tag matches exist
       },
       {
         "from": "1.4.0-alpha.8",
-        "to": null,
-        "transition": undefined,
-        "type": undefined,
+        "to": "1.4.0-alpha.9",
+        "transition": "continue",
+        "type": "patch",
       },
       {
         "from": "1.4.0",
@@ -667,9 +667,9 @@ test('derives patch transition releases when target prerelease tag differs from 
       },
       {
         "from": "1.0.0-alpha.5",
-        "to": null,
-        "transition": undefined,
-        "type": undefined,
+        "to": "1.0.0-beta.0",
+        "transition": "continue",
+        "type": "patch",
       },
       {
         "from": "1.0.0",
@@ -691,9 +691,9 @@ test('derives patch transition releases when target prerelease tag differs from 
       },
       {
         "from": "1.4.0-alpha.8",
-        "to": null,
-        "transition": undefined,
-        "type": undefined,
+        "to": "1.4.0-beta.0",
+        "transition": "continue",
+        "type": "patch",
       },
       {
         "from": "1.4.0",
