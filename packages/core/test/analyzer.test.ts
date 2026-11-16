@@ -1680,7 +1680,7 @@ test('warns and proceeds with an empty run when the filter matches no packages',
     expect(logger.mock.calls).toMatchInlineSnapshot(`
       [
         [
-          "[33mFilter matched no packages: [1mnope-*[22m. Available packages: foo.[39m",
+          "[33mFilter matched no packages: "[1mnope-*[22m". Available packages: foo.[39m",
         ],
         [
           "Status: [32mSUCCESS[39m",
@@ -1872,7 +1872,7 @@ test('warns when the filter matches no packages even if none were discovered', a
     expect(logger.mock.calls).toMatchInlineSnapshot(`
       [
         [
-          "[33mFilter matched no packages: [1mnope-*[22m.[39m",
+          "[33mFilter matched no packages: "[1mnope-*[22m".[39m",
         ],
         [
           "Status: [32mSUCCESS[39m",

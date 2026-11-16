@@ -75,7 +75,9 @@ const analyzer = (): ReleasePlugin => ({
   name: '@reelout/core/analyzer',
   version,
   analyze: async (context, next) => {
-    if (context.filter.length > 0) {
+    const hasFilter = context.filter.length > 0
+
+    if (hasFilter) {
       const available = context.packages
 
       context.packages = available.filter((pkg) =>
@@ -87,9 +89,9 @@ const analyzer = (): ReleasePlugin => ({
       )
 
       if (context.packages.length === 0) {
-        let message = `Filter matched no packages: ${colors.bold(
+        let message = `Filter matched no packages: "${colors.bold(
           context.filter.join(', ')
-        )}.`
+        )}".`
 
         if (available.length > 0) {
           message += ` Available packages: ${available
@@ -109,7 +111,7 @@ const analyzer = (): ReleasePlugin => ({
       }))
     }
 
-    if (context.filter.length > 0) {
+    if (hasFilter) {
       context.plans = await derivePerPackageReleases(context)
     } else {
       const window = await collectUnreleased(context.cwd)
