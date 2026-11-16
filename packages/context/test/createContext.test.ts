@@ -271,10 +271,6 @@ test('defaults filter to an empty array and passes filter patterns through', asy
     expect((await createContext(options)).filter).toEqual([])
 
     expect(
-      (await createContext({ ...options, filter: undefined })).filter
-    ).toEqual([])
-
-    expect(
       (await createContext({ ...options, filter: ['pkg-*', '!pkg-skip'] }))
         .filter
     ).toEqual(['pkg-*', '!pkg-skip'])

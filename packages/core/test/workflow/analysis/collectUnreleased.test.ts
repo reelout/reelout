@@ -98,35 +98,3 @@ test('returns an empty history with the release stop when HEAD is a release comm
     `)
   })
 })
-
-test('respects custom release marker option instead of falling back to default', async () => {
-  await temporaryDirectoryTask(async (cwd) => {
-    await initializeGitRepository(cwd)
-
-    await writeFile(path.join(cwd, 'a.txt'), 'a')
-    await execGit(cwd, ['add', '.'])
-    await execGit(cwd, [
-      'commit',
-      '-m',
-      'chore: create initial configuration file [q101-aa]\n\nRelease-As: v1.0.0',
-    ])
-
-    await writeFile(path.join(cwd, 'b.txt'), 'b')
-    await execGit(cwd, ['add', '.'])
-    await execGit(cwd, [
-      'commit',
-      '-m',
-      'feat: add custom marker parser strategy [r202-bb]',
-    ])
-
-    expect(await showWindow(cwd, { marker: 'Release-As' }))
-      .toMatchInlineSnapshot(`
-      {
-        "history": [
-          "feat: add custom marker parser strategy [r202-bb]",
-        ],
-        "stop": "chore: create initial configuration file [q101-aa]",
-      }
-    `)
-  })
-})

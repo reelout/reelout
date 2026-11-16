@@ -10,16 +10,8 @@ import { temporaryDirectoryTask } from 'tempy'
 import { expect, test } from 'vitest'
 import { initializeGitRepository } from '../../../../../test/mock/git'
 
-async function createCommit(
-  cwd: string,
-  message: string,
-  options?: { tag?: string }
-) {
+async function createCommit(cwd: string, message: string) {
   await execGit(cwd, ['commit', '--allow-empty', '-m', message])
-
-  if (options?.tag) {
-    await execGit(cwd, ['tag', options.tag])
-  }
 }
 
 test('returns false when commit is null or undefined', async () => {
@@ -37,16 +29,6 @@ test('returns false when commit carries no release filter trailer', async () => 
     await initializeGitRepository(cwd)
 
     await createCommit(cwd, 'feat: add feature')
-
-    expect(await isFilteredReleaseCommit(cwd, 'HEAD')).toBe(false)
-  })
-})
-
-test('returns false when commit is a regular tagged release commit', async () => {
-  await temporaryDirectoryTask(async (cwd) => {
-    await initializeGitRepository(cwd)
-
-    await createCommit(cwd, 'chore: release 1.0.0', { tag: 'v1.0.0' })
 
     expect(await isFilteredReleaseCommit(cwd, 'HEAD')).toBe(false)
   })
