@@ -9,8 +9,8 @@ import type { GitCommit } from '#types'
  * Determine whether a commit is a filtered release commit.
  *
  * Fetches the commit with the release filter trailer parsed and checks
- * whether the trailer carries a value. Use this to detect release commits
- * created by runs scoped with `--filter`.
+ * whether the trailer carries a value. Detects release commits created
+ * by runs scoped with `--filter`.
  *
  * @param cwd Working directory path for Git commands
  * @param commit Commit object, hash string, or nullish value
