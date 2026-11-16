@@ -16,7 +16,11 @@ import { extractVersionQualifier } from '../versioning/extractVersionQualifier'
  * Evaluates unreleased `plans` by parsing package `semver` strings and checking
  * prerelease tags. Compares parsed version qualifiers against
  * `versionQualifier` and assigns `major`, `minor`, or `patch` release types
- * according to `hint`.
+ * according to `hint`. When `hint` is `patch`, stable packages are assigned a
+ * patch release even without a `versionQualifier`, and prerelease packages
+ * with a nonzero patch component (pre-patch cycles) continue their cycle with
+ * an incremented counter. Prereleases with a zero patch component (pre-major
+ * and pre-minor cycles) are left untouched.
  *
  * @param hint Release type override hint to guide release classification
  * @param versionQualifier Optional qualifier string to compare against prerelease tags
@@ -77,11 +81,9 @@ export function deriveTransitionReleases(
 
       case 'patch':
         if (parsed.prerelease.length === 0) {
-          if (typeof versionQualifier === 'string') {
-            releaseType = 'patch'
-          }
+          releaseType = 'patch'
         } else {
-          if (patch > 0 && parsedVersionQualifier !== versionQualifier) {
+          if (patch > 0) {
             releaseType = 'patch'
           }
         }
