@@ -5,6 +5,7 @@ import {
   formatError,
   normalizeWorkspace,
   sortPackages,
+  type GitRepository,
   type Package,
   type ReleasePlugin,
   type Workspace,
@@ -22,6 +23,17 @@ import type { PublishAccess } from './types'
 
 export const PLUGIN_NAME = '@reelout/npm'
 
+/**
+ * Check whether two Git repositories point to the same project.
+ *
+ * @param a First repository
+ * @param b Second repository
+ * @returns `true` when host, owner, and repository name are identical
+ */
+function isSameRepository(a: GitRepository, b: GitRepository): boolean {
+  return a.host === b.host && a.owner === b.owner && a.repo === b.repo
+}
+
 export interface PluginOptions {
   workspace?: Partial<Workspace>
   access?: PublishAccess | null | undefined
@@ -37,7 +49,8 @@ export interface PluginOptions {
  * - `configure`: Resolves and attaches Git repository metadata from root package configuration.
  * - `discover`: Discovers workspace member packages and loads package metadata into context.
  * - `write`: Bumps internal workspace dependency versions in `package.json` files (skipped in dry-run).
- * - `publish`: Authenticates, detects public provenance status, and publishes non-private packages to NPM.
+ * - `publish`: Authenticates and publishes non-private packages to NPM, enabling provenance when
+ *   the manifest repository is valid, matches the context repository, and is public.
  *
  * @param options Configuration options for NPM workspace discovery and publishing behavior.
  * @returns A release plugin configured for NPM workspace management and package publication.
@@ -94,18 +107,26 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => ({
 
     try {
       if (provenance == null) {
-        if (context.repository?.host === 'github' && context.env.GITHUB_TOKEN) {
-          provenance = await github.isRepositoryPublic(
-            context.env.GITHUB_TOKEN,
-            context.repository
-          )
-        }
+        const repo = await resolveGitRepositoryFromPackage(context.cwd)
 
-        if (context.repository?.host === 'gitlab' && context.env.GITLAB_TOKEN) {
-          provenance = await gitlab.isRepositoryPublic(
-            context.env.GITLAB_TOKEN,
-            context.repository
-          )
+        if (
+          repo &&
+          context.repository &&
+          isSameRepository(repo, context.repository)
+        ) {
+          if (repo.host === 'github' && context.env.GITHUB_TOKEN) {
+            provenance = await github.isRepositoryPublic(
+              context.env.GITHUB_TOKEN,
+              repo
+            )
+          }
+
+          if (repo.host === 'gitlab' && context.env.GITLAB_TOKEN) {
+            provenance = await gitlab.isRepositoryPublic(
+              context.env.GITLAB_TOKEN,
+              repo
+            )
+          }
         }
       }
     } catch {}

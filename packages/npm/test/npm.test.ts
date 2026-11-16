@@ -9,6 +9,7 @@ import {
   type GitCommit,
   type Package,
   type ReleasePlan,
+  type ReleasePlugin,
 } from '@reelout/core'
 import plugin, {
   buildPackage,
@@ -16,7 +17,6 @@ import plugin, {
   PLUGIN_NAME,
   writePackageJson,
 } from '@reelout/npm'
-import type { Hosts } from 'hosted-git-info'
 import { vol } from 'memfs'
 import { beforeEach, expect, test, vi } from 'vitest'
 import {
@@ -778,6 +778,13 @@ test('enables provenance automatically when publishing to a public GitHub reposi
   context.repository = repository
 
   vol.fromJSON({
+    '/repo/package.json': JSON.stringify({
+      name: 'root',
+      repository: {
+        type: 'git',
+        url: 'https://github.com/mock-owner/mock-repo.git',
+      },
+    }),
     '/repo/a/package.json': JSON.stringify({ name: 'a', version: '0.0.0' }),
   })
 
@@ -831,6 +838,13 @@ test('enables provenance automatically when publishing to a public GitLab reposi
   context.repository = createMockRepository('gitlab')
 
   vol.fromJSON({
+    '/repo/package.json': JSON.stringify({
+      name: 'root',
+      repository: {
+        type: 'git',
+        url: 'https://gitlab.com/mock-owner/mock-repo.git',
+      },
+    }),
     '/repo/a/package.json': JSON.stringify({ name: 'a', version: '0.0.0' }),
   })
 
@@ -884,6 +898,13 @@ test('leaves provenance undefined when repository visibility check fails', async
   context.repository = repository
 
   vol.fromJSON({
+    '/repo/package.json': JSON.stringify({
+      name: 'root',
+      repository: {
+        type: 'git',
+        url: 'https://github.com/mock-owner/mock-repo.git',
+      },
+    }),
     '/repo/a/package.json': JSON.stringify({ name: 'a', version: '0.0.0' }),
   })
 
@@ -927,15 +948,22 @@ test('leaves provenance undefined when repository visibility check fails', async
   `)
 })
 
-test('leaves provenance undefined when repository host is unsupported or tokens are missing', async () => {
+test('leaves provenance undefined when repository host is unsupported', async () => {
   context.env = {
-    'GITHUB_TOKEN': undefined,
-    'GITLAB_TOKEN': undefined,
+    'GITHUB_TOKEN': 'mock-github-token',
+    'GITLAB_TOKEN': 'mock-gitlab-token',
   }
 
-  context.repository = createMockRepository('other' as Hosts)
+  context.repository = createMockRepository('bitbucket')
 
   vol.fromJSON({
+    '/repo/package.json': JSON.stringify({
+      name: 'root',
+      repository: {
+        type: 'git',
+        url: 'https://bitbucket.org/mock-owner/mock-repo.git',
+      },
+    }),
     '/repo/a/package.json': JSON.stringify({ name: 'a', version: '0.0.0' }),
   })
 
@@ -951,6 +979,180 @@ test('leaves provenance undefined when repository host is unsupported or tokens 
 
   expect(isGitHubRepositoryPublic).not.toHaveBeenCalled()
   expect(isGitLabRepositoryPublic).not.toHaveBeenCalled()
+  expect(publishPackage.mock.calls).toMatchInlineSnapshot(`
+    [
+      [
+        "/repo",
+        {
+          "history": [],
+          "package": {
+            "location": "a",
+            "provider": "@reelout/npm",
+          },
+          "release": {
+            "version": "1.2.3",
+          },
+        },
+        {
+          "access": undefined,
+          "dryRun": false,
+          "provenance": undefined,
+          "stage": undefined,
+          "tag": undefined,
+        },
+      ],
+    ]
+  `)
+})
+
+test('leaves provenance undefined when repository host tokens are missing', async () => {
+  context.env = {
+    'GITHUB_TOKEN': undefined,
+    'GITLAB_TOKEN': undefined,
+  }
+
+  context.repository = repository
+
+  vol.fromJSON({
+    '/repo/package.json': JSON.stringify({
+      name: 'root',
+      repository: {
+        type: 'git',
+        url: 'https://github.com/mock-owner/mock-repo.git',
+      },
+    }),
+    '/repo/a/package.json': JSON.stringify({ name: 'a', version: '0.0.0' }),
+  })
+
+  context.plans = [
+    {
+      package: { provider: PLUGIN_NAME, location: 'a' },
+      history: [] as GitCommit[],
+      release: { version: '1.2.3' },
+    },
+  ] as ReleasePlan[]
+
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(isGitHubRepositoryPublic).not.toHaveBeenCalled()
+  expect(isGitLabRepositoryPublic).not.toHaveBeenCalled()
+  expect(publishPackage.mock.calls).toMatchInlineSnapshot(`
+    [
+      [
+        "/repo",
+        {
+          "history": [],
+          "package": {
+            "location": "a",
+            "provider": "@reelout/npm",
+          },
+          "release": {
+            "version": "1.2.3",
+          },
+        },
+        {
+          "access": undefined,
+          "dryRun": false,
+          "provenance": undefined,
+          "stage": undefined,
+          "tag": undefined,
+        },
+      ],
+    ]
+  `)
+})
+
+test('leaves provenance undefined when the package manifest does not define a repository', async () => {
+  context.env = {
+    'GITHUB_TOKEN': 'mock-github-token',
+  }
+
+  isGitHubRepositoryPublic.mockResolvedValueOnce(true)
+
+  context.repository = repository
+
+  vol.fromJSON({
+    '/repo/package.json': JSON.stringify({ name: 'root' }),
+    '/repo/a/package.json': JSON.stringify({ name: 'a', version: '0.0.0' }),
+  })
+
+  context.plans = [
+    {
+      package: { provider: PLUGIN_NAME, location: 'a' },
+      history: [] as GitCommit[],
+      release: { version: '1.2.3' },
+    },
+  ] as ReleasePlan[]
+
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(isGitHubRepositoryPublic).not.toHaveBeenCalled()
+  expect(publishPackage.mock.calls).toMatchInlineSnapshot(`
+    [
+      [
+        "/repo",
+        {
+          "history": [],
+          "package": {
+            "location": "a",
+            "provider": "@reelout/npm",
+          },
+          "release": {
+            "version": "1.2.3",
+          },
+        },
+        {
+          "access": undefined,
+          "dryRun": false,
+          "provenance": undefined,
+          "stage": undefined,
+          "tag": undefined,
+        },
+      ],
+    ]
+  `)
+})
+
+test('leaves provenance undefined when the context repository no longer matches the manifest repository', async () => {
+  context.env = {
+    'GITHUB_TOKEN': 'mock-github-token',
+  }
+
+  isGitHubRepositoryPublic.mockResolvedValueOnce(true)
+
+  context.repository = repository
+
+  const mutator: ReleasePlugin = {
+    name: 'mutator',
+    version: '0.0.0',
+    write: async (mutatedContext, next) => {
+      mutatedContext.repository = createMockRepository('gitlab')
+      return next(mutatedContext)
+    },
+  }
+
+  vol.fromJSON({
+    '/repo/package.json': JSON.stringify({
+      name: 'root',
+      repository: {
+        type: 'git',
+        url: 'https://github.com/mock-owner/mock-repo.git',
+      },
+    }),
+    '/repo/a/package.json': JSON.stringify({ name: 'a', version: '0.0.0' }),
+  })
+
+  context.plans = [
+    {
+      package: { provider: PLUGIN_NAME, location: 'a' },
+      history: [] as GitCommit[],
+      release: { version: '1.2.3' },
+    },
+  ] as ReleasePlan[]
+
+  await executeReleaseWorkflow(context, [plugin(), mutator])
+
+  expect(isGitHubRepositoryPublic).not.toHaveBeenCalled()
   expect(publishPackage.mock.calls).toMatchInlineSnapshot(`
     [
       [
