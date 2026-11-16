@@ -176,7 +176,7 @@ current branch name. Pass `false` to disable only the corresponding setting.
 `--filter` scopes a run to packages whose names match the given glob patterns.
 Patterns match package names, so a package without a name, such as the
 workspace root, is only included by patterns that match the empty string
-(for example `*`). Repeat the flag to combine patterns and prefix one with
+(for example `**`). Repeat the flag to combine patterns and prefix one with
 `!` to exclude matches; a filter made only of negations releases every
 package the patterns do not exclude:
 
