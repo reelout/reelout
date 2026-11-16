@@ -193,7 +193,7 @@ test('returns bumped version according to transition strategy when transition pa
     ['1.2.0', undefined, 'continue', null],
     ['1.2.0-dev.3', 'dev', 'advance', '1.3.0-dev.0'],
     ['1.2.0-dev.3', 'dev', 'continue', '1.2.0-dev.4'],
-    ['1.2.0-dev.3', undefined, 'advance', '1.2.0'],
+    ['1.2.0-dev.3', undefined, 'advance', null],
     ['1.2.0-dev.3', undefined, 'continue', '1.2.0'],
   ] as const) {
     expect(

@@ -58,7 +58,7 @@ test('derives major transition releases when release hint is major and target pr
       {
         "from": "1.0.0-alpha.5",
         "to": "1.0.0",
-        "transition": "advance",
+        "transition": "continue",
         "type": "major",
       },
       {
@@ -143,7 +143,7 @@ test('derives minor transition releases when release hint is minor and target pr
       {
         "from": "1.4.0-alpha.8",
         "to": "1.4.0",
-        "transition": "advance",
+        "transition": "continue",
         "type": "minor",
       },
       {
@@ -168,7 +168,7 @@ test('derives patch transition releases when release hint is patch and target pr
       {
         "from": "0.1.2-alpha.1",
         "to": "0.1.2",
-        "transition": "advance",
+        "transition": "continue",
         "type": "patch",
       },
       {
@@ -180,7 +180,7 @@ test('derives patch transition releases when release hint is patch and target pr
       {
         "from": "1.0.0-alpha.5",
         "to": "1.0.0",
-        "transition": "advance",
+        "transition": "continue",
         "type": "patch",
       },
       {
@@ -192,7 +192,7 @@ test('derives patch transition releases when release hint is patch and target pr
       {
         "from": "1.0.3-alpha.2",
         "to": "1.0.3",
-        "transition": "advance",
+        "transition": "continue",
         "type": "patch",
       },
       {
@@ -204,7 +204,7 @@ test('derives patch transition releases when release hint is patch and target pr
       {
         "from": "1.4.0-alpha.8",
         "to": "1.4.0",
-        "transition": "advance",
+        "transition": "continue",
         "type": "patch",
       },
       {
@@ -229,7 +229,7 @@ test('infers transition releases automatically when release hint is auto and tar
       {
         "from": "0.1.2-alpha.1",
         "to": "0.1.2",
-        "transition": "advance",
+        "transition": "continue",
         "type": "patch",
       },
       {
@@ -241,7 +241,7 @@ test('infers transition releases automatically when release hint is auto and tar
       {
         "from": "1.0.0-alpha.5",
         "to": "1.0.0",
-        "transition": "advance",
+        "transition": "continue",
         "type": "major",
       },
       {
@@ -253,7 +253,7 @@ test('infers transition releases automatically when release hint is auto and tar
       {
         "from": "1.0.3-alpha.2",
         "to": "1.0.3",
-        "transition": "advance",
+        "transition": "continue",
         "type": "patch",
       },
       {
@@ -265,7 +265,7 @@ test('infers transition releases automatically when release hint is auto and tar
       {
         "from": "1.4.0-alpha.8",
         "to": "1.4.0",
-        "transition": "advance",
+        "transition": "continue",
         "type": "minor",
       },
       {
