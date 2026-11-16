@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.3](https://github.com/reelout/reelout/compare/v0.2.2...v0.2.3) (2026-11-16)
+
+### Bug Fixes
+
+- **npm:** gate default provenance on the manifest repository ([#13](https://github.com/reelout/reelout/issues/13)) ([c6c342b](https://github.com/reelout/reelout/commit/c6c342bf5d97739710700195cc414313f1467bd5))
+
 ## [0.2.2](https://github.com/reelout/reelout/compare/v0.2.1...v0.2.2) (2026-11-15)
 
 ### Bug Fixes

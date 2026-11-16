@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.3](https://github.com/reelout/reelout/compare/%40reelout%2Fcli%400.4.2...%40reelout%2Fcli%400.4.3) (2026-11-16)
+
+### Bug Fixes
+
+- **npm:** gate default provenance on the manifest repository ([#13](https://github.com/reelout/reelout/issues/13)) ([c6c342b](https://github.com/reelout/reelout/commit/c6c342bf5d97739710700195cc414313f1467bd5))
+
 ## [0.4.2](https://github.com/reelout/reelout/compare/%40reelout%2Fcli%400.4.1...%40reelout%2Fcli%400.4.2) (2026-11-15)
 
 ### Bug Fixes
