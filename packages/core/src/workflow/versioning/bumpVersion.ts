@@ -18,8 +18,10 @@ export interface BumpVersionOptions {
  *
  * Parses the target version and determines the next version string using the
  * specified release type, prerelease identifier, and transition mode. Adjusts
- * prerelease types when continuing an existing qualifier and returns `null` when
- * `options.release` is omitted or if transition conditions fail.
+ * prerelease types when continuing an existing qualifier, releases the target
+ * version when a prerelease advances without an identifier, and returns `null`
+ * when `options.release` is omitted or a stable version is asked to continue
+ * a cycle.
  *
  * @param options Version bump configuration including release type, identifier, and transition rules
  * @returns The bumped semantic version string, or `null` if no bump occurs
@@ -38,14 +40,8 @@ export function bumpVersion(options: BumpVersionOptions): string | null {
     return null
   }
 
-  if (parsed.prerelease.length > 0) {
-    if (options.transition === 'advance' && options.identifier == null) {
-      return null
-    }
-  } else {
-    if (options.transition === 'continue') {
-      return null
-    }
+  if (parsed.prerelease.length === 0 && options.transition === 'continue') {
+    return null
   }
 
   let release: semver.ReleaseType = options.release

@@ -1319,7 +1319,7 @@ test('promotes prerelease and zero-major versions when allowEmpty is true', asyn
             "version": "0.1.0-dev.0",
           },
           "release": {
-            "transition": "continue",
+            "transition": "advance",
             "type": "minor",
           },
         },
@@ -1353,7 +1353,7 @@ test('promotes prerelease and zero-major versions when allowEmpty is true', asyn
             "version": "1.0.0-dev.0",
           },
           "release": {
-            "transition": "continue",
+            "transition": "advance",
             "type": "major",
           },
         },
@@ -1384,7 +1384,7 @@ test('promotes prerelease and zero-major versions when allowEmpty is true', asyn
             "version": "1.2.0-dev.0",
           },
           "release": {
-            "transition": "continue",
+            "transition": "advance",
             "type": "minor",
           },
         },
@@ -1401,7 +1401,7 @@ test('promotes prerelease and zero-major versions when allowEmpty is true', asyn
             "version": "2.0.0-0",
           },
           "release": {
-            "transition": "continue",
+            "transition": "advance",
             "type": "major",
           },
         },
@@ -1418,7 +1418,7 @@ test('promotes prerelease and zero-major versions when allowEmpty is true', asyn
             "version": "2.0.0-rc",
           },
           "release": {
-            "transition": "continue",
+            "transition": "advance",
             "type": "major",
           },
         },

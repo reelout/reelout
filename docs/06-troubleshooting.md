@@ -37,11 +37,12 @@ the last tags match the [classifier](./02-config.md#classifier). You can:
 - Land a qualifying commit (`feat:`, `fix:`, ...).
 - Proceed with a prerelease or 0.x promotion using `--allow-empty`. Stable
   packages without changes are still skipped unless `--type patch` is set.
-  With `--type patch`, every package receives an update: stable packages are
-  bumped by a patch version and prerelease cycles (pre-major, pre-minor, and
-  pre-patch) continue with an incremented counter (`1.2.3-dev.1` →
-  `1.2.3-dev.2`, `2.0.0-dev.0` → `2.0.0-dev.1`, `1.1.0-dev.1` →
-  `1.1.0-dev.2`).
+  With `--type patch`, stable packages advance (`1.2.3` → `1.2.4`, or
+  `1.2.4-dev.0` with `--qualifier dev`) and prerelease cycles (pre-major,
+  pre-minor, and pre-patch) continue with an incremented counter
+  (`1.2.3-dev.1` → `1.2.3-dev.2`) or redirect to a differing qualifier
+  (`1.2.3-rc.1` → `1.2.3-dev.0`). Prereleases without a `--qualifier`
+  advance to their stable base (`1.2.3-dev.1` → `1.2.3`).
 
 ## Shallow clones in CI
 
