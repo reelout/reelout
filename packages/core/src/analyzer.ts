@@ -43,6 +43,17 @@ async function derivePerPackageReleases(
 }
 
 /**
+ * Check whether a package name matches the given filter patterns.
+ *
+ * @param name Package name to test, possibly undefined for entry packages
+ * @param filter Filter patterns to match against
+ * @returns True when the name matches at least one pattern
+ */
+function matchesFilter(name: string | undefined, filter: string[]): boolean {
+  return isMatch(name ?? '', filter)
+}
+
+/**
  * Built-in plugin that inspects repository history and produces release plans for packages.
  *
  * @remarks
@@ -68,21 +79,25 @@ const analyzer = (): ReleasePlugin => ({
       const available = context.packages
 
       context.packages = available.filter((pkg) =>
-        isMatch(pkg.name ?? '', context.filter)
+        matchesFilter(pkg.name, context.filter)
       )
 
       context.plans = context.plans.filter((plan) =>
-        isMatch(plan.package.name ?? '', context.filter)
+        matchesFilter(plan.package.name, context.filter)
       )
 
-      if (available.length > 0 && context.packages.length === 0) {
-        context.logger.warn(
-          colors.yellow(
-            `Filter matched no packages: ${colors.bold(context.filter.join(', '))}. Available packages: ${available
-              .map((pkg) => pkg.name ?? pkg.location)
-              .join(', ')}.`
-          )
-        )
+      if (context.packages.length === 0) {
+        let message = `Filter matched no packages: ${colors.bold(
+          context.filter.join(', ')
+        )}.`
+
+        if (available.length > 0) {
+          message += ` Available packages: ${available
+            .map((pkg) => pkg.name ?? pkg.location)
+            .join(', ')}.`
+        }
+
+        context.logger.warn(colors.yellow(message))
       }
     }
 

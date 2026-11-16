@@ -45,10 +45,10 @@ for (const definition of config.plugins) {
 await executeReleaseWorkflow(context, plugins)
 ```
 
-`createContext` accepts the options the CLI derives from flags: `type`,
-`qualifier`, `channel`, `allowEmpty`, `dryRun`, and `debug`. Pass an optional
-`signal` (`AbortSignal`) to cancel the workflow. Set `dryRun: false` or omit it
-to perform a real release.
+`createContext` accepts the options the CLI derives from flags: `filter`,
+`type`, `qualifier`, `channel`, `allowEmpty`, `dryRun`, and `debug`. Pass an
+optional `signal` (`AbortSignal`) to cancel the workflow. Set `dryRun: false`
+or omit it to perform a real release.
 
 ## Resolving configuration
 

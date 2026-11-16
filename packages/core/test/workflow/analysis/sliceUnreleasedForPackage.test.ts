@@ -178,7 +178,7 @@ test('respects custom release marker option instead of falling back to default',
   })
 })
 
-test('returns an empty array when package directory does not exist', async () => {
+test('yields no commits when package directory does not exist', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     await initializeGitRepository(cwd)
 
