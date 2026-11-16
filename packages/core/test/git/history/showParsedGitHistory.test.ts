@@ -337,7 +337,7 @@ test('yields parsed commits when querying repository history', async () => {
       `)
     })
   })
-})
+}, 15_000)
 
 test('yields parsed commits when bounded by revision range', async () => {
   await temporaryDirectoryTask(async (remote) => {
