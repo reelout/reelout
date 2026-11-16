@@ -1639,6 +1639,77 @@ test('releases only filtered packages by slicing each package history independen
   })
 })
 
+test('releases every non-excluded package for negation-only filters', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    using _ = vi.spyOn(context, 'cwd', 'get').mockReturnValue(cwd)
+    workspace.entry = '.'
+    workspace.members = ['*']
+
+    await initializeGitRepository(cwd)
+
+    const pkgDir1 = path.join(cwd, 'foo')
+    const pkgDir2 = path.join(cwd, 'bar')
+
+    await writePackageJson(cwd, {
+      name: undefined,
+      version: '0.0.0',
+      workspaces: ['*'],
+    })
+    await writePackageJson(pkgDir1, { name: 'foo', version: '0.0.0' })
+    await writePackageJson(pkgDir2, { name: 'bar', version: '0.0.0' })
+    await execGit(cwd, ['add', '.'])
+    await execGit(cwd, ['commit', '-m', 'chore: init pkgs'])
+
+    await writeFile(path.join(pkgDir1, 'index.ts'), 'export const foo = 1;')
+    await execGit(cwd, ['add', '.'])
+    await execGit(cwd, ['commit', '-m', 'feat(foo): add entry'])
+
+    await writeFile(path.join(pkgDir2, 'index.ts'), 'export const bar = 1;')
+    await execGit(cwd, ['add', '.'])
+    await execGit(cwd, ['commit', '-m', 'feat(bar): add entry'])
+
+    context.packages = [
+      await buildPackage({
+        rootDir: context.cwd,
+        packageDir: 'foo',
+        workspace,
+        packageManager: 'npm',
+      }),
+      await buildPackage({
+        rootDir: context.cwd,
+        packageDir: 'bar',
+        workspace,
+        packageManager: 'npm',
+      }),
+    ]
+
+    context.filter = ['!foo']
+
+    await executeReleaseWorkflow(context, [plugin()])
+
+    expect(context.packages.map((pkg) => pkg.name)).toEqual(['bar'])
+
+    expect(
+      context.plans.map((plan) => ({
+        name: plan.package.name,
+        history: plan.history.map((commit) => commit.header),
+        type: plan.release?.type ?? null,
+      }))
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "history": [
+            "feat(bar): add entry",
+            "chore: init pkgs",
+          ],
+          "name": "bar",
+          "type": "minor",
+        },
+      ]
+    `)
+  })
+})
+
 test('warns and proceeds with an empty run when the filter matches no packages', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     using _ = vi.spyOn(context, 'cwd', 'get').mockReturnValue(cwd)

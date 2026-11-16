@@ -177,7 +177,8 @@ current branch name. Pass `false` to disable only the corresponding setting.
 Patterns match package names, so a package without a name, such as the
 workspace root, is only included by patterns that match the empty string
 (for example `*`). Repeat the flag to combine patterns and prefix one with
-`!` to exclude matches:
+`!` to exclude matches; a filter made only of negations releases every
+package the patterns do not exclude:
 
 ```sh
 npx reelout --filter '@scope/pkg-*' --filter '!@scope/pkg-experimental'

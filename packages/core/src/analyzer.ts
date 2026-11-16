@@ -45,12 +45,20 @@ async function derivePerPackageReleases(
 /**
  * Check whether a package name matches the given filter patterns.
  *
+ * Negation-only filters imply inclusion for every package the patterns do
+ * not exclude, mirroring the single-pattern expansion of `isMatch`.
+ *
  * @param name Package name to test, possibly undefined for entry packages
  * @param filter Filter patterns to match against
  * @returns True when the name matches at least one pattern
  */
 function matchesFilter(name: string | undefined, filter: string[]): boolean {
-  return isMatch(name ?? '', filter)
+  return isMatch(
+    name ?? '',
+    filter.some((pattern) => !pattern.startsWith('!'))
+      ? filter
+      : ['**/*', ...filter]
+  )
 }
 
 /**
