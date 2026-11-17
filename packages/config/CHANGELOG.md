@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.6](https://github.com/reelout/reelout/compare/%40reelout%2Fconfig%400.4.5...%40reelout%2Fconfig%400.4.6) (2026-11-17)
+
+### Features
+
+- **core:** add --filter flag to release matching packages ([#15](https://github.com/reelout/reelout/issues/15)) ([2077128](https://github.com/reelout/reelout/commit/20771281ad5e76d146e9d297ceb0f1374377d22e))
+
 ## [0.4.5](https://github.com/reelout/reelout/compare/%40reelout%2Fconfig%400.4.4...%40reelout%2Fconfig%400.4.5) (2026-11-17)
 
 ### Bug Fixes

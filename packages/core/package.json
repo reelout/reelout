@@ -1,6 +1,6 @@
 {
   "name": "@reelout/core",
-  "version": "0.5.3",
+  "version": "0.6.0",
   "description": "Release engine for commit analysis, version planning, lifecycle hooks, and release notes.",
   "repository": {
     "type": "git",

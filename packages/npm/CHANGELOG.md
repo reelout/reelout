@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.6.0](https://github.com/reelout/reelout/compare/%40reelout%2Fnpm%400.5.4...%40reelout%2Fnpm%400.6.0) (2026-11-17)
+
+### Features
+
+- **core:** add --filter flag to release matching packages ([#15](https://github.com/reelout/reelout/issues/15)) ([2077128](https://github.com/reelout/reelout/commit/20771281ad5e76d146e9d297ceb0f1374377d22e))
+
 ## [0.5.4](https://github.com/reelout/reelout/compare/%40reelout%2Fnpm%400.5.3...%40reelout%2Fnpm%400.5.4) (2026-11-17)
 
 ### Bug Fixes
