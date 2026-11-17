@@ -86,7 +86,7 @@ test('downgrades major to minor while version is zero-major', () => {
   ).toBe('minor')
 })
 
-test('keeps major for breaking changes when version is at or above 1.0.0', () => {
+test('keeps major for breaking changes when version has a non-zero major', () => {
   expect(
     deriveReleaseType(classifier, createPlan('1.0.0', breakingHistory))
   ).toBe('major')
