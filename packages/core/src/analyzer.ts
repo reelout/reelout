@@ -46,8 +46,8 @@ async function derivePerPackageReleases(
  * Check whether a package name matches the given filter patterns.
  *
  * Expands negation-only filters with `**`, which also matches the empty
- * string. Includes packages without names alongside every non-excluded
- * package.
+ * string, so packages without names are included alongside every
+ * non-excluded package.
  *
  * @param name Package name to test, possibly undefined for entry packages
  * @param filter Filter patterns to match against
