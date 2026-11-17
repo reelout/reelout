@@ -11,9 +11,9 @@ import { isMatch } from '#util'
  * a subset of the discovered workspace. Returns a copy of every package when
  * `patterns` is empty.
  *
- * @param packages The workspace packages to filter.
- * @param patterns The minimatch patterns to match package names against.
- * @returns The packages whose names match the patterns.
+ * @param packages Workspace packages to filter
+ * @param patterns Minimatch patterns to match package names against
+ * @returns Packages whose names match the patterns
  */
 export function filterPackages(
   packages: readonly Package[],
