@@ -78,7 +78,10 @@ classifier: {
 
 You can change the mapping or provide a classifier function. Breaking changes
 always trigger a `major` release, regardless of the classifier: ReelOut detects
-them from a `!` after the commit type or a `BREAKING CHANGE` footer.
+them from a `!` after the commit type or a `BREAKING CHANGE` footer. On `0.x`
+versions the `major` bump becomes a `minor` bump (`0.y.z` → `0.(y+1).0`),
+matching SemVer's treatment of `0.y.z` as initial development; pass
+`--type major` to graduate to `1.0.0`.
 
 ### `rules`
 
@@ -140,12 +143,12 @@ details.
 
 ReelOut's default configuration targets an npm monorepo hosted on GitHub:
 
-| Option       | Default                                                                             |
-| ------------ | ----------------------------------------------------------------------------------- |
-| `author`     | The `github-actions[bot]` identity                                                  |
-| `classifier` | Breaking changes → `major`; `feat` → `minor`; `fix`, `perf`, and `revert` → `patch` |
-| `rules`      | `alpha`, `beta`, and `next` branches use matching qualifiers and channels           |
-| `plugins`    | Analyzer, builder, changelog, npm, Git, and GitHub plugins, in that order           |
+| Option       | Default                                                                                                  |
+| ------------ | -------------------------------------------------------------------------------------------------------- |
+| `author`     | The `github-actions[bot]` identity                                                                       |
+| `classifier` | Breaking changes → `major` (→ `minor` on `0.x`); `feat` → `minor`; `fix`, `perf`, and `revert` → `patch` |
+| `rules`      | `alpha`, `beta`, and `next` branches use matching qualifiers and channels                                |
+| `plugins`    | Analyzer, builder, changelog, npm, Git, and GitHub plugins, in that order                                |
 
 ReelOut merges user configuration over these defaults at the top level.
 Unspecified values retain their defaults; a supplied array replaces the

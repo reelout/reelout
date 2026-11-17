@@ -315,6 +315,75 @@ test('falls back to calculated release type when release hint is unrecognized', 
   `)
 })
 
+test('downgrades breaking change to minor while package version is zero-major', async () => {
+  const plans = [
+    {
+      package: { files: 'packages/foo/**/*', version: '0.3.0' },
+      history: [] as GitCommit[],
+      release: null,
+    },
+  ] as ReleasePlan[]
+
+  const history = [
+    {
+      hash: 'c1',
+      type: 'refactor',
+      notes: [{ title: 'BREAKING CHANGE', text: 'Dropped legacy adapters.' }],
+      files: ['packages/foo/src/index.ts'],
+    },
+  ] as Partial<GitCommit>[] as GitCommit[]
+
+  const result = await deriveChangeReleases('auto', classifier, plans, history)
+
+  expect(result[0]?.release?.type).toBe('minor')
+})
+
+test('keeps major for breaking change when package version is at or above 1.0.0', async () => {
+  const plans = [
+    {
+      package: { files: 'packages/foo/**/*', version: '1.2.3' },
+      history: [] as GitCommit[],
+      release: null,
+    },
+  ] as ReleasePlan[]
+
+  const history = [
+    {
+      hash: 'c1',
+      type: 'refactor',
+      notes: [{ title: 'BREAKING CHANGE', text: 'Dropped legacy adapters.' }],
+      files: ['packages/foo/src/index.ts'],
+    },
+  ] as Partial<GitCommit>[] as GitCommit[]
+
+  const result = await deriveChangeReleases('auto', classifier, plans, history)
+
+  expect(result[0]?.release?.type).toBe('major')
+})
+
+test('keeps explicit major hint on zero-major package versions', async () => {
+  const plans = [
+    {
+      package: { files: 'packages/foo/**/*', version: '0.3.0' },
+      history: [] as GitCommit[],
+      release: null,
+    },
+  ] as ReleasePlan[]
+
+  const history = [
+    {
+      hash: 'c1',
+      type: 'refactor',
+      notes: [{ title: 'BREAKING CHANGE', text: 'Dropped legacy adapters.' }],
+      files: ['packages/foo/src/index.ts'],
+    },
+  ] as Partial<GitCommit>[] as GitCommit[]
+
+  const result = await deriveChangeReleases('major', classifier, plans, history)
+
+  expect(result[0]?.release?.type).toBe('major')
+})
+
 test('returns null release type when commit history is empty', async () => {
   const plans = [
     {
