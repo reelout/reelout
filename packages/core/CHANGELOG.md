@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.5.3](https://github.com/reelout/reelout/compare/%40reelout%2Fcore%400.5.2...%40reelout%2Fcore%400.5.3) (2026-11-17)
+
+### Bug Fixes
+
+- **core:** bump minor instead of major for breaking changes on 0.x ([#16](https://github.com/reelout/reelout/issues/16)) ([217b7e0](https://github.com/reelout/reelout/commit/217b7e035cc0630b920c9b15208eab5a31f668c9))
+
 ## [0.5.2](https://github.com/reelout/reelout/compare/%40reelout%2Fcore%400.5.1...%40reelout%2Fcore%400.5.2) (2026-11-16)
 
 ### Bug Fixes

@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.5](https://github.com/reelout/reelout/compare/%40reelout%2Fcli%400.4.4...%40reelout%2Fcli%400.4.5) (2026-11-17)
+
+### Bug Fixes
+
+- **core:** bump minor instead of major for breaking changes on 0.x ([#16](https://github.com/reelout/reelout/issues/16)) ([217b7e0](https://github.com/reelout/reelout/commit/217b7e035cc0630b920c9b15208eab5a31f668c9))
+
 ## [0.4.4](https://github.com/reelout/reelout/compare/%40reelout%2Fcli%400.4.3...%40reelout%2Fcli%400.4.4) (2026-11-16)
 
 ### Bug Fixes
