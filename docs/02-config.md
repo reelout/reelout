@@ -163,6 +163,7 @@ CLI options override the corresponding release settings for a run:
 
 | Flag                                 | Effect                                                                                       |
 | ------------------------------------ | -------------------------------------------------------------------------------------------- |
+| `--filter <pattern>`                 | Release only packages whose names match the glob patterns; repeatable, `!` excludes matches  |
 | `--type <auto\|major\|minor\|patch>` | Choose a release type; `auto` derives it from commits                                        |
 | `--qualifier <id\|true\|false>`      | Set the SemVer prerelease identifier, use the matching branch rule, or disable the qualifier |
 | `--channel <name\|true\|false>`      | Set the npm dist-tag, use the matching branch rule, or disable the channel                   |

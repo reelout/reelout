@@ -6,8 +6,9 @@ import { minimatch } from 'minimatch'
 /**
  * Determine whether a target string matches glob patterns.
  *
- * Matches positive and negative glob patterns using dotfile support. Automatically
- * expands a single negative pattern by prepending a global wildcard match.
+ * Matches positive and negative glob patterns using dotfile support.
+ * Negation-only patterns are expanded with a catch-all pattern so they match
+ * every named target the patterns do not exclude.
  *
  * @param target Target string to evaluate against glob patterns
  * @param patterns Single glob pattern or list of patterns to evaluate
@@ -18,11 +19,14 @@ export function isMatch(
   patterns: string | readonly string[]
 ): boolean {
   if (typeof patterns === 'string') {
-    if (patterns.startsWith('!')) {
-      patterns = ['**/*', patterns]
-    } else {
-      patterns = [patterns]
-    }
+    patterns = [patterns]
+  }
+
+  if (
+    patterns.length > 0 &&
+    patterns.every((pattern) => pattern.startsWith('!'))
+  ) {
+    patterns = ['**/*', ...patterns]
   }
 
   const positives: string[] = []

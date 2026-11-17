@@ -1,22 +1,14 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
-import { showParsedGitHistory, type ShowGitHistoryOptions } from '#git'
 import type { GitCommit } from '#types'
-import {
-  isReleaseCommit,
-  type ReleaseMarker,
-} from '../committing/isReleaseCommit'
-
-export interface SliceUnreleasedOptions extends ShowGitHistoryOptions {
-  marker?: ReleaseMarker | undefined
-}
+import { collectUnreleased, type UnreleasedOptions } from './collectUnreleased'
 
 /**
  * Yield parsed commits from the workspace until a release commit is found.
  *
- * Iterates through parsed commit history and yields unreleased commits in
- * order. Stops processing upon reaching the first release commit.
+ * Collects unreleased commits ahead of the most recent release commit and
+ * yields them in order.
  *
  * @param cwd Path to the working directory
  * @param options Options for configuring Git history retrieval
@@ -24,13 +16,9 @@ export interface SliceUnreleasedOptions extends ShowGitHistoryOptions {
  */
 export async function* sliceUnreleased(
   cwd: string,
-  options?: SliceUnreleasedOptions
+  options?: UnreleasedOptions
 ): AsyncGenerator<GitCommit> {
-  for await (const commit of showParsedGitHistory(cwd, options)) {
-    if (await isReleaseCommit(cwd, commit, options?.marker)) {
-      break
-    }
+  const { history } = await collectUnreleased(cwd, options)
 
-    yield commit
-  }
+  yield* history
 }

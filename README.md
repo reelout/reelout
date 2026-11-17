@@ -62,6 +62,7 @@ Usage: reelout [options]
 Plugin-driven release automation for JavaScript and TypeScript monorepos.
 
 Options:
+  --filter <pattern>               Release only packages whose names match the glob patterns (for example, `@scope/pkg-*`); repeat the flag to combine patterns or prefix with `!` to exclude matches.
   --type <string>                  Choose a release type instead of deriving it from commits; use `auto` to analyze commits. (choices: "auto", "major", "minor", "patch")
   --qualifier <boolean or string>  Set the SemVer prerelease identifier (for example, `beta`); use `false` to disable it or `true` to follow branch rules.
   --channel <boolean or string>    Set the npm dist-tag (for example, `beta`); use `false` to disable it or `true` to follow branch rules.

@@ -159,6 +159,7 @@ export interface ReleaseContext<P extends Package = Package> {
   author: GitAuthor
   classifier: CommitClassifier
   rules: ResolvedReleaseRule[]
+  filter: string[]
   type: ReleaseTypeHint
   versionQualifier: string | undefined
   releaseChannel: string | undefined

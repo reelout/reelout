@@ -10,6 +10,8 @@ export const DEFAULT_CHANGELOG_FILE = 'CHANGELOG.md'
 
 export const GIT_TRAILER_RELEASE_AGENT = 'Release-Agent'
 
+export const GIT_TRAILER_RELEASE_FILTER = 'Release-Filter'
+
 /**
  * 1. Primitive Building Blocks
  *

@@ -8,7 +8,7 @@ import { isCommitForPackage } from './isCommitForPackage'
 /**
  * Yield commits from git history associated with a package.
  *
- * Filters git commit history to stream only entries relevant to the target
+ * Filters git commit history to yield only entries relevant to the target
  * `pkg` directory.
  *
  * @param cwd Path to the working directory for git commands
@@ -16,7 +16,7 @@ import { isCommitForPackage } from './isCommitForPackage'
  * @param options Options for parsing and filtering git history
  * @yields Commits belonging to the specified package
  */
-export async function* streamPackageCommits(
+export async function* readPackageHistory(
   cwd: string,
   pkg: Package,
   options: ShowGitHistoryOptions = {}

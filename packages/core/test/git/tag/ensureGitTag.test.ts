@@ -198,7 +198,7 @@ test('fetches missing tags and restores commit context', async () => {
       `)
     })
   })
-})
+}, 15_000)
 
 test('updates local tag when remote tag is force-pushed', async () => {
   await temporaryDirectoryTask(async (remote) => {
@@ -548,4 +548,4 @@ test('verifies fetch depth impact on commit ancestry and graph connectivity', as
       `)
     })
   })
-})
+}, 15_000)

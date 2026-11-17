@@ -25,6 +25,14 @@ async function writeChangelog(dir: string, version: string, changes?: string) {
   )
 }
 
+function summarizePlans(plans: typeof context.plans) {
+  return plans.map((plan) => ({
+    name: plan.package.name,
+    history: plan.history.map((commit) => commit.header),
+    type: plan.release?.type ?? null,
+  }))
+}
+
 test('returns empty plans when repository has no commits', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     using _ = vi.spyOn(context, 'cwd', 'get').mockReturnValue(cwd)
@@ -1555,6 +1563,223 @@ test('continues prerelease cycles when type is patch and allowEmpty is true', as
             "transition": "continue",
             "type": "patch",
           },
+        },
+      ]
+    `)
+  })
+})
+
+test('splits window and per-package histories when the latest release commit was a filtered release', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    using _ = vi.spyOn(context, 'cwd', 'get').mockReturnValue(cwd)
+    workspace.entry = '.'
+    workspace.members = ['*']
+
+    await initializeGitRepository(cwd)
+
+    const pkgDir1 = path.join(cwd, 'foo')
+    const pkgDir2 = path.join(cwd, 'bar')
+
+    await writePackageJson(cwd, {
+      name: undefined,
+      version: '0.0.0',
+      workspaces: ['*'],
+    })
+    await writePackageJson(pkgDir1, { name: 'foo', version: '0.0.0' })
+    await writePackageJson(pkgDir2, { name: 'bar', version: '0.0.0' })
+    await execGit(cwd, ['add', '.'])
+    await execGit(cwd, ['commit', '-m', 'chore: init pkgs'])
+
+    await writeFile(path.join(pkgDir2, 'index.ts'), 'export const bar = 1;')
+    await execGit(cwd, ['add', '.'])
+    await execGit(cwd, ['commit', '-m', 'feat(bar): add entry'])
+
+    await updatePackageJson(pkgDir1, { version: '1.0.0' })
+    await writeChangelog(pkgDir1, '1.0.0')
+    await execGit(cwd, ['add', '.'])
+    await execGit(cwd, [
+      'commit',
+      '-m',
+      'chore: release foo\n\nRelease-Filter: foo',
+    ])
+    await execGit(cwd, ['tag', 'foo@1.0.0'])
+
+    await writeFile(path.join(pkgDir2, 'index.ts'), 'export const bar = 2;')
+    await execGit(cwd, ['add', '.'])
+    await execGit(cwd, ['commit', '-m', 'fix(bar): update entry'])
+
+    context.packages = [
+      await buildPackage({
+        rootDir: context.cwd,
+        packageDir: 'foo',
+        workspace,
+        packageManager: 'npm',
+      }),
+      await buildPackage({
+        rootDir: context.cwd,
+        packageDir: 'bar',
+        workspace,
+        packageManager: 'npm',
+      }),
+    ]
+
+    await executeReleaseWorkflow(context, [plugin()])
+
+    expect(summarizePlans(context.plans)).toMatchInlineSnapshot(`
+      [
+        {
+          "history": [],
+          "name": "foo",
+          "type": null,
+        },
+        {
+          "history": [
+            "fix(bar): update entry",
+            "feat(bar): add entry",
+            "chore: init pkgs",
+          ],
+          "name": "bar",
+          "type": "minor",
+        },
+      ]
+    `)
+  })
+})
+
+test('keeps global slicing when the latest release commit was not a filtered release', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    using _ = vi.spyOn(context, 'cwd', 'get').mockReturnValue(cwd)
+    workspace.entry = '.'
+    workspace.members = ['*']
+
+    await initializeGitRepository(cwd)
+
+    const pkgDir1 = path.join(cwd, 'foo')
+    const pkgDir2 = path.join(cwd, 'bar')
+
+    await writePackageJson(cwd, {
+      name: undefined,
+      version: '0.0.0',
+      workspaces: ['*'],
+    })
+    await writePackageJson(pkgDir1, { name: 'foo', version: '0.0.0' })
+    await writePackageJson(pkgDir2, { name: 'bar', version: '0.0.0' })
+    await execGit(cwd, ['add', '.'])
+    await execGit(cwd, ['commit', '-m', 'chore: init pkgs'])
+
+    await writeFile(path.join(pkgDir2, 'index.ts'), 'export const bar = 1;')
+    await execGit(cwd, ['add', '.'])
+    await execGit(cwd, ['commit', '-m', 'feat(bar): add entry'])
+
+    await updatePackageJson(pkgDir1, { version: '1.0.0' })
+    await writeChangelog(pkgDir1, '1.0.0')
+    await execGit(cwd, ['add', '.'])
+    await execGit(cwd, ['commit', '-m', 'chore: release foo'])
+    await execGit(cwd, ['tag', 'foo@1.0.0'])
+
+    await writeFile(path.join(pkgDir2, 'index.ts'), 'export const bar = 2;')
+    await execGit(cwd, ['add', '.'])
+    await execGit(cwd, ['commit', '-m', 'fix(bar): update entry'])
+
+    context.packages = [
+      await buildPackage({
+        rootDir: context.cwd,
+        packageDir: 'foo',
+        workspace,
+        packageManager: 'npm',
+      }),
+      await buildPackage({
+        rootDir: context.cwd,
+        packageDir: 'bar',
+        workspace,
+        packageManager: 'npm',
+      }),
+    ]
+
+    await executeReleaseWorkflow(context, [plugin()])
+
+    expect(summarizePlans(context.plans)).toMatchInlineSnapshot(`
+      [
+        {
+          "history": [],
+          "name": "foo",
+          "type": null,
+        },
+        {
+          "history": [
+            "fix(bar): update entry",
+          ],
+          "name": "bar",
+          "type": "patch",
+        },
+      ]
+    `)
+  })
+})
+
+test('releases pre-seeded plans regardless of the filter', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    using _ = vi.spyOn(context, 'cwd', 'get').mockReturnValue(cwd)
+    workspace.entry = '.'
+    workspace.members = ['*']
+
+    await initializeGitRepository(cwd)
+
+    const pkgDir1 = path.join(cwd, 'foo')
+    const pkgDir2 = path.join(cwd, 'bar')
+
+    await writePackageJson(cwd, {
+      name: undefined,
+      version: '0.0.0',
+      workspaces: ['*'],
+    })
+    await writePackageJson(pkgDir1, { name: 'foo', version: '0.0.0' })
+    await writePackageJson(pkgDir2, { name: 'bar', version: '0.0.0' })
+    await execGit(cwd, ['add', '.'])
+    await execGit(cwd, ['commit', '-m', 'chore: init pkgs'])
+
+    await writeFile(path.join(pkgDir2, 'index.ts'), 'export const bar = 1;')
+    await execGit(cwd, ['add', '.'])
+    await execGit(cwd, ['commit', '-m', 'feat(bar): add entry'])
+
+    const foo = await buildPackage({
+      rootDir: context.cwd,
+      packageDir: 'foo',
+      workspace,
+      packageManager: 'npm',
+    })
+    const bar = await buildPackage({
+      rootDir: context.cwd,
+      packageDir: 'bar',
+      workspace,
+      packageManager: 'npm',
+    })
+
+    context.packages = [foo, bar]
+    context.plans = [
+      { package: foo, history: [], release: null },
+      { package: bar, history: [], release: null },
+    ]
+    context.filter = ['bar']
+
+    await executeReleaseWorkflow(context, [plugin()])
+
+    expect(summarizePlans(context.plans)).toMatchInlineSnapshot(`
+      [
+        {
+          "history": [
+            "chore: init pkgs",
+          ],
+          "name": "foo",
+          "type": null,
+        },
+        {
+          "history": [
+            "feat(bar): add entry",
+            "chore: init pkgs",
+          ],
+          "name": "bar",
+          "type": "minor",
         },
       ]
     `)

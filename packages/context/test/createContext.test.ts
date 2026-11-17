@@ -185,6 +185,7 @@ test('populates context with default configuration, plugins, and metadata upon s
           releaseChannel: 'next',
         },
       ],
+      filter: [],
       type: 'auto',
       versionQualifier: undefined,
       releaseChannel: undefined,
@@ -256,6 +257,23 @@ test('sets dryRun to true when dryRun option is enabled', async () => {
     const context = await createContext({ ...options, dryRun: true })
 
     expect(context.dryRun).toBe(true)
+  })
+})
+
+test('defaults filter to an empty array and passes filter patterns through', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    options.cwd = cwd
+
+    await initializeGitRepository(cwd)
+
+    await execGit(cwd, ['commit', '--allow-empty', '-m', 'Initial commit'])
+
+    expect((await createContext(options)).filter).toEqual([])
+
+    expect(
+      (await createContext({ ...options, filter: ['pkg-*', '!pkg-skip'] }))
+        .filter
+    ).toEqual(['pkg-*', '!pkg-skip'])
   })
 })
 

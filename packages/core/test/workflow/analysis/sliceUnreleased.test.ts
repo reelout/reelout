@@ -1,11 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
-import {
-  execGit,
-  sliceUnreleased,
-  type SliceUnreleasedOptions,
-} from '@reelout/core'
+import { execGit, sliceUnreleased, type UnreleasedOptions } from '@reelout/core'
 import { updatePackageJson, writePackageJson } from '@reelout/npm'
 import { fromAsync } from 'from-async'
 import { writeFile } from 'node:fs/promises'
@@ -16,7 +12,7 @@ import { initializeGitRepository } from '../../../../../test/mock/git'
 
 async function showCommits(
   cwd: string,
-  options?: SliceUnreleasedOptions
+  options?: UnreleasedOptions
 ): Promise<string[]> {
   return (await fromAsync(sliceUnreleased(cwd, options)))
     .toReversed()

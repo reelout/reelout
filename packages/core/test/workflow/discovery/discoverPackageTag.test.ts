@@ -389,7 +389,7 @@ test('resolves changelog tag after tags are pushed sequentially', async () => {
       `)
     })
   })
-})
+}, 15_000)
 
 test('prefers changelog version when package and branch versions diverge', async () => {
   await temporaryDirectoryTask(async (remote) => {

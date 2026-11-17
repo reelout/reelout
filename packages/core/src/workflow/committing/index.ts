@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
+export * from './formatReleaseFilterPatterns'
 export * from './generateReleaseCommitMessage'
 export * from './isReleaseCommit'
+export * from './readReleaseFilterPatterns'

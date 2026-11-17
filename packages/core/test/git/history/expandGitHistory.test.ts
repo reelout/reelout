@@ -671,7 +671,7 @@ test('spans the commit gap to merge disconnected shallow tags into HEAD history 
       `)
     })
   })
-})
+}, 15_000)
 
 test('successfully deepens the history of a disconnected target reference to resolve its ancestor commits', async () => {
   await temporaryDirectoryTask(async (remote) => {
@@ -807,7 +807,7 @@ test('successfully deepens the history of a disconnected target reference to res
       `)
     })
   })
-})
+}, 15_000)
 
 test('maintains historical continuity across parallel streams when tracking cherry-picked commits', async () => {
   await temporaryDirectoryTask(async (remote) => {

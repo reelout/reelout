@@ -86,6 +86,10 @@ test('renders formatted help output when options are configured', async () => {
     A modern release tool
 
     Options:
+      --filter <pattern>               Release only packages whose names match the
+                                       glob patterns (for example, \`@scope/pkg-*\`);
+                                       repeat the flag to combine patterns or prefix
+                                       with \`!\` to exclude matches.
       --type <string>                  Choose a release type instead of deriving it
                                        from commits; use \`auto\` to analyze commits.
                                        (choices: "auto", "major", "minor", "patch")
@@ -121,6 +125,11 @@ test('registers default release options when program is created', async () => {
     ])
   ).toMatchInlineSnapshot(`
     [
+      [
+        "--filter <pattern>",
+        "Release only packages whose names match the glob patterns (for example, \`@scope/pkg-*\`); repeat the flag to combine patterns or prefix with \`!\` to exclude matches.",
+        undefined,
+      ],
       [
         "--type <string>",
         "Choose a release type instead of deriving it from commits; use \`auto\` to analyze commits.",
@@ -218,6 +227,28 @@ test('parses channel as boolean or string value when --channel flag is provided'
 
   await program.parseAsync(['node', 'test', '--channel', 'next'])
   expect(program.opts().channel).toBe('next')
+})
+
+test('collects repeatable glob patterns when --filter flag is provided', async () => {
+  resolveConfig.mockResolvedValue({ plugins: [] })
+
+  const program = await createProgram(options)
+
+  await program.parseAsync(['node', 'test'])
+  expect(program.opts().filter).toBe(undefined)
+
+  await program.parseAsync(['node', 'test', '--filter', '@scope/pkg-*'])
+  expect(program.opts().filter).toEqual(['@scope/pkg-*'])
+
+  await program.parseAsync([
+    'node',
+    'test',
+    '--filter',
+    '@scope/*',
+    '--filter',
+    '!@scope/internal',
+  ])
+  expect(program.opts().filter).toEqual(['@scope/*', '!@scope/internal'])
 })
 
 test('enables allowEmpty option when --allow-empty flag is provided', async () => {

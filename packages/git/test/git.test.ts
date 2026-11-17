@@ -133,6 +133,113 @@ test('skips creating release commit during dry-run mode', async () => {
   })
 })
 
+test('stamps release filter trailer when filter patterns are configured', async () => {
+  await temporaryDirectoryTask(async (remote) => {
+    await temporaryDirectoryTask(async (cwd) => {
+      using _ = vi.spyOn(context, 'cwd', 'get').mockReturnValue(cwd)
+
+      await initializeGitRepository(cwd, remote)
+
+      await writePackageJson(cwd, { version: '1.0.0' })
+
+      context.repository = repository
+
+      context.filter = ['pkg-a', '!pkg-b']
+
+      context.plans = [
+        {
+          package: { entry: true, location: '.', name: 'pkg-a' },
+          history: [] as GitCommit[],
+          release: { version: '1.0.0', tag: { name: 'v1.0.0' } },
+        },
+      ] as ReleasePlan[]
+
+      await executeReleaseWorkflow(context, [plugin()])
+
+      expect(await execGit(cwd, ['log', '-1', '--format=%B']))
+        .toMatchInlineSnapshot(`
+          "chore: release 1.0.0
+
+          Release-Agent: ReelOut/0.0.0
+          Release-Filter: pkg-a, !pkg-b
+
+          "
+        `)
+    })
+  })
+})
+
+test('omits release filter trailer when a released plan falls outside the filter patterns', async () => {
+  await temporaryDirectoryTask(async (remote) => {
+    await temporaryDirectoryTask(async (cwd) => {
+      using _ = vi.spyOn(context, 'cwd', 'get').mockReturnValue(cwd)
+
+      await initializeGitRepository(cwd, remote)
+
+      await writePackageJson(cwd, { version: '1.0.0' })
+
+      context.repository = repository
+
+      context.filter = ['pkg-a']
+
+      context.plans = [
+        {
+          package: { entry: true, location: '.', name: 'pkg-b' },
+          history: [] as GitCommit[],
+          release: { version: '1.0.0', tag: { name: 'v1.0.0' } },
+        },
+      ] as ReleasePlan[]
+
+      await executeReleaseWorkflow(context, [plugin()])
+
+      expect(await execGit(cwd, ['log', '-1', '--format=%B']))
+        .toMatchInlineSnapshot(`
+          "chore: release 1.0.0
+
+          Release-Agent: ReelOut/0.0.0
+
+          "
+        `)
+    })
+  })
+})
+
+test('escapes commas within filter patterns in the release filter trailer', async () => {
+  await temporaryDirectoryTask(async (remote) => {
+    await temporaryDirectoryTask(async (cwd) => {
+      using _ = vi.spyOn(context, 'cwd', 'get').mockReturnValue(cwd)
+
+      await initializeGitRepository(cwd, remote)
+
+      await writePackageJson(cwd, { version: '1.0.0' })
+
+      context.repository = repository
+
+      context.filter = ['@scope/{pkg-a,pkg-b}']
+
+      context.plans = [
+        {
+          package: { entry: true, location: '.', name: '@scope/pkg-a' },
+          history: [] as GitCommit[],
+          release: { version: '1.0.0', tag: { name: 'v1.0.0' } },
+        },
+      ] as ReleasePlan[]
+
+      await executeReleaseWorkflow(context, [plugin()])
+
+      expect(await execGit(cwd, ['log', '-1', '--format=%B']))
+        .toMatchInlineSnapshot(`
+          "chore: release 1.0.0
+
+          Release-Agent: ReelOut/0.0.0
+          Release-Filter: @scope/{pkg-a\\,pkg-b}
+
+          "
+        `)
+    })
+  })
+})
+
 test('fails workflow execution when git remote is not configured', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     using _ = vi.spyOn(context, 'cwd', 'get').mockReturnValue(cwd)

@@ -8,6 +8,9 @@ test('returns false when target or pattern array is empty', () => {
   expect(isMatch('main', [])).toBe(false)
   expect(isMatch('', [])).toBe(false)
   expect(isMatch('', 'main')).toBe(false)
+  expect(isMatch('', '*')).toBe(false)
+  expect(isMatch('', '**/*')).toBe(false)
+  expect(isMatch('', 'foo*')).toBe(false)
 })
 
 test('accepts both a single string pattern and an array of patterns', () => {
@@ -55,15 +58,18 @@ test('returns true if target matches at least one positive pattern', () => {
   expect(isMatch('bugfix/login', ['main', 'feature/*'])).toBe(false)
 })
 
-test('auto-expands a single negative string pattern to imply standard inclusion (**/*)', () => {
+test('matches every named non-excluded target for negation-only patterns (**/*)', () => {
   expect(isMatch('main', '!main')).toBe(false)
   expect(isMatch('develop', '!main')).toBe(true)
   expect(isMatch('release/20260101', '!main')).toBe(true)
 
-  // Explicitly demonstrates why array with only negatives fails (positives.some() is false)
   expect(isMatch('main', ['!main'])).toBe(false)
-  expect(isMatch('develop', ['!main'])).toBe(false)
-  expect(isMatch('release/20260101', ['!main'])).toBe(false)
+  expect(isMatch('develop', ['!main'])).toBe(true)
+  expect(isMatch('release/20260101', ['!main'])).toBe(true)
+
+  expect(isMatch('', ['!main'])).toBe(false)
+  expect(isMatch('', '**')).toBe(true)
+  expect(isMatch('', ['**', '!main'])).toBe(true)
 })
 
 test('filters positive matches when matching negative patterns are present', () => {

@@ -30,6 +30,7 @@ const createMockContext = (): ReleaseContext => ({
     patch: ['fix', 'perf', 'revert'],
   }),
   rules: [],
+  filter: [],
   type: 'auto',
   versionQualifier: undefined,
   releaseChannel: undefined,
