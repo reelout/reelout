@@ -55,7 +55,7 @@ test('returns true if target matches at least one positive pattern', () => {
   expect(isMatch('bugfix/login', ['main', 'feature/*'])).toBe(false)
 })
 
-test('auto-expands negation-only patterns to imply standard inclusion (**/*)', () => {
+test('matches every named non-excluded target for negation-only patterns (**/*)', () => {
   expect(isMatch('main', '!main')).toBe(false)
   expect(isMatch('develop', '!main')).toBe(true)
   expect(isMatch('release/20260101', '!main')).toBe(true)

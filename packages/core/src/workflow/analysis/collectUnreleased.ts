@@ -20,7 +20,7 @@ export interface UnreleasedWindow {
  *
  * Walks parsed commit history in order and gathers every commit preceding the
  * first release commit. Exposes the release commit that ended the walk so
- * callers can inspect it, for example to detect filtered release commits.
+ * callers can inspect it, for example to read its release filter trailer.
  *
  * @param cwd Path to the working directory for git commands
  * @param options Options for configuring Git history retrieval

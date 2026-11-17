@@ -7,9 +7,10 @@ import type { GitCommit } from '#types'
 /**
  * Read release filter patterns from a parsed commit.
  *
- * Joins the release filter trailer values and splits them into individual
- * filter patterns. Returns `null` when the commit carries no release filter
- * trailer, so callers can treat such commits as releases of every package.
+ * Collects the release filter trailer values and splits them into individual
+ * comma-separated filter patterns. Returns `null` when the commit carries no
+ * release filter trailer, so callers can treat it as a release of every
+ * package.
  *
  * @param commit Parsed commit object or nullish value
  * @returns Filter patterns carried by the trailer, or `null` when absent
