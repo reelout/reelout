@@ -47,6 +47,16 @@ test('returns true when commit reference carries a release filter trailer', asyn
   })
 })
 
+test('returns true when the release filter trailer has an empty value', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    await initializeGitRepository(cwd)
+
+    await createCommit(cwd, 'chore: release pkg-a\n\nRelease-Filter:')
+
+    expect(await isFilteredReleaseCommit(cwd, 'HEAD')).toBe(true)
+  })
+})
+
 test('returns true when pre-parsed commit object resolves to a filtered release commit', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     await initializeGitRepository(cwd)

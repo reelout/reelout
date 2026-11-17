@@ -9,7 +9,7 @@ import type { GitCommit } from '#types'
  * Determine whether a commit is a filtered release commit.
  *
  * Fetches the commit with the release filter trailer parsed and checks
- * whether the trailer carries a value. Detects release commits created
+ * whether the trailer is present. Detects release commits created
  * by runs scoped with `--filter`.
  *
  * @param cwd Working directory path for Git commands
@@ -32,7 +32,7 @@ export async function isFilteredReleaseCommit(
     )
 
     return parsed.trailers.some(
-      (trailer) => trailer.key === GIT_TRAILER_RELEASE_FILTER && !!trailer.value
+      (trailer) => trailer.key === GIT_TRAILER_RELEASE_FILTER
     )
   } catch {
     return false
