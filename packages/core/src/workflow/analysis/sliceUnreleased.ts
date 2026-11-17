@@ -4,8 +4,6 @@
 import type { GitCommit } from '#types'
 import { collectUnreleased, type UnreleasedOptions } from './collectUnreleased'
 
-export type { UnreleasedOptions }
-
 /**
  * Yield parsed commits from the workspace until a release commit is found.
  *
