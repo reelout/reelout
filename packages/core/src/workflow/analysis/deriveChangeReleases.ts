@@ -48,11 +48,7 @@ export async function deriveChangeReleases(
   return plans.map((plan): ReleasePlan => {
     let { release } = plan
 
-    let releaseType = deriveReleaseType(
-      classifier,
-      plan.history,
-      plan.package.version
-    )
+    let releaseType = deriveReleaseType(classifier, plan)
 
     if (releaseType) {
       switch (hint) {

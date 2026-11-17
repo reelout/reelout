@@ -15,6 +15,48 @@ test('returns major for breaking changes', () => {
   expect(determineReleaseType(classifier, commit)).toBe('major')
 })
 
+test('returns minor for breaking changes while version is zero-major', () => {
+  const classifier = normalizeCommitFilter({})
+
+  const commit = {
+    notes: [{ title: 'BREAKING CHANGE', text: '' }],
+  } as GitCommit
+
+  expect(determineReleaseType(classifier, commit, '0.3.0')).toBe('minor')
+  expect(determineReleaseType(classifier, commit, '0.3.1')).toBe('minor')
+  expect(determineReleaseType(classifier, commit, '0.0.3')).toBe('minor')
+  expect(determineReleaseType(classifier, commit, '0.3.0-alpha.1')).toBe(
+    'minor'
+  )
+})
+
+test('returns major for breaking changes when version is at or above 1.0.0', () => {
+  const classifier = normalizeCommitFilter({})
+
+  const commit = {
+    notes: [{ title: 'BREAKING CHANGE', text: '' }],
+  } as GitCommit
+
+  expect(determineReleaseType(classifier, commit, '1.0.0')).toBe('major')
+  expect(determineReleaseType(classifier, commit, '1.2.3')).toBe('major')
+  expect(determineReleaseType(classifier, commit, '1.0.0-alpha.1')).toBe(
+    'major'
+  )
+})
+
+test('returns major for breaking changes when version is null or invalid', () => {
+  const classifier = normalizeCommitFilter({})
+
+  const commit = {
+    notes: [{ title: 'BREAKING CHANGE', text: '' }],
+  } as GitCommit
+
+  expect(determineReleaseType(classifier, commit, null)).toBe('major')
+  expect(determineReleaseType(classifier, commit, 'not-a-version')).toBe(
+    'major'
+  )
+})
+
 test('returns release type based on commit type and config', () => {
   const classifier: CommitClassifier = (commit) => {
     switch (commit.type) {
@@ -45,4 +87,17 @@ test('returns release type based on commit type and config', () => {
       releaseType
     )
   }
+})
+
+test('ignores version for non-breaking commits', () => {
+  const classifier = normalizeCommitFilter({ minor: ['feat'] })
+
+  const commit = { type: 'feat' } as GitCommit
+
+  expect(
+    determineReleaseType(classifier, { ...commit, notes: [] }, '0.3.0')
+  ).toBe('minor')
+  expect(
+    determineReleaseType(classifier, { ...commit, notes: [] }, '1.2.3')
+  ).toBe('minor')
 })
