@@ -105,6 +105,7 @@ test('exposes the correct API contract', () => {
       "readGitFile",
       "readJson",
       "readPackageHistory",
+      "readReleaseFilterPatterns",
       "resolveConfig",
       "resolveGitRepository",
       "resolveGitRevision",

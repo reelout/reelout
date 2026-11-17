@@ -4,13 +4,14 @@
 import { GIT_TRAILER_RELEASE_FILTER } from '#config'
 import { getParsedGitCommit } from '#git'
 import type { GitCommit } from '#types'
+import { readReleaseFilterPatterns } from './readReleaseFilterPatterns'
 
 /**
  * Determine whether a commit carries a release filter trailer.
  *
- * Fetches the commit with the release filter trailer parsed and checks
- * whether the trailer is present. Detects release commits created
- * by runs scoped with `--filter`.
+ * Fetches string commit references through Git and reads pre-parsed trailers
+ * from commit objects. Detects release commits created by runs scoped with
+ * `--filter`.
  *
  * @param cwd Working directory path for Git commands
  * @param commit Commit object, hash string, or nullish value
@@ -20,21 +21,17 @@ export async function hasReleaseFilterTrailer(
   cwd: string,
   commit: GitCommit | string | null | undefined
 ): Promise<boolean> {
-  if (!commit) {
-    return false
+  if (typeof commit === 'string') {
+    try {
+      return (
+        readReleaseFilterPatterns(
+          await getParsedGitCommit(cwd, commit, [GIT_TRAILER_RELEASE_FILTER])
+        ) !== null
+      )
+    } catch {
+      return false
+    }
   }
 
-  try {
-    const parsed = await getParsedGitCommit(
-      cwd,
-      typeof commit === 'string' ? commit : commit.hash,
-      [GIT_TRAILER_RELEASE_FILTER]
-    )
-
-    return parsed.trailers.some(
-      (trailer) => trailer.key === GIT_TRAILER_RELEASE_FILTER
-    )
-  } catch {
-    return false
-  }
+  return readReleaseFilterPatterns(commit) !== null
 }

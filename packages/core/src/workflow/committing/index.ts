@@ -4,3 +4,4 @@
 export * from './generateReleaseCommitMessage'
 export * from './hasReleaseFilterTrailer'
 export * from './isReleaseCommit'
+export * from './readReleaseFilterPatterns'

@@ -137,6 +137,67 @@ test('stops at the package release boundary while ignoring foreign release commi
   })
 })
 
+test('skips filtered release commits that excluded the package and keeps walking', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    await initializeGitRepository(cwd)
+
+    const pkgDir1 = path.join(cwd, 'pkg1')
+    const pkgDir2 = path.join(cwd, 'pkg2')
+
+    await writePackageJson(pkgDir1, { name: 'pkg1', version: '1.0.0' })
+    await writePackageJson(pkgDir2, { name: 'pkg2', version: '1.0.0' })
+    await execGit(cwd, ['add', '.'])
+    await execGit(cwd, ['commit', '-m', 'chore: initialize packages'])
+
+    await writeFile(path.join(pkgDir1, 'index.js'), 'export const v1 = 1;')
+    await execGit(cwd, ['add', '.'])
+    await execGit(cwd, ['commit', '-m', 'feat(pkg1): add entry'])
+
+    await writeFile(path.join(pkgDir2, 'index.js'), 'export const v2 = 1;')
+    await execGit(cwd, ['add', '.'])
+    await execGit(cwd, ['commit', '-m', 'feat(pkg2): add entry'])
+
+    await updatePackageJson(pkgDir2, { version: '1.1.0' })
+    await updatePackageJson(pkgDir1, { dependencies: { pkg2: '^1.1.0' } })
+    await execGit(cwd, ['add', '.'])
+    await execGit(cwd, [
+      'commit',
+      '-m',
+      'chore: release pkg2\n\nRelease-Filter: pkg2',
+    ])
+    await execGit(cwd, ['tag', 'pkg2@1.1.0'])
+
+    await writeFile(path.join(pkgDir1, 'index.js'), 'export const v1 = 2;')
+    await execGit(cwd, ['add', '.'])
+    await execGit(cwd, ['commit', '-m', 'fix(pkg1): update entry'])
+
+    const pkg1 = await buildPackage({
+      rootDir: cwd,
+      packageDir: 'pkg1',
+      workspace,
+      packageManager: 'npm',
+    })
+    const pkg2 = await buildPackage({
+      rootDir: cwd,
+      packageDir: 'pkg2',
+      workspace,
+      packageManager: 'npm',
+    })
+
+    expect(await showCommits(cwd, pkg1)).toMatchInlineSnapshot(`
+      [
+        "chore: initialize packages",
+        "feat(pkg1): add entry",
+        "fix(pkg1): update entry",
+      ]
+    `)
+
+    expect(await showCommits(cwd, pkg2)).toMatchInlineSnapshot(`
+      []
+    `)
+  })
+})
+
 test('respects custom release marker option instead of falling back to default', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     await initializeGitRepository(cwd)

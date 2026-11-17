@@ -1641,7 +1641,7 @@ test("releases only matching packages with history reaching back past another pa
   })
 })
 
-test('releases every non-excluded package for negation-only filters', async () => {
+test('releases every named non-excluded package for negation-only filters', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     using _ = vi.spyOn(context, 'cwd', 'get').mockReturnValue(cwd)
     workspace.entry = '.'
@@ -1695,17 +1695,10 @@ test('releases every non-excluded package for negation-only filters', async () =
 
     await executeReleaseWorkflow(context, [plugin()])
 
-    expect(context.packages.map((pkg) => pkg.name)).toEqual([undefined, 'bar'])
+    expect(context.packages.map((pkg) => pkg.name)).toEqual(['bar'])
 
     expect(summarizePlans(context.plans)).toMatchInlineSnapshot(`
       [
-        {
-          "history": [
-            "chore: init pkgs",
-          ],
-          "name": undefined,
-          "type": null,
-        },
         {
           "history": [
             "feat(bar): add entry",
@@ -1773,7 +1766,7 @@ test('warns and proceeds with an empty run when the filter matches no packages',
   })
 })
 
-test('escalates to per-package slicing when the latest release commit was a filtered release', async () => {
+test('splits window and per-package histories when the latest release commit was a filtered release', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     using _ = vi.spyOn(context, 'cwd', 'get').mockReturnValue(cwd)
     workspace.entry = '.'

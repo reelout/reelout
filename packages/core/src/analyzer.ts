@@ -1,30 +1,40 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
-import type { ReleaseContext, ReleasePlan, ReleasePlugin } from '#types'
+import type {
+  GitCommit,
+  ReleaseContext,
+  ReleasePlan,
+  ReleasePlugin,
+} from '#types'
 import { isMatch } from '#util'
 import {
   collectUnreleased,
   deriveChangeReleases,
   deriveTransitionReleases,
-  hasReleaseFilterTrailer,
   propagateDependencyUpdates,
+  readReleaseFilterPatterns,
   sliceUnreleasedForPackage,
 } from '#workflow'
 import { colors } from 'consola/utils'
 import { version } from '../package.json'
 
 /**
- * Derive release plans using per-package unreleased history.
+ * Derive release plans by resolving history independently for every plan.
  *
- * Slices history independently for every plan so each package releases from
- * its own most recent release commit instead of the repository-wide one.
+ * Resolves each plan's commit history through `resolveHistory` so plans can
+ * share a repository-wide window or keep their own release boundary, then
+ * derives each release from its resolved history.
  *
  * @param context Release execution context containing runtime options
+ * @param resolveHistory Resolves the commit history for a single plan
  * @returns Release plans updated with per-package histories and release types
  */
-async function derivePerPackageReleases(
-  context: ReleaseContext
+async function deriveSlicedReleases(
+  context: ReleaseContext,
+  resolveHistory: (
+    plan: ReleasePlan
+  ) => Iterable<GitCommit> | AsyncIterable<GitCommit>
 ): Promise<ReleasePlan[]> {
   const plans: ReleasePlan[] = []
 
@@ -34,7 +44,7 @@ async function derivePerPackageReleases(
         context.type,
         context.classifier,
         [plan],
-        sliceUnreleasedForPackage(context.cwd, plan.package)
+        resolveHistory(plan)
       ))
     )
   }
@@ -53,10 +63,11 @@ async function derivePerPackageReleases(
  *   classifications, handles transition releases for empty changesets (if
  *   enabled), and propagates dependency updates across internal packages.
  *
- *   History slicing depends on the run scope: unfiltered runs read history up
- *   to the latest repository-wide release commit and escalate to per-package
- *   slicing when that commit was created by a filtered run, while filtered
- *   runs always slice history per package from its own latest release commit.
+ *   History slicing depends on the run scope: filtered runs slice history per
+ *   package from its own latest release commit. Unfiltered runs read history
+ *   up to the latest repository-wide release commit, share that window with
+ *   the packages its release filter trailer released, and slice history
+ *   independently for the packages it skipped.
  *
  * @returns A release plugin configured for package change analysis.
  */
@@ -64,6 +75,14 @@ const analyzer = (): ReleasePlugin => ({
   name: '@reelout/core/analyzer',
   version,
   analyze: async (context, next) => {
+    if (context.plans.length === 0) {
+      context.plans = context.packages.map((pkg): ReleasePlan => ({
+        package: pkg,
+        history: [],
+        release: null,
+      }))
+    }
+
     const hasFilter = context.filter.length > 0
 
     if (hasFilter) {
@@ -90,31 +109,27 @@ const analyzer = (): ReleasePlugin => ({
 
         context.logger.warn(colors.yellow(message))
       }
-    }
 
-    if (context.plans.length === 0) {
-      context.plans = context.packages.map((pkg): ReleasePlan => ({
-        package: pkg,
-        history: [],
-        release: null,
-      }))
-    }
-
-    if (hasFilter) {
-      context.plans = await derivePerPackageReleases(context)
+      context.plans = await deriveSlicedReleases(context, (plan) =>
+        sliceUnreleasedForPackage(context.cwd, plan.package)
+      )
     } else {
       const window = await collectUnreleased(context.cwd)
+      const patterns = readReleaseFilterPatterns(window.stop)
 
-      if (await hasReleaseFilterTrailer(context.cwd, window.stop)) {
-        context.plans = await derivePerPackageReleases(context)
-      } else {
-        context.plans = await deriveChangeReleases(
-          context.type,
-          context.classifier,
-          context.plans,
-          window.history
-        )
-      }
+      context.plans =
+        patterns === null
+          ? await deriveChangeReleases(
+              context.type,
+              context.classifier,
+              context.plans,
+              window.history
+            )
+          : await deriveSlicedReleases(context, (plan) =>
+              isMatch(plan.package.name ?? '', patterns)
+                ? window.history
+                : sliceUnreleasedForPackage(context.cwd, plan.package)
+            )
     }
 
     if (context.allowEmpty) {
