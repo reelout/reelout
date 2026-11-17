@@ -25,6 +25,14 @@ async function writeChangelog(dir: string, version: string, changes?: string) {
   )
 }
 
+function summarizePlans(plans: typeof context.plans) {
+  return plans.map((plan) => ({
+    name: plan.package.name,
+    history: plan.history.map((commit) => commit.header),
+    type: plan.release?.type ?? null,
+  }))
+}
+
 test('returns empty plans when repository has no commits', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     using _ = vi.spyOn(context, 'cwd', 'get').mockReturnValue(cwd)
@@ -1561,7 +1569,7 @@ test('continues prerelease cycles when type is patch and allowEmpty is true', as
   })
 })
 
-test('releases only filtered packages by slicing each package history independently', async () => {
+test("releases only matching packages with history reaching back past another package's release commit", async () => {
   await temporaryDirectoryTask(async (cwd) => {
     using _ = vi.spyOn(context, 'cwd', 'get').mockReturnValue(cwd)
     workspace.entry = '.'
@@ -1617,13 +1625,7 @@ test('releases only filtered packages by slicing each package history independen
 
     expect(context.packages.map((pkg) => pkg.name)).toEqual(['bar'])
 
-    expect(
-      context.plans.map((plan) => ({
-        name: plan.package.name,
-        history: plan.history.map((commit) => commit.header),
-        type: plan.release?.type ?? null,
-      }))
-    ).toMatchInlineSnapshot(`
+    expect(summarizePlans(context.plans)).toMatchInlineSnapshot(`
       [
         {
           "history": [
@@ -1671,6 +1673,12 @@ test('releases every non-excluded package for negation-only filters', async () =
     context.packages = [
       await buildPackage({
         rootDir: context.cwd,
+        packageDir: '.',
+        workspace,
+        packageManager: 'npm',
+      }),
+      await buildPackage({
+        rootDir: context.cwd,
         packageDir: 'foo',
         workspace,
         packageManager: 'npm',
@@ -1687,16 +1695,17 @@ test('releases every non-excluded package for negation-only filters', async () =
 
     await executeReleaseWorkflow(context, [plugin()])
 
-    expect(context.packages.map((pkg) => pkg.name)).toEqual(['bar'])
+    expect(context.packages.map((pkg) => pkg.name)).toEqual([undefined, 'bar'])
 
-    expect(
-      context.plans.map((plan) => ({
-        name: plan.package.name,
-        history: plan.history.map((commit) => commit.header),
-        type: plan.release?.type ?? null,
-      }))
-    ).toMatchInlineSnapshot(`
+    expect(summarizePlans(context.plans)).toMatchInlineSnapshot(`
       [
+        {
+          "history": [
+            "chore: init pkgs",
+          ],
+          "name": undefined,
+          "type": null,
+        },
         {
           "history": [
             "feat(bar): add entry",
@@ -1820,13 +1829,7 @@ test('escalates to per-package slicing when the latest release commit was a filt
 
     await executeReleaseWorkflow(context, [plugin()])
 
-    expect(
-      context.plans.map((plan) => ({
-        name: plan.package.name,
-        history: plan.history.map((commit) => commit.header),
-        type: plan.release?.type ?? null,
-      }))
-    ).toMatchInlineSnapshot(`
+    expect(summarizePlans(context.plans)).toMatchInlineSnapshot(`
       [
         {
           "history": [],
@@ -1899,13 +1902,7 @@ test('keeps global slicing when the latest release commit was not a filtered rel
 
     await executeReleaseWorkflow(context, [plugin()])
 
-    expect(
-      context.plans.map((plan) => ({
-        name: plan.package.name,
-        history: plan.history.map((commit) => commit.header),
-        type: plan.release?.type ?? null,
-      }))
-    ).toMatchInlineSnapshot(`
+    expect(summarizePlans(context.plans)).toMatchInlineSnapshot(`
       [
         {
           "history": [],
@@ -2003,13 +2000,7 @@ test('prunes pre-seeded plans when a filter is provided', async () => {
 
     await executeReleaseWorkflow(context, [plugin()])
 
-    expect(
-      context.plans.map((plan) => ({
-        name: plan.package.name,
-        history: plan.history.map((commit) => commit.header),
-        type: plan.release?.type ?? null,
-      }))
-    ).toMatchInlineSnapshot(`
+    expect(summarizePlans(context.plans)).toMatchInlineSnapshot(`
       [
         {
           "history": [
