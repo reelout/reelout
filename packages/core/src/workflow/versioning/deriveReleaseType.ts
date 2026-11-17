@@ -12,8 +12,7 @@ import { pickPriorityReleaseType } from './pickPriorityReleaseType'
  * highest-precedence release type found by evaluating each individual commit
  * and comparing it against the current maximum via `pickPriorityReleaseType`.
  * Breaking commits resolve to `minor` while the plan's package version is
- * zero-major (`0.y.z`), since SemVer treats `0.y.z` as initial development
- * where breaking changes do not require a new major version.
+ * zero-major (`0.y.z`).
  *
  * @param classifier Function mapping commits to release types
  * @param plan Release plan carrying the commit history and package version

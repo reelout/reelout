@@ -81,7 +81,9 @@ always classify as a `major` release, regardless of the classifier: ReelOut
 detects them from a `!` after the commit type or a `BREAKING CHANGE` footer. On
 `0.x` versions a breaking change bumps `minor` instead (`0.y.z` → `0.(y+1).0`),
 matching SemVer's treatment of `0.y.z` as initial development; pass
-`--type major` to graduate to `1.0.0`.
+`--type major` to graduate to `1.0.0`. Commit types mapped to `major` by a
+custom classifier are not downgraded on `0.x`; only detected breaking changes
+are.
 
 ### `rules`
 
