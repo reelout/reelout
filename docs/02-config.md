@@ -170,25 +170,3 @@ For `--qualifier` and `--channel`, `true` uses the matching rule's value when
 one is defined. Without a rule value, `--qualifier true` creates a prerelease
 without an explicit identifier, while `--channel true` uses the sanitized
 current branch name. Pass `false` to disable only the corresponding setting.
-
-## Filtering packages
-
-`--filter` scopes a run to packages whose names match the given glob patterns.
-Patterns match package names, so a package without a name, such as the
-workspace root, is only included by patterns that match the empty string
-(for example `**`). Repeat the flag to combine patterns and prefix one with
-`!` to exclude matches; a filter made only of negations releases every
-package the patterns do not exclude:
-
-```sh
-npx reelout --filter '@scope/pkg-*' --filter '!@scope/pkg-experimental'
-```
-
-Filtered runs release only matching packages: they skip analysis, version
-bumps, changelogs, and publishing for everything else, which stays untouched
-and catches up on the next unfiltered run. History is sliced per package, back
-to its own most recent release commit, so commits made before another
-package's release are still included. Filtered release commits carry a
-`Release-Filter` trailer; the next unfiltered run detects it and switches to
-per-package slicing for all packages, restoring lockstep releases. A filter
-that matches no packages logs a warning and proceeds with an empty run.
