@@ -68,7 +68,6 @@ test('exposes the correct API contract', () => {
       "getGitTagMessage",
       "getLatestGitTag",
       "getParsedGitCommit",
-      "hasReleaseFilterTrailer",
       "interpolate",
       "isCI",
       "isClass",
