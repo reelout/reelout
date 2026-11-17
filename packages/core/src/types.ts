@@ -160,7 +160,6 @@ export interface ReleaseContext<P extends Package = Package> {
   classifier: CommitClassifier
   rules: ResolvedReleaseRule[]
   filter: string[]
-  rawFilter: string[]
   type: ReleaseTypeHint
   versionQualifier: string | undefined
   releaseChannel: string | undefined

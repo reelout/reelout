@@ -56,10 +56,8 @@ const git = (): ReleasePlugin => ({
           await generateReleaseCommitMessage(
             context.cwd,
             context.plans,
-            context.rawFilter.length > 0
-              ? {
-                  [GIT_TRAILER_RELEASE_FILTER]: context.rawFilter.join(', '),
-                }
+            context.filter.length > 0
+              ? { [GIT_TRAILER_RELEASE_FILTER]: context.filter.join(', ') }
               : {}
           )
         )

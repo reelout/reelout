@@ -186,7 +186,6 @@ test('populates context with default configuration, plugins, and metadata upon s
         },
       ],
       filter: [],
-      rawFilter: [],
       type: 'auto',
       versionQualifier: undefined,
       releaseChannel: undefined,
@@ -269,24 +268,16 @@ test('defaults filter to an empty array and normalizes filter patterns', async (
 
     await execGit(cwd, ['commit', '--allow-empty', '-m', 'Initial commit'])
 
-    expect(await createContext(options)).toMatchObject({
-      filter: [],
-      rawFilter: [],
-    })
+    expect((await createContext(options)).filter).toEqual([])
 
     expect(
-      await createContext({ ...options, filter: ['pkg-*', '!pkg-skip'] })
-    ).toMatchObject({
-      filter: ['pkg-*', '!pkg-skip'],
-      rawFilter: ['pkg-*', '!pkg-skip'],
-    })
+      (await createContext({ ...options, filter: ['pkg-*', '!pkg-skip'] }))
+        .filter
+    ).toEqual(['pkg-*', '!pkg-skip'])
 
     expect(
-      await createContext({ ...options, filter: ['!pkg-skip'] })
-    ).toMatchObject({
-      filter: ['**', '!pkg-skip'],
-      rawFilter: ['!pkg-skip'],
-    })
+      (await createContext({ ...options, filter: ['!pkg-skip'] })).filter
+    ).toEqual(['**', '!pkg-skip'])
   })
 })
 

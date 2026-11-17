@@ -1752,7 +1752,6 @@ test('warns and proceeds with an empty run when the filter matches no packages',
     ]
 
     context.filter = ['nope-*']
-    context.rawFilter = ['nope-*']
 
     await executeReleaseWorkflow(context, [plugin()])
 
@@ -1933,7 +1932,6 @@ test('warns when the filter matches no packages even if none were discovered', a
 
     context.packages = []
     context.filter = ['nope-*']
-    context.rawFilter = ['nope-*']
 
     await executeReleaseWorkflow(context, [plugin()])
 
