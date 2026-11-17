@@ -43,26 +43,6 @@ async function derivePerPackageReleases(
 }
 
 /**
- * Check whether a package name matches the given filter patterns.
- *
- * Expands negation-only filters with `**`, which also matches the empty
- * string, so packages without names are included alongside every
- * non-excluded package.
- *
- * @param name Package name to test, possibly undefined for entry packages
- * @param filter Filter patterns to match against
- * @returns True when the name matches at least one pattern
- */
-function matchesFilter(name: string | undefined, filter: string[]): boolean {
-  return isMatch(
-    name ?? '',
-    filter.some((pattern) => !pattern.startsWith('!'))
-      ? filter
-      : ['**', ...filter]
-  )
-}
-
-/**
  * Built-in plugin that inspects repository history and produces release plans for packages.
  *
  * @remarks
@@ -90,11 +70,11 @@ const analyzer = (): ReleasePlugin => ({
       const available = context.packages
 
       context.packages = available.filter((pkg) =>
-        matchesFilter(pkg.name, context.filter)
+        isMatch(pkg.name ?? '', context.filter)
       )
 
       context.plans = context.plans.filter((plan) =>
-        matchesFilter(plan.package.name, context.filter)
+        isMatch(plan.package.name ?? '', context.filter)
       )
 
       if (context.packages.length === 0) {

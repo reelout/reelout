@@ -1691,7 +1691,7 @@ test('releases every non-excluded package for negation-only filters', async () =
       }),
     ]
 
-    context.filter = ['!foo']
+    context.filter = ['**', '!foo']
 
     await executeReleaseWorkflow(context, [plugin()])
 
