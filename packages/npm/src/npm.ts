@@ -37,8 +37,7 @@ export interface PluginOptions {
  * @remarks
  * **Lifecycle Stages:**
  * - `configure`: Resolves and attaches Git repository metadata from root package configuration.
- * - `discover`: Discovers workspace member packages, filters them against the `filter` patterns, and loads package
- *   metadata into context. Warns when the filter matches no packages.
+ * - `discover`: Discovers workspace member packages, filters them against the `filter` patterns, and loads package metadata into context.
  * - `write`: Bumps internal workspace dependency versions in `package.json` files (skipped in dry-run).
  * - `publish`: Authenticates and publishes non-private packages to NPM, enabling provenance when
  *   the manifest repository is valid, matches the context repository, and is public.
@@ -77,23 +76,9 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => ({
       }
     }
 
-    const available = context.packages.concat(packages)
-
-    context.packages = sortPackages(filterPackages(available, context.filter))
-
-    if (context.filter.length > 0 && context.packages.length === 0) {
-      let message = `Filter matched no packages: "${colors.bold(
-        context.filter.join(', ')
-      )}".`
-
-      if (available.length > 0) {
-        message += ` Available packages: ${available
-          .map((pkg) => pkg.name ?? pkg.location)
-          .join(', ')}.`
-      }
-
-      context.logger.warn(colors.yellow(message))
-    }
+    context.packages = sortPackages(
+      filterPackages(context.packages.concat(packages), context.filter)
+    )
 
     return next(context)
   },
