@@ -8,8 +8,8 @@ import {
   buildReleaseNotes,
   bumpVersion,
   isSameReleaseCycle,
+  readPackageHistory,
   resolvePackageStableTag,
-  streamPackageCommits,
 } from '#workflow'
 import { colors } from 'consola/utils'
 import { version } from '../package.json'
@@ -87,7 +87,7 @@ const builder = (): ReleasePlugin => ({
                 await resolvePackageStableTag(context.cwd, plan.package)
               )?.name
 
-              const history = streamPackageCommits(context.cwd, plan.package, {
+              const history = readPackageHistory(context.cwd, plan.package, {
                 until: previousTag,
               })
 

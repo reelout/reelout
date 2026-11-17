@@ -3,7 +3,7 @@
 
 import {
   execGit,
-  streamPackageCommits,
+  readPackageHistory,
   type Package,
   type ShowGitHistoryOptions,
 } from '@reelout/core'
@@ -21,7 +21,7 @@ async function showCommits(
   plan: Package,
   options?: ShowGitHistoryOptions
 ) {
-  return (await fromAsync(streamPackageCommits(cwd, plan, options)))
+  return (await fromAsync(readPackageHistory(cwd, plan, options)))
     .toReversed()
     .map((commit) => commit.header)
 }

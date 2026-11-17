@@ -4,7 +4,7 @@
 import type { GitCommit, Package } from '#types'
 import { isReleaseCommit } from '../committing/isReleaseCommit'
 import type { SliceUnreleasedOptions } from './sliceUnreleased'
-import { streamPackageCommits } from './streamPackageCommits'
+import { readPackageHistory } from './readPackageHistory'
 
 /**
  * Yield unreleased commits from the history of a single package.
@@ -24,7 +24,7 @@ export async function* sliceUnreleasedForPackage(
   pkg: Package,
   options: SliceUnreleasedOptions = {}
 ): AsyncGenerator<GitCommit> {
-  for await (const commit of streamPackageCommits(cwd, pkg, options)) {
+  for await (const commit of readPackageHistory(cwd, pkg, options)) {
     if (await isReleaseCommit(cwd, commit, options?.marker)) {
       break
     }
