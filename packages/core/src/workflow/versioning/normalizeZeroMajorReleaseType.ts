@@ -5,7 +5,7 @@ import type { ReleaseType } from '#types'
 import semver from 'semver'
 
 /**
- * Downgrade a breaking `major` release type to `minor` on zero-major versions.
+ * Downgrade a `major` release type to `minor` on zero-major versions.
  *
  * SemVer treats `0.y.z` versions as initial development where breaking
  * changes do not require a new major version. When `version` has a major
