@@ -4,7 +4,7 @@
 import {
   collectUnreleased,
   execGit,
-  type SliceUnreleasedOptions,
+  type UnreleasedOptions,
 } from '@reelout/core'
 import { updatePackageJson, writePackageJson } from '@reelout/npm'
 import { writeFile } from 'node:fs/promises'
@@ -15,7 +15,7 @@ import { initializeGitRepository } from '../../../../../test/mock/git'
 
 async function showWindow(
   cwd: string,
-  options?: SliceUnreleasedOptions
+  options?: UnreleasedOptions
 ): Promise<{ history: string[]; stop: string | null }> {
   const window = await collectUnreleased(cwd, options)
 

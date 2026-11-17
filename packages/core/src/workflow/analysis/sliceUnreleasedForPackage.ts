@@ -3,7 +3,7 @@
 
 import type { GitCommit, Package } from '#types'
 import { isReleaseCommit } from '../committing/isReleaseCommit'
-import type { SliceUnreleasedOptions } from './collectUnreleased'
+import type { UnreleasedOptions } from './collectUnreleased'
 import { readPackageHistory } from './readPackageHistory'
 
 /**
@@ -22,7 +22,7 @@ import { readPackageHistory } from './readPackageHistory'
 export async function* sliceUnreleasedForPackage(
   cwd: string,
   pkg: Package,
-  options: SliceUnreleasedOptions = {}
+  options: UnreleasedOptions = {}
 ): AsyncGenerator<GitCommit> {
   for await (const commit of readPackageHistory(cwd, pkg, options)) {
     if (await isReleaseCommit(cwd, commit, options.marker)) {

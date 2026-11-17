@@ -5,7 +5,7 @@ import {
   execGit,
   sliceUnreleasedForPackage,
   type Package,
-  type SliceUnreleasedOptions,
+  type UnreleasedOptions,
 } from '@reelout/core'
 import { buildPackage, updatePackageJson, writePackageJson } from '@reelout/npm'
 import { fromAsync } from 'from-async'
@@ -19,7 +19,7 @@ import { initializeGitRepository } from '../../../../../test/mock/git'
 async function showCommits(
   cwd: string,
   pkg: Package,
-  options?: SliceUnreleasedOptions
+  options?: UnreleasedOptions
 ): Promise<string[]> {
   return (await fromAsync(sliceUnreleasedForPackage(cwd, pkg, options)))
     .toReversed()

@@ -6,7 +6,7 @@ import type { GitCommit } from '#types'
 import type { ReleaseMarker } from '../committing/isReleaseCommit'
 import { isReleaseCommit } from '../committing/isReleaseCommit'
 
-export interface SliceUnreleasedOptions extends ShowGitHistoryOptions {
+export interface UnreleasedOptions extends ShowGitHistoryOptions {
   marker?: ReleaseMarker | undefined
 }
 
@@ -28,7 +28,7 @@ export interface UnreleasedWindow {
  */
 export async function collectUnreleased(
   cwd: string,
-  options: SliceUnreleasedOptions = {}
+  options: UnreleasedOptions = {}
 ): Promise<UnreleasedWindow> {
   const history: GitCommit[] = []
 

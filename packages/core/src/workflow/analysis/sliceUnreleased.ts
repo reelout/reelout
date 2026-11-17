@@ -2,12 +2,9 @@
 // Copyright (c) 2026 Fai
 
 import type { GitCommit } from '#types'
-import {
-  collectUnreleased,
-  type SliceUnreleasedOptions,
-} from './collectUnreleased'
+import { collectUnreleased, type UnreleasedOptions } from './collectUnreleased'
 
-export type { SliceUnreleasedOptions }
+export type { UnreleasedOptions }
 
 /**
  * Yield parsed commits from the workspace until a release commit is found.
@@ -21,7 +18,7 @@ export type { SliceUnreleasedOptions }
  */
 export async function* sliceUnreleased(
   cwd: string,
-  options?: SliceUnreleasedOptions
+  options?: UnreleasedOptions
 ): AsyncGenerator<GitCommit> {
   const { history } = await collectUnreleased(cwd, options)
 
