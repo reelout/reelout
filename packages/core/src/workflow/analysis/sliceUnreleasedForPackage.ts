@@ -25,7 +25,7 @@ export async function* sliceUnreleasedForPackage(
   options: SliceUnreleasedOptions = {}
 ): AsyncGenerator<GitCommit> {
   for await (const commit of readPackageHistory(cwd, pkg, options)) {
-    if (await isReleaseCommit(cwd, commit, options?.marker)) {
+    if (await isReleaseCommit(cwd, commit, options.marker)) {
       break
     }
 

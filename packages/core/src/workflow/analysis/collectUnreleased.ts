@@ -33,7 +33,7 @@ export async function collectUnreleased(
   const history: GitCommit[] = []
 
   for await (const commit of showParsedGitHistory(cwd, options)) {
-    if (await isReleaseCommit(cwd, commit, options?.marker)) {
+    if (await isReleaseCommit(cwd, commit, options.marker)) {
       return { history, stop: commit }
     }
 
