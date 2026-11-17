@@ -79,7 +79,7 @@ const analyzer = (): ReleasePlugin => ({
 
       if (context.packages.length === 0) {
         let message = `Filter matched no packages: "${colors.bold(
-          context.filter.join(', ')
+          context.rawFilter.join(', ')
         )}".`
 
         if (available.length > 0) {

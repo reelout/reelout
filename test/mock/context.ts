@@ -31,6 +31,7 @@ const createMockContext = (): ReleaseContext => ({
   }),
   rules: [],
   filter: [],
+  rawFilter: [],
   type: 'auto',
   versionQualifier: undefined,
   releaseChannel: undefined,

@@ -63,7 +63,8 @@ function normalizeFilter(filter: string[] | undefined): string[] {
  * Resolves the Git repository, current commit, and branch information, then
  * computes target release parameters using the provided configuration rules
  * and runtime options. Filter patterns are normalized so negation-only
- * filters match every non-excluded package.
+ * filters match every non-excluded package; the patterns as supplied are
+ * preserved as `rawFilter`.
  *
  * @param options Combined release configuration and runtime options
  * @returns A promise that resolves to the fully initialized release context
@@ -142,6 +143,7 @@ export async function createContext(
     classifier: options.classifier,
     rules: options.rules,
     filter: normalizeFilter(options.filter),
+    rawFilter: options.filter ?? [],
     type: options.type ?? 'auto',
     versionQualifier,
     releaseChannel,

@@ -144,7 +144,7 @@ test('stamps release filter trailer when filter patterns are configured', async 
 
       context.repository = repository
 
-      context.filter = ['pkg-a', '!pkg-b']
+      context.rawFilter = ['pkg-a', '!pkg-b']
 
       context.plans = [
         {
