@@ -91,7 +91,6 @@ test('exposes the correct API contract', () => {
       "normalizeConfig",
       "normalizeReleaseRule",
       "normalizeWorkspace",
-      "normalizeZeroMajorReleaseType",
       "parseGitCommit",
       "parseGitPrettyFormat",
       "pickPriorityReleaseType",

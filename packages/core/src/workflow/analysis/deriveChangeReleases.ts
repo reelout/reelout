@@ -7,11 +7,7 @@ import type {
   ReleasePlan,
   ReleaseTypeHint,
 } from '#types'
-import {
-  deriveReleaseType,
-  normalizeZeroMajorReleaseType,
-  pickPriorityReleaseType,
-} from '../versioning'
+import { deriveReleaseType, pickPriorityReleaseType } from '../versioning'
 import { isCommitForPackage } from './isCommitForPackage'
 
 /**
@@ -52,9 +48,10 @@ export async function deriveChangeReleases(
   return plans.map((plan): ReleasePlan => {
     let { release } = plan
 
-    let releaseType = normalizeZeroMajorReleaseType(
-      plan.package.version,
-      deriveReleaseType(classifier, plan.history)
+    let releaseType = deriveReleaseType(
+      classifier,
+      plan.history,
+      plan.package.version
     )
 
     if (releaseType) {
