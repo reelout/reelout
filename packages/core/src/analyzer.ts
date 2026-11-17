@@ -1,12 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
-import type {
-  GitCommit,
-  ReleaseContext,
-  ReleasePlan,
-  ReleasePlugin,
-} from '#types'
+import type { ReleaseContext, ReleasePlan, ReleasePlugin } from '#types'
 import { isMatch } from '#util'
 import {
   collectUnreleased,
@@ -15,26 +10,27 @@ import {
   propagateDependencyUpdates,
   readReleaseFilterPatterns,
   sliceUnreleasedForPackage,
+  type UnreleasedWindow,
 } from '#workflow'
 import { colors } from 'consola/utils'
 import { version } from '../package.json'
 
 /**
- * Derive release plans by resolving history independently for every plan.
+ * Derive release plans when the latest release commit was a filtered release.
  *
- * Resolves each plan's commit history through `resolveHistory` so plans can
- * share a repository-wide window or keep their own release boundary, then
- * derives each release from its resolved history.
+ * Packages the release filter trailer released share the unreleased window it
+ * bounds, while packages it skipped slice history back to their own release
+ * boundary.
  *
  * @param context Release execution context containing runtime options
- * @param resolveHistory Resolves the commit history for a single plan
+ * @param window Unreleased window bounded by the filtered release commit
+ * @param patterns Filter patterns carried by the release filter trailer
  * @returns Release plans updated with per-package histories and release types
  */
-async function deriveSlicedReleases(
+async function deriveFilteredWindowReleases(
   context: ReleaseContext,
-  resolveHistory: (
-    plan: ReleasePlan
-  ) => Iterable<GitCommit> | AsyncIterable<GitCommit>
+  window: UnreleasedWindow,
+  patterns: string[]
 ): Promise<ReleasePlan[]> {
   const plans: ReleasePlan[] = []
 
@@ -44,7 +40,9 @@ async function deriveSlicedReleases(
         context.type,
         context.classifier,
         [plan],
-        resolveHistory(plan)
+        isMatch(plan.package.name ?? '', patterns)
+          ? window.history
+          : sliceUnreleasedForPackage(context.cwd, plan.package)
       ))
     )
   }
@@ -57,17 +55,17 @@ async function deriveSlicedReleases(
  *
  * @remarks
  * **Lifecycle Stages:**
- * - `analyze`: Initializes release plans if empty, prunes packages and plans
- *   against the `filter` patterns when provided, extracts unreleased Git
+ * - `analyze`: Initializes release plans if empty, prunes plans against the
+ *   `filter` patterns when provided, extracts unreleased Git
  *   commit history, calculates package version bumps based on commit
  *   classifications, handles transition releases for empty changesets (if
  *   enabled), and propagates dependency updates across internal packages.
  *
- *   History slicing depends on the run scope: filtered runs slice history per
- *   package from its own latest release commit. Unfiltered runs read history
- *   up to the latest repository-wide release commit, share that window with
- *   the packages its release filter trailer released, and slice history
- *   independently for the packages it skipped.
+ *   History slicing starts at the latest repository-wide release commit: when
+ *   it carries no release filter trailer it bounds every package and all
+ *   plans share its unreleased window; when it carries one, the packages its
+ *   filter released share the window while the packages it skipped slice
+ *   history back to their own release boundary.
  *
  * @returns A release plugin configured for package change analysis.
  */
@@ -83,54 +81,40 @@ const analyzer = (): ReleasePlugin => ({
       }))
     }
 
-    const hasFilter = context.filter.length > 0
+    if (context.filter.length > 0) {
+      const available = context.plans
 
-    if (hasFilter) {
-      const available = context.packages
-
-      context.packages = available.filter((pkg) =>
-        isMatch(pkg.name ?? '', context.filter)
-      )
-
-      context.plans = context.plans.filter((plan) =>
+      context.plans = available.filter((plan) =>
         isMatch(plan.package.name ?? '', context.filter)
       )
 
-      if (context.packages.length === 0) {
+      if (context.plans.length === 0) {
         let message = `Filter matched no packages: "${colors.bold(
           context.filter.join(', ')
         )}".`
 
         if (available.length > 0) {
           message += ` Available packages: ${available
-            .map((pkg) => pkg.name ?? pkg.location)
+            .map((plan) => plan.package.name ?? plan.package.location)
             .join(', ')}.`
         }
 
         context.logger.warn(colors.yellow(message))
       }
-
-      context.plans = await deriveSlicedReleases(context, (plan) =>
-        sliceUnreleasedForPackage(context.cwd, plan.package)
-      )
-    } else {
-      const window = await collectUnreleased(context.cwd)
-      const patterns = readReleaseFilterPatterns(window.stop)
-
-      context.plans =
-        patterns === null
-          ? await deriveChangeReleases(
-              context.type,
-              context.classifier,
-              context.plans,
-              window.history
-            )
-          : await deriveSlicedReleases(context, (plan) =>
-              isMatch(plan.package.name ?? '', patterns)
-                ? window.history
-                : sliceUnreleasedForPackage(context.cwd, plan.package)
-            )
     }
+
+    const window = await collectUnreleased(context.cwd)
+    const patterns = readReleaseFilterPatterns(window.stop)
+
+    context.plans =
+      patterns === null
+        ? await deriveChangeReleases(
+            context.type,
+            context.classifier,
+            context.plans,
+            window.history
+          )
+        : await deriveFilteredWindowReleases(context, window, patterns)
 
     if (context.allowEmpty) {
       context.plans = deriveTransitionReleases(

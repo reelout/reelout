@@ -1569,7 +1569,7 @@ test('continues prerelease cycles when type is patch and allowEmpty is true', as
   })
 })
 
-test("releases only matching packages with history reaching back past another package's release commit", async () => {
+test('releases only matching packages from the window since the latest release commit', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     using _ = vi.spyOn(context, 'cwd', 'get').mockReturnValue(cwd)
     workspace.entry = '.'
@@ -1623,18 +1623,16 @@ test("releases only matching packages with history reaching back past another pa
 
     await executeReleaseWorkflow(context, [plugin()])
 
-    expect(context.packages.map((pkg) => pkg.name)).toEqual(['bar'])
+    expect(context.packages.map((pkg) => pkg.name)).toEqual(['foo', 'bar'])
 
     expect(summarizePlans(context.plans)).toMatchInlineSnapshot(`
       [
         {
           "history": [
             "fix(bar): update entry",
-            "feat(bar): add entry",
-            "chore: init pkgs",
           ],
           "name": "bar",
-          "type": "minor",
+          "type": "patch",
         },
       ]
     `)
@@ -1695,7 +1693,11 @@ test('releases every named non-excluded package for negation-only filters', asyn
 
     await executeReleaseWorkflow(context, [plugin()])
 
-    expect(context.packages.map((pkg) => pkg.name)).toEqual(['bar'])
+    expect(context.packages.map((pkg) => pkg.name ?? '')).toEqual([
+      '',
+      'foo',
+      'bar',
+    ])
 
     expect(summarizePlans(context.plans)).toMatchInlineSnapshot(`
       [
