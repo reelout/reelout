@@ -5,7 +5,6 @@ import {
   formatError,
   normalizeWorkspace,
   sortPackages,
-  type GitRepository,
   type Package,
   type ReleasePlugin,
   type Workspace,
@@ -15,6 +14,7 @@ import * as gitlab from '@reelout/gitlab'
 import { colors } from 'consola/utils'
 import { version } from '../package.json'
 import { bumpPackageDependencies } from './bumpPackageDependencies'
+import { isSameRepository } from './isSameRepository'
 import { loadPackages } from './loadPackages'
 import { publishPackage } from './publishPackage'
 import { resolveGitRepositoryFromPackage } from './resolveGitRepositoryFromPackage'
@@ -22,17 +22,6 @@ import { resolveWorkspaceMembers } from './resolveWorkspaceMembers'
 import type { PublishAccess } from './types'
 
 export const PLUGIN_NAME = '@reelout/npm'
-
-/**
- * Check whether two Git repositories point to the same project.
- *
- * @param a First repository
- * @param b Second repository
- * @returns `true` when host, owner, and repository name are identical
- */
-function isSameRepository(a: GitRepository, b: GitRepository): boolean {
-  return a.host === b.host && a.owner === b.owner && a.repo === b.repo
-}
 
 export interface PluginOptions {
   workspace?: Partial<Workspace>
