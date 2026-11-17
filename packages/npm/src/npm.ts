@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Fai
 
 import {
+  filterPackages,
   formatError,
   normalizeWorkspace,
   sortPackages,
@@ -36,7 +37,7 @@ export interface PluginOptions {
  * @remarks
  * **Lifecycle Stages:**
  * - `configure`: Resolves and attaches Git repository metadata from root package configuration.
- * - `discover`: Discovers workspace member packages and loads package metadata into context.
+ * - `discover`: Discovers workspace member packages, filters them against the `filter` patterns, and loads package metadata into context.
  * - `write`: Bumps internal workspace dependency versions in `package.json` files (skipped in dry-run).
  * - `publish`: Authenticates and publishes non-private packages to NPM, enabling provenance when
  *   the manifest repository is valid, matches the context repository, and is public.
@@ -75,7 +76,9 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => ({
       }
     }
 
-    context.packages = sortPackages(context.packages.concat(packages))
+    context.packages = sortPackages(
+      filterPackages(context.packages.concat(packages), context.filter)
+    )
 
     return next(context)
   },

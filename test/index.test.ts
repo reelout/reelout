@@ -54,6 +54,7 @@ test('exposes the correct API contract', () => {
       "extractPreviousVersion",
       "extractSemVer",
       "extractVersionQualifier",
+      "filterPackages",
       "findReleaseRule",
       "formatError",
       "formatFile",

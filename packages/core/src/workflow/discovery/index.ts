@@ -3,6 +3,7 @@
 
 export * from './buildDependencyGraph'
 export * from './discoverPackageTag'
+export * from './filterPackages'
 export * from './resolvePackageStableTag'
 export * from './resolvePackageTag'
 export * from './sortPackages'
