@@ -13,9 +13,9 @@ import { readPackageHistory } from './readPackageHistory'
  *
  * Streams commits that touch the package files in historical order and stops
  * at the first release commit that released the package. Release commits
- * created by filtered runs that excluded the package are skipped, so every
- * package keeps its own release boundary instead of sharing the latest
- * repository-wide release commit.
+ * created by filtered runs that excluded the package are themselves yielded
+ * as unreleased changes, so every package keeps its own release boundary
+ * instead of sharing the latest repository-wide release commit.
  *
  * @param cwd Path to the working directory for git commands
  * @param pkg Package whose files scope the commit history
@@ -34,8 +34,6 @@ export async function* sliceUnreleasedForPackage(
       if (patterns === null || isMatch(pkg.name ?? '', patterns)) {
         break
       }
-
-      continue
     }
 
     yield commit

@@ -137,7 +137,7 @@ test('stops at the package release boundary while ignoring foreign release commi
   })
 })
 
-test('skips filtered release commits that excluded the package and keeps walking', async () => {
+test('yields filtered release commits that excluded the package as unreleased changes', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     await initializeGitRepository(cwd)
 
@@ -188,6 +188,7 @@ test('skips filtered release commits that excluded the package and keeps walking
       [
         "chore: initialize packages",
         "feat(pkg1): add entry",
+        "chore: release pkg2",
         "fix(pkg1): update entry",
       ]
     `)
