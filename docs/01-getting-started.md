@@ -61,7 +61,9 @@ Running without `--dry-run` performs the release. With the default plugins, Reel
 
 1. **Analyze** commits since each package's last tag. Breaking changes trigger a
    `major` bump, `feat` triggers `minor`, and `fix`, `perf`, or `revert` triggers
-   `patch` (see [Configuration](./02-config.md#classifier)).
+   `patch` (see [Configuration](./02-config.md#classifier)). On `0.x` versions a
+   breaking change bumps `minor` instead, since SemVer treats `0.y.z` as
+   initial development.
 2. **Build** new versions, tag names (`v<version>` for the workspace root and
    `<name>@<version>` for workspace packages), and release notes.
 3. **Write** changelogs, update package versions and internal dependency ranges,

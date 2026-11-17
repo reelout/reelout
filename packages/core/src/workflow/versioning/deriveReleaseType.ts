@@ -1,31 +1,33 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
-import type { CommitClassifier, GitCommit, ReleaseType } from '#types'
+import type { CommitClassifier, ReleasePlan, ReleaseType } from '#types'
 import { determineReleaseType } from './determineReleaseType'
 import { pickPriorityReleaseType } from './pickPriorityReleaseType'
 
 /**
- * Derive the combined release type from a commit history collection.
+ * Derive the combined release type from a release plan.
  *
- * Processes commits sequentially, accumulating the highest-precedence release
- * type found by evaluating each individual commit and comparing it against the
- * current maximum via `pickPriorityReleaseType`.
+ * Processes the plan's commits sequentially, accumulating the
+ * highest-precedence release type found by evaluating each individual commit
+ * and comparing it against the current maximum via `pickPriorityReleaseType`.
+ * Breaking commits resolve to `minor` while the plan's package version is
+ * zero-major (`0.y.z`).
  *
  * @param classifier Function mapping commits to release types
- * @param history Array of parsed commits to evaluate
+ * @param plan Release plan carrying the commit history and package version
  * @returns `ReleaseType` string, or `null` when no matching rule applies
  */
 export function deriveReleaseType(
   classifier: CommitClassifier,
-  history: readonly GitCommit[]
+  plan: Pick<ReleasePlan, 'history' | 'package'>
 ): ReleaseType | null {
   let releaseType: ReleaseType | null = null
 
-  for (const commit of history) {
+  for (const commit of plan.history) {
     releaseType = pickPriorityReleaseType(
       releaseType,
-      determineReleaseType(classifier, commit)
+      determineReleaseType(classifier, commit, plan.package.version)
     )
   }
 

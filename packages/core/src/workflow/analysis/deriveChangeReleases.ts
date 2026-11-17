@@ -16,7 +16,9 @@ import { isCommitForPackage } from './isCommitForPackage'
  * Maps commit `history` across package release `plans` to associate matching
  * commits with their target packages. Calculates the release type for each
  * plan based on classified `history` and applies overrides according to the
- * provided `hint` or existing release priority.
+ * provided `hint` or existing release priority. Downgrades breaking-change
+ * `major` release types to `minor` while the package version is zero-major
+ * (`0.y.z`).
  *
  * @param hint Release type override hint or default preference
  * @param classifier Classifier function to determine commit release types
@@ -46,7 +48,7 @@ export async function deriveChangeReleases(
   return plans.map((plan): ReleasePlan => {
     let { release } = plan
 
-    let releaseType = deriveReleaseType(classifier, plan.history)
+    let releaseType = deriveReleaseType(classifier, plan)
 
     if (releaseType) {
       switch (hint) {
