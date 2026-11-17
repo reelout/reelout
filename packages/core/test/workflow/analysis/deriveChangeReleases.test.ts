@@ -384,6 +384,52 @@ test('keeps explicit major hint on zero-major package versions', async () => {
   expect(result[0]?.release?.type).toBe('major')
 })
 
+test('keeps minor release type for feat commits on zero-major versions', async () => {
+  const plans = [
+    {
+      package: { files: 'packages/foo/**/*', version: '0.3.0' },
+      history: [] as GitCommit[],
+      release: null,
+    },
+  ] as ReleasePlan[]
+
+  const history = [
+    {
+      hash: 'c1',
+      type: 'feat',
+      notes: [],
+      files: ['packages/foo/src/index.ts'],
+    },
+  ] as Partial<GitCommit>[] as GitCommit[]
+
+  const result = await deriveChangeReleases('auto', classifier, plans, history)
+
+  expect(result[0]?.release?.type).toBe('minor')
+})
+
+test('keeps patch release type for fix commits on zero-major versions', async () => {
+  const plans = [
+    {
+      package: { files: 'packages/foo/**/*', version: '0.3.0' },
+      history: [] as GitCommit[],
+      release: null,
+    },
+  ] as ReleasePlan[]
+
+  const history = [
+    {
+      hash: 'c1',
+      type: 'fix',
+      notes: [],
+      files: ['packages/foo/src/index.ts'],
+    },
+  ] as Partial<GitCommit>[] as GitCommit[]
+
+  const result = await deriveChangeReleases('auto', classifier, plans, history)
+
+  expect(result[0]?.release?.type).toBe('patch')
+})
+
 test('returns null release type when commit history is empty', async () => {
   const plans = [
     {

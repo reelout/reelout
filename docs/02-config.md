@@ -77,9 +77,9 @@ classifier: {
 ```
 
 You can change the mapping or provide a classifier function. Breaking changes
-always trigger a `major` release, regardless of the classifier: ReelOut detects
-them from a `!` after the commit type or a `BREAKING CHANGE` footer. On `0.x`
-versions the `major` bump becomes a `minor` bump (`0.y.z` → `0.(y+1).0`),
+always classify as a `major` release, regardless of the classifier: ReelOut
+detects them from a `!` after the commit type or a `BREAKING CHANGE` footer. On
+`0.x` versions a breaking change bumps `minor` instead (`0.y.z` → `0.(y+1).0`),
 matching SemVer's treatment of `0.y.z` as initial development; pass
 `--type major` to graduate to `1.0.0`.
 
