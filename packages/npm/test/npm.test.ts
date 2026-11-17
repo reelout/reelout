@@ -316,6 +316,35 @@ test('filters discovered packages against the context filter patterns', async ()
   expect(context.packages.map((pkg) => pkg.name)).toEqual(['bar'])
 })
 
+test('keeps every named non-excluded package for negation-only filters', async () => {
+  workspace.entry = '.'
+  workspace.members = ['packages/*']
+
+  vol.fromJSON({
+    '/repo/packages/foo/package.json': JSON.stringify({
+      name: 'foo',
+      version: '1.0.0',
+      dependencies: {},
+    }),
+    '/repo/packages/bar/package.json': JSON.stringify({
+      name: 'bar',
+      version: '1.0.0',
+      dependencies: {},
+    }),
+    '/repo/pnpm-workspace.yaml': 'packages:\n  - packages/*',
+    '/repo/package.json': JSON.stringify({
+      version: '0.0.0',
+      dependencies: {},
+    }),
+  })
+
+  context.filter = ['!foo']
+
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(context.packages.map((pkg) => pkg.name)).toEqual(['bar'])
+})
+
 test('updates dependency versions in package manifests when release plans are present', async () => {
   const cwd = '/repo'
   workspace.entry = '.'

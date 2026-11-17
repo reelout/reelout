@@ -8,6 +8,9 @@ test('returns false when target or pattern array is empty', () => {
   expect(isMatch('main', [])).toBe(false)
   expect(isMatch('', [])).toBe(false)
   expect(isMatch('', 'main')).toBe(false)
+  expect(isMatch('', '*')).toBe(false)
+  expect(isMatch('', '**/*')).toBe(false)
+  expect(isMatch('', 'foo*')).toBe(false)
 })
 
 test('accepts both a single string pattern and an array of patterns', () => {
@@ -65,6 +68,8 @@ test('matches every named non-excluded target for negation-only patterns (**/*)'
   expect(isMatch('release/20260101', ['!main'])).toBe(true)
 
   expect(isMatch('', ['!main'])).toBe(false)
+  expect(isMatch('', '**')).toBe(true)
+  expect(isMatch('', ['**', '!main'])).toBe(true)
 })
 
 test('filters positive matches when matching negative patterns are present', () => {
