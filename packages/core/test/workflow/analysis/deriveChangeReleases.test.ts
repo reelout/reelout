@@ -15,6 +15,27 @@ const classifier = normalizeCommitFilter({
   patch: ['fix'],
 })
 
+function createPlans(version: string): ReleasePlan[] {
+  return [
+    {
+      package: { files: 'packages/foo/**/*', version },
+      history: [] as GitCommit[],
+      release: null,
+    },
+  ] as ReleasePlan[]
+}
+
+function createHistory(type: string, notes: GitCommitNote[]): GitCommit[] {
+  return [
+    {
+      hash: 'c1',
+      type,
+      notes,
+      files: ['packages/foo/src/index.ts'],
+    },
+  ] as Partial<GitCommit>[] as GitCommit[]
+}
+
 test('associates commits with target packages and calculates release types when release hint is auto', async () => {
   const plans = [
     {
@@ -316,22 +337,11 @@ test('falls back to calculated release type when release hint is unrecognized', 
 })
 
 test('downgrades breaking change to minor while package version is zero-major', async () => {
-  const plans = [
-    {
-      package: { files: 'packages/foo/**/*', version: '0.3.0' },
-      history: [] as GitCommit[],
-      release: null,
-    },
-  ] as ReleasePlan[]
+  const plans = createPlans('0.3.0')
 
-  const history = [
-    {
-      hash: 'c1',
-      type: 'refactor',
-      notes: [{ title: 'BREAKING CHANGE', text: 'Dropped legacy adapters.' }],
-      files: ['packages/foo/src/index.ts'],
-    },
-  ] as Partial<GitCommit>[] as GitCommit[]
+  const history = createHistory('refactor', [
+    { title: 'BREAKING CHANGE', text: 'Dropped legacy adapters.' },
+  ])
 
   const result = await deriveChangeReleases('auto', classifier, plans, history)
 
@@ -339,22 +349,11 @@ test('downgrades breaking change to minor while package version is zero-major', 
 })
 
 test('keeps major for breaking change when package version is at or above 1.0.0', async () => {
-  const plans = [
-    {
-      package: { files: 'packages/foo/**/*', version: '1.2.3' },
-      history: [] as GitCommit[],
-      release: null,
-    },
-  ] as ReleasePlan[]
+  const plans = createPlans('1.2.3')
 
-  const history = [
-    {
-      hash: 'c1',
-      type: 'refactor',
-      notes: [{ title: 'BREAKING CHANGE', text: 'Dropped legacy adapters.' }],
-      files: ['packages/foo/src/index.ts'],
-    },
-  ] as Partial<GitCommit>[] as GitCommit[]
+  const history = createHistory('refactor', [
+    { title: 'BREAKING CHANGE', text: 'Dropped legacy adapters.' },
+  ])
 
   const result = await deriveChangeReleases('auto', classifier, plans, history)
 
@@ -362,22 +361,11 @@ test('keeps major for breaking change when package version is at or above 1.0.0'
 })
 
 test('keeps explicit major hint on zero-major package versions', async () => {
-  const plans = [
-    {
-      package: { files: 'packages/foo/**/*', version: '0.3.0' },
-      history: [] as GitCommit[],
-      release: null,
-    },
-  ] as ReleasePlan[]
+  const plans = createPlans('0.3.0')
 
-  const history = [
-    {
-      hash: 'c1',
-      type: 'refactor',
-      notes: [{ title: 'BREAKING CHANGE', text: 'Dropped legacy adapters.' }],
-      files: ['packages/foo/src/index.ts'],
-    },
-  ] as Partial<GitCommit>[] as GitCommit[]
+  const history = createHistory('refactor', [
+    { title: 'BREAKING CHANGE', text: 'Dropped legacy adapters.' },
+  ])
 
   const result = await deriveChangeReleases('major', classifier, plans, history)
 
@@ -385,22 +373,9 @@ test('keeps explicit major hint on zero-major package versions', async () => {
 })
 
 test('keeps minor release type for feat commits on zero-major versions', async () => {
-  const plans = [
-    {
-      package: { files: 'packages/foo/**/*', version: '0.3.0' },
-      history: [] as GitCommit[],
-      release: null,
-    },
-  ] as ReleasePlan[]
+  const plans = createPlans('0.3.0')
 
-  const history = [
-    {
-      hash: 'c1',
-      type: 'feat',
-      notes: [],
-      files: ['packages/foo/src/index.ts'],
-    },
-  ] as Partial<GitCommit>[] as GitCommit[]
+  const history = createHistory('feat', [])
 
   const result = await deriveChangeReleases('auto', classifier, plans, history)
 
@@ -408,22 +383,9 @@ test('keeps minor release type for feat commits on zero-major versions', async (
 })
 
 test('keeps patch release type for fix commits on zero-major versions', async () => {
-  const plans = [
-    {
-      package: { files: 'packages/foo/**/*', version: '0.3.0' },
-      history: [] as GitCommit[],
-      release: null,
-    },
-  ] as ReleasePlan[]
+  const plans = createPlans('0.3.0')
 
-  const history = [
-    {
-      hash: 'c1',
-      type: 'fix',
-      notes: [],
-      files: ['packages/foo/src/index.ts'],
-    },
-  ] as Partial<GitCommit>[] as GitCommit[]
+  const history = createHistory('fix', [])
 
   const result = await deriveChangeReleases('auto', classifier, plans, history)
 
