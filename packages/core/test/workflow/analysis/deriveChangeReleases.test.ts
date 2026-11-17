@@ -348,7 +348,7 @@ test('downgrades breaking change to minor while package version is zero-major', 
   expect(result[0]?.release?.type).toBe('minor')
 })
 
-test('keeps major for breaking change when package version is at or above 1.0.0', async () => {
+test('keeps major for breaking change when package version has a non-zero major', async () => {
   const plans = createPlans('1.2.3')
 
   const history = createHistory('refactor', [
