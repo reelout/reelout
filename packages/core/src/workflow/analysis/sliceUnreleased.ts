@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
-import type { ShowGitHistoryOptions } from '#git'
 import type { GitCommit } from '#types'
-import type { ReleaseMarker } from '../committing/isReleaseCommit'
-import { collectUnreleased } from './collectUnreleased'
+import {
+  collectUnreleased,
+  type SliceUnreleasedOptions,
+} from './collectUnreleased'
 
-export interface SliceUnreleasedOptions extends ShowGitHistoryOptions {
-  marker?: ReleaseMarker | undefined
-}
+export type { SliceUnreleasedOptions }
 
 /**
  * Yield parsed commits from the workspace until a release commit is found.

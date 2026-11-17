@@ -3,7 +3,7 @@
 
 import type { GitCommit, Package } from '#types'
 import { isReleaseCommit } from '../committing/isReleaseCommit'
-import type { SliceUnreleasedOptions } from './sliceUnreleased'
+import type { SliceUnreleasedOptions } from './collectUnreleased'
 import { readPackageHistory } from './readPackageHistory'
 
 /**

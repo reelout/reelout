@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
-import { showParsedGitHistory } from '#git'
+import { showParsedGitHistory, type ShowGitHistoryOptions } from '#git'
 import type { GitCommit } from '#types'
+import type { ReleaseMarker } from '../committing/isReleaseCommit'
 import { isReleaseCommit } from '../committing/isReleaseCommit'
-import type { SliceUnreleasedOptions } from './sliceUnreleased'
+
+export interface SliceUnreleasedOptions extends ShowGitHistoryOptions {
+  marker?: ReleaseMarker | undefined
+}
 
 export interface UnreleasedWindow {
   history: GitCommit[]
