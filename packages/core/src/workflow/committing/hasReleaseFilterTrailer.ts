@@ -6,7 +6,7 @@ import { getParsedGitCommit } from '#git'
 import type { GitCommit } from '#types'
 
 /**
- * Determine whether a commit is a filtered release commit.
+ * Determine whether a commit carries a release filter trailer.
  *
  * Fetches the commit with the release filter trailer parsed and checks
  * whether the trailer is present. Detects release commits created
@@ -16,7 +16,7 @@ import type { GitCommit } from '#types'
  * @param commit Commit object, hash string, or nullish value
  * @returns `true` if the commit carries a release filter trailer
  */
-export async function isFilteredReleaseCommit(
+export async function hasReleaseFilterTrailer(
   cwd: string,
   commit: GitCommit | string | null | undefined
 ): Promise<boolean> {

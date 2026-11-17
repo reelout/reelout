@@ -7,7 +7,7 @@ import {
   collectUnreleased,
   deriveChangeReleases,
   deriveTransitionReleases,
-  isFilteredReleaseCommit,
+  hasReleaseFilterTrailer,
   propagateDependencyUpdates,
   sliceUnreleasedForPackage,
 } from '#workflow'
@@ -125,7 +125,7 @@ const analyzer = (): ReleasePlugin => ({
     } else {
       const window = await collectUnreleased(context.cwd)
 
-      if (await isFilteredReleaseCommit(context.cwd, window.stop)) {
+      if (await hasReleaseFilterTrailer(context.cwd, window.stop)) {
         context.plans = await derivePerPackageReleases(context)
       } else {
         context.plans = await deriveChangeReleases(
