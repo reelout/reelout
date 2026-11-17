@@ -2,7 +2,6 @@
 // Copyright (c) 2026 Fai
 
 import { minimatch } from 'minimatch'
-import { normalizeFilter } from './normalizeFilter'
 
 /**
  * Determine whether a target string matches glob patterns.
@@ -20,10 +19,18 @@ export function isMatch(
   target: string,
   patterns: string | readonly string[]
 ): boolean {
+  const patternsList = typeof patterns === 'string' ? [patterns] : patterns
+
+  const normalized =
+    patternsList.length === 0 ||
+    patternsList.some((pattern) => !pattern.startsWith('!'))
+      ? patternsList
+      : ['**', ...patternsList]
+
   const positives: string[] = []
   const negatives: string[] = []
 
-  for (const pattern of normalizeFilter(patterns)) {
+  for (const pattern of normalized) {
     if (pattern.startsWith('!')) {
       negatives.push(pattern)
     } else {

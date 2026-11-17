@@ -92,7 +92,6 @@ test('exposes the correct API contract', () => {
       "mergeGitHistory",
       "normalizeCommitFilter",
       "normalizeConfig",
-      "normalizeFilter",
       "normalizeReleaseRule",
       "normalizeWorkspace",
       "parseGitCommit",
