@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
-import { readReleaseFilterPatterns } from '@reelout/core'
+import {
+  formatReleaseFilterPatterns,
+  readReleaseFilterPatterns,
+} from '@reelout/core'
 import { expect, test } from 'vitest'
 import { createMockCommit } from '../../../../../test/mock/git'
 
@@ -41,6 +44,32 @@ test('splits comma-separated patterns and trims whitespace', async () => {
       )
     )
   ).toEqual(['pkg-a', '!pkg-b', '@scope/pkg-*'])
+})
+
+test('unescapes commas within escaped filter patterns', async () => {
+  expect(
+    readReleaseFilterPatterns(
+      await createMockCommit(
+        'a1b2c3d',
+        'chore: release pkg-a',
+        'Release-Filter: @scope/{cli\\,git}, !pkg-b'
+      )
+    )
+  ).toEqual(['@scope/{cli,git}', '!pkg-b'])
+})
+
+test('round-trips filter patterns through the trailer format', async () => {
+  const patterns = ['@scope/{cli,git}', '!@scope/internal', 'pkg-*']
+
+  expect(
+    readReleaseFilterPatterns(
+      await createMockCommit(
+        'a1b2c3d',
+        'chore: release pkg-a',
+        `Release-Filter: ${formatReleaseFilterPatterns(patterns)}`
+      )
+    )
+  ).toEqual(patterns)
 })
 
 test('returns an empty list when the release filter trailer has an empty value', async () => {

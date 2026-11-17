@@ -58,6 +58,7 @@ test('exposes the correct API contract', () => {
       "findReleaseRule",
       "formatError",
       "formatFile",
+      "formatReleaseFilterPatterns",
       "generateGitTagName",
       "generateReleaseCommitMessage",
       "generateReleaseReport",

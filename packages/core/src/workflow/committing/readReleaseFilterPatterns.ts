@@ -8,9 +8,9 @@ import type { GitCommit } from '#types'
  * Read release filter patterns from a parsed commit.
  *
  * Collects the release filter trailer values and splits them into individual
- * comma-separated filter patterns. Returns `null` when the commit carries no
- * release filter trailer, so callers can treat it as a release of every
- * package.
+ * comma-separated filter patterns, unescaping the commas within patterns.
+ * Returns `null` when the commit carries no release filter trailer, so
+ * callers can treat it as a release of every package.
  *
  * @param commit Parsed commit object or nullish value
  * @returns Filter patterns carried by the trailer, or `null` when absent
@@ -31,7 +31,8 @@ export function readReleaseFilterPatterns(
   }
 
   return values
-    .flatMap((value) => value.split(','))
+    .flatMap((value) => value.split(/(?<!\\),/))
     .map((pattern) => pattern.trim())
+    .map((pattern) => pattern.replaceAll('\\,', ','))
     .filter((pattern) => pattern.length > 0)
 }
