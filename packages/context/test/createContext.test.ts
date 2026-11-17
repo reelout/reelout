@@ -260,7 +260,7 @@ test('sets dryRun to true when dryRun option is enabled', async () => {
   })
 })
 
-test('defaults filter to an empty array and normalizes filter patterns', async () => {
+test('defaults filter to an empty array and passes filter patterns through', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     options.cwd = cwd
 
@@ -274,10 +274,6 @@ test('defaults filter to an empty array and normalizes filter patterns', async (
       (await createContext({ ...options, filter: ['pkg-*', '!pkg-skip'] }))
         .filter
     ).toEqual(['pkg-*', '!pkg-skip'])
-
-    expect(
-      (await createContext({ ...options, filter: ['!pkg-skip'] })).filter
-    ).toEqual(['**', '!pkg-skip'])
   })
 })
 

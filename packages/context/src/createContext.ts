@@ -38,32 +38,11 @@ export interface CreateContextOptions extends Omit<
 }
 
 /**
- * Normalize filter patterns for package matching.
- *
- * Expands negation-only filters with `**`, which also matches the empty
- * string, so packages without names are included alongside every
- * non-excluded package.
- *
- * @param filter Filter patterns to normalize
- * @returns Normalized filter patterns
- */
-function normalizeFilter(filter: string[] | undefined): string[] {
-  if (filter == null || filter.length === 0) {
-    return []
-  }
-
-  return filter.some((pattern) => !pattern.startsWith('!'))
-    ? filter
-    : ['**', ...filter]
-}
-
-/**
  * Initialize a release context for the current execution run.
  *
  * Resolves the Git repository, current commit, and branch information, then
  * computes target release parameters using the provided configuration rules
- * and runtime options. Filter patterns are normalized so negation-only
- * filters match every non-excluded package.
+ * and runtime options.
  *
  * @param options Combined release configuration and runtime options
  * @returns A promise that resolves to the fully initialized release context
@@ -141,7 +120,7 @@ export async function createContext(
     author: options.author,
     classifier: options.classifier,
     rules: options.rules,
-    filter: normalizeFilter(options.filter),
+    filter: options.filter ?? [],
     type: options.type ?? 'auto',
     versionQualifier,
     releaseChannel,
