@@ -167,6 +167,39 @@ test('filters commits by custom file path', async () => {
   })
 })
 
+test('includes commits touching extra files from package file patterns', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    await initializeGitRepository(cwd)
+
+    const pkgDir1 = path.join(cwd, 'pkg1')
+
+    await writePackageJson(pkgDir1, { name: 'pkg1', version: '1.0.0' })
+    await execGit(cwd, ['add', '.'])
+    await execGit(cwd, ['commit', '-m', 'chore: initialize package'])
+
+    await writeFile(
+      path.join(cwd, 'pnpm-workspace.yaml'),
+      'packages:\n  - pkg1'
+    )
+    await execGit(cwd, ['add', '.'])
+    await execGit(cwd, ['commit', '-m', 'fix(deps): bump catalog versions'])
+
+    const pkg = await buildPackage({
+      rootDir: cwd,
+      packageDir: 'pkg1',
+      workspace,
+      packageManager: 'pnpm',
+    })
+
+    expect(await showCommits(cwd, pkg)).toMatchInlineSnapshot(`
+      [
+        "chore: initialize package",
+        "fix(deps): bump catalog versions",
+      ]
+    `)
+  })
+})
+
 test('stops yielding commits at specified revision tag', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     await initializeGitRepository(cwd)

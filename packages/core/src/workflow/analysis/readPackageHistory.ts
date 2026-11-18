@@ -5,11 +5,16 @@ import { showParsedGitHistory, type ShowGitHistoryOptions } from '#git'
 import type { GitCommit, Package } from '#types'
 import { isCommitForPackage } from './isCommitForPackage'
 
+const GLOB_MAGIC = /[*?[\]{}!+@]/
+
 /**
  * Yield commits from git history associated with a package.
  *
  * Filters git commit history to yield only entries relevant to the target
- * `pkg` directory.
+ * `pkg` directory. When the package file pattern is a list, plain file
+ * entries are added to the git path filter alongside the package directory,
+ * so commits touching extra package files (for example the pnpm workspace
+ * manifest) are included.
  *
  * @param cwd Path to the working directory for git commands
  * @param pkg Package configuration containing the target directory
@@ -23,7 +28,11 @@ export async function* readPackageHistory(
 ): AsyncGenerator<GitCommit> {
   options = {
     ...options,
-    filePath: options.filePath || pkg.location,
+    filePath:
+      options.filePath ||
+      (Array.isArray(pkg.files)
+        ? [pkg.location, ...pkg.files.filter((file) => !GLOB_MAGIC.test(file))]
+        : pkg.location),
   }
 
   for await (const commit of showParsedGitHistory(cwd, options)) {
