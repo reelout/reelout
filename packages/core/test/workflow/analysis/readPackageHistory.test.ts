@@ -5,7 +5,7 @@ import {
   execGit,
   readPackageHistory,
   type Package,
-  type ShowGitHistoryOptions,
+  type ReadGitHistoryOptions,
 } from '@reelout/core'
 import { buildPackage, writePackageJson } from '@reelout/npm'
 import { fromAsync } from 'from-async'
@@ -16,10 +16,10 @@ import { beforeEach, expect, test } from 'vitest'
 import { workspace } from '../../../../../test/mock/context'
 import { initializeGitRepository } from '../../../../../test/mock/git'
 
-async function showCommits(
+async function readCommits(
   cwd: string,
   plan: Package,
-  options?: ShowGitHistoryOptions
+  options?: ReadGitHistoryOptions
 ) {
   return (await fromAsync(readPackageHistory(cwd, plan, options)))
     .toReversed()
@@ -50,7 +50,7 @@ test('yields all commits when targeting the root directory', async () => {
       packageManager: 'npm',
     })
 
-    expect(await showCommits(cwd, pkg)).toMatchInlineSnapshot(`
+    expect(await readCommits(cwd, pkg)).toMatchInlineSnapshot(`
       [
         "chore: initial package.json setup",
         "feat: add index file",
@@ -92,13 +92,13 @@ test('isolates commits belonging to specific subpackages', async () => {
       packageManager: 'npm',
     })
 
-    expect(await showCommits(cwd, pkg1)).toMatchInlineSnapshot(`
+    expect(await readCommits(cwd, pkg1)).toMatchInlineSnapshot(`
       [
         "chore: initialize packages",
         "feat(pkg1): add index module",
       ]
     `)
-    expect(await showCommits(cwd, pkg2)).toMatchInlineSnapshot(`
+    expect(await readCommits(cwd, pkg2)).toMatchInlineSnapshot(`
       [
         "chore: initialize packages",
         "feat(pkg2): add index module",
@@ -125,7 +125,7 @@ test('filters commits matching package file glob patterns', async () => {
 
     const pkg = { location: '.', files: '!package.json' } as Package
 
-    expect(await showCommits(cwd, pkg)).toMatchInlineSnapshot(`
+    expect(await readCommits(cwd, pkg)).toMatchInlineSnapshot(`
       [
         "feat: create index entrypoint",
         "refactor: update index entrypoint",
@@ -157,7 +157,7 @@ test('filters commits by custom file path', async () => {
       packageManager: 'npm',
     })
 
-    expect(await showCommits(cwd, pkg, { filePath: 'index.js' }))
+    expect(await readCommits(cwd, pkg, { filePath: 'index.js' }))
       .toMatchInlineSnapshot(`
       [
         "feat: create index.js",
@@ -191,7 +191,7 @@ test('includes commits touching extra files from package file patterns', async (
       packageManager: 'pnpm',
     })
 
-    expect(await showCommits(cwd, pkg)).toMatchInlineSnapshot(`
+    expect(await readCommits(cwd, pkg)).toMatchInlineSnapshot(`
       [
         "chore: initialize package",
         "fix(deps): bump catalog versions",
@@ -243,26 +243,26 @@ test('stops yielding commits at specified revision tag', async () => {
       packageManager: 'npm',
     })
 
-    expect(await showCommits(cwd, pkg1, { until: 'pkg1@1.0.0' }))
+    expect(await readCommits(cwd, pkg1, { until: 'pkg1@1.0.0' }))
       .toMatchInlineSnapshot(`
       [
         "fix(pkg1): patch v1.0.1 update",
       ]
     `)
-    expect(await showCommits(cwd, pkg2, { until: 'pkg2@1.0.0' }))
+    expect(await readCommits(cwd, pkg2, { until: 'pkg2@1.0.0' }))
       .toMatchInlineSnapshot(`
       [
         "fix(pkg2): patch v1.0.1 update",
       ]
     `)
-    expect(await showCommits(cwd, pkg1)).toMatchInlineSnapshot(`
+    expect(await readCommits(cwd, pkg1)).toMatchInlineSnapshot(`
       [
         "chore: initialize packages",
         "feat(pkg1): release v1.0.0",
         "fix(pkg1): patch v1.0.1 update",
       ]
     `)
-    expect(await showCommits(cwd, pkg2)).toMatchInlineSnapshot(`
+    expect(await readCommits(cwd, pkg2)).toMatchInlineSnapshot(`
       [
         "chore: initialize packages",
         "feat(pkg2): release v1.0.0",
@@ -282,6 +282,6 @@ test('returns an empty array when package directory does not exist', async () =>
 
     const pkg = { location: 'non-existent-pkg', files: '**/*' } as Package
 
-    expect(await showCommits(cwd, pkg)).toEqual([])
+    expect(await readCommits(cwd, pkg)).toEqual([])
   })
 })

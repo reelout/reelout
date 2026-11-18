@@ -76,6 +76,7 @@ test('exposes the correct API contract', () => {
       "isGitTagConnected",
       "isGitTagExact",
       "isMatch",
+      "isPackageTagName",
       "isQuietEnvironment",
       "isSameReleaseCycle",
       "isSemVer",

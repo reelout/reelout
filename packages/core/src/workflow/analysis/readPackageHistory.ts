@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
-import { readParsedGitHistory, type ShowGitHistoryOptions } from '#git'
+import { readParsedGitHistory, type ReadGitHistoryOptions } from '#git'
 import type { GitCommit, Package } from '#types'
 import { packageContainsCommit } from './packageContainsCommit'
 
@@ -24,7 +24,7 @@ const GLOB_MAGIC = /[*?[\]{}!+@]/
 export async function* readPackageHistory(
   cwd: string,
   pkg: Package,
-  options: ShowGitHistoryOptions = {}
+  options: ReadGitHistoryOptions = {}
 ): AsyncGenerator<GitCommit> {
   options = {
     ...options,

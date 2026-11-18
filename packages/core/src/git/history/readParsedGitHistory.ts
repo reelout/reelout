@@ -3,7 +3,7 @@
 
 import type { GitCommit } from '#types'
 import { getParsedGitCommit } from '../commit/getParsedGitCommit'
-import { readGitHistory, type ShowGitHistoryOptions } from './readGitHistory'
+import { readGitHistory, type ReadGitHistoryOptions } from './readGitHistory'
 
 /**
  * Yield parsed commits sequentially from repository history.
@@ -18,7 +18,7 @@ import { readGitHistory, type ShowGitHistoryOptions } from './readGitHistory'
  */
 export async function* readParsedGitHistory(
   cwd: string,
-  options?: ShowGitHistoryOptions
+  options?: ReadGitHistoryOptions
 ): AsyncGenerator<GitCommit> {
   for await (const commit of readGitHistory(cwd, options)) {
     try {

@@ -7,7 +7,7 @@ import { execGit } from '#util'
  * List every Git tag in the repository.
  *
  * @param cwd Repository working directory
- * @returns Sorted tag names, or an empty array when none exist
+ * @returns Sorted tag names, or an empty array when none exist or the listing fails
  */
 export async function listGitTags(cwd: string): Promise<string[]> {
   try {

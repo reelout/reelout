@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
-import { listGitTags } from '#git'
-import type { Package, ReleasePlan, ReleasePlugin } from '#types'
+import { isPackageTagName, listGitTags } from '#git'
+import type { ReleasePlan, ReleasePlugin } from '#types'
 import {
   deriveChangeReleases,
   deriveTransitionReleases,
@@ -12,24 +12,6 @@ import {
 } from '#workflow'
 import { colors } from 'consola/utils'
 import { version } from '../package.json'
-
-/**
- * Test whether a tag name follows the naming convention of a package.
- *
- * Entry packages use `v`-prefixed version tags, workspace packages use
- * `<name>@`-prefixed version tags.
- *
- * @param pkg Package whose tag naming convention is checked
- * @param tag Tag name to test
- * @returns `true` if the tag belongs to the package's naming convention
- */
-function isPackageTagName(pkg: Package, tag: string): boolean {
-  if (pkg.entry) {
-    return tag.startsWith('v') && !tag.includes('@')
-  }
-
-  return pkg.name ? tag.startsWith(`${pkg.name}@`) : false
-}
 
 /**
  * Built-in plugin that inspects repository history and produces release plans for packages.
@@ -91,7 +73,11 @@ const analyzer = (): ReleasePlugin => ({
       if (!tag) {
         tags ??= await listGitTags(context.cwd)
 
-        if (tags.some((name) => isPackageTagName(plan.package, name))) {
+        if (
+          tags.some((name) =>
+            isPackageTagName(plan.package.entry, plan.package.name, name)
+          )
+        ) {
           context.logger.warn(
             colors.yellow(
               `Release tag could not be verified for package at "${colors.bold(plan.package.location)}"; analyzing commits since the beginning of history.`
