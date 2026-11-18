@@ -3,7 +3,6 @@
 
 export * from './deriveChangeReleases'
 export * from './deriveTransitionReleases'
-export * from './isCommitForPackage'
-export * from './promotePrereleaseVersions'
+export * from './packageContainsCommit'
 export * from './propagateDependencyUpdates'
 export * from './readPackageHistory'

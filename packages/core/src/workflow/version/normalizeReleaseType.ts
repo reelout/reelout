@@ -19,7 +19,7 @@ import semver from 'semver'
  * @param version Current package version used to adjust zero-major breaking releases
  * @returns `ReleaseType` string, or `null` when no matching rule applies
  */
-export function determineReleaseType(
+export function normalizeReleaseType(
   classifier: CommitClassifier,
   commit: GitCommit,
   version?: string | null | undefined

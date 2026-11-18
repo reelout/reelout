@@ -7,7 +7,7 @@ import {
   execGit,
   getParsedGitCommit,
   pushGitChanges,
-  showParsedGitHistory,
+  readParsedGitHistory,
 } from '@reelout/core'
 import { updatePackageJson, writePackageJson } from '@reelout/npm'
 import { fromAsync } from 'from-async'
@@ -38,7 +38,7 @@ async function fetchCommits(
   return (
     await fromAsync(
       (async function* () {
-        for await (const commit of showParsedGitHistory(
+        for await (const commit of readParsedGitHistory(
           cwd,
           from !== undefined || until !== undefined
             ? { from, until }
@@ -63,7 +63,7 @@ async function fetchFileCommits(cwd: string, filePath: string, limit: number) {
   return (
     await fromAsync(
       (async function* () {
-        for await (const commit of showParsedGitHistory(cwd, { filePath })) {
+        for await (const commit of readParsedGitHistory(cwd, { filePath })) {
           yield commit
           if (--limit <= 0) break
         }

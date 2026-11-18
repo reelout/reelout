@@ -29,6 +29,13 @@ ReelOut is an ESM-only TypeScript monorepo managed with pnpm workspaces. The roo
 - Use Conventional Commit messages, such as `feat:`, `fix:`, `docs:`, and `refactor:`.
 - Keep changes focused and avoid unrelated edits.
 
+## Naming Conventions
+
+- Name workflow stage directories after the stage verb in its singular form: `analysis`, `changelog`, `commit`, `discovery`, `report`, `version` — not gerunds such as `committing` or `versioning`. Steps that operate on versions (`promotePrereleaseVersions`) belong in `version`.
+- Prefix functions that fetch data with a read verb: `readGitHistory`, `readParsedGitHistory`, `readPackageHistory` — not display verbs such as `show`.
+- Prefix functions that canonicalize an input with `normalize` (`normalizeReleaseType`); prefix functions that compute an output from context with `derive` (`deriveReleaseType`, `deriveChangeReleases`).
+- Prefix boolean functions with `has` for possession (`hasGitTag`) or `is` for type, state, or relation checks (`isGitTagExact`, `isStableVersion`). Name containment checks as subject-verb-object: `packageContainsCommit`.
+
 ## References
 
 - [README.md](./README.md) — product overview and CLI quick start.

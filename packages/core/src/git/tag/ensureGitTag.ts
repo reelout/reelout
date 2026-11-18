@@ -5,7 +5,7 @@ import { execGit } from '#util'
 import { countGitHistory } from '../history/countGitHistory'
 import { withShallowLock } from '../repository/withShallowLock'
 import { deleteGitTag } from './deleteGitTag'
-import { isGitTagPresent } from './isGitTagPresent'
+import { hasGitTag } from './hasGitTag'
 
 const MIN_HISTORY_DEPTH = 2
 const ORIGIN_NOT_REPO = `fatal: 'origin' does not appear to be a git repository`
@@ -27,7 +27,7 @@ export function ensureGitTag(cwd: string, tag: string): Promise<boolean> {
     const tagRef = `refs/tags/${tag}`
 
     if (
-      (await isGitTagPresent(cwd, tag)) &&
+      (await hasGitTag(cwd, tag)) &&
       (await countGitHistory(cwd, tagRef)) >= MIN_HISTORY_DEPTH
     ) {
       return true
@@ -48,11 +48,11 @@ export function ensureGitTag(cwd: string, tag: string): Promise<boolean> {
       const errorMessage = (err as Error | undefined)?.message
 
       if (errorMessage?.includes(ORIGIN_NOT_REPO)) {
-        return await isGitTagPresent(cwd, tag)
+        return await hasGitTag(cwd, tag)
       }
 
       if (errorMessage?.includes(REMOTE_REF_NOT_FOUND)) {
-        if (await isGitTagPresent(cwd, tag)) {
+        if (await hasGitTag(cwd, tag)) {
           await deleteGitTag(cwd, tag)
         }
       }

@@ -8,7 +8,7 @@ import {
   isGitTagConnected,
 } from '#git'
 import type { GitCommit, Package } from '#types'
-import { isCommitForPackage } from '../analysis/isCommitForPackage'
+import { packageContainsCommit } from '../analysis/packageContainsCommit'
 
 /**
  * Verify a Git tag against package specifications and repository history.
@@ -39,7 +39,7 @@ export async function verifyPackageTag(
     return false
   }
 
-  if (!isCommitForPackage(pkg, tagCommit)) {
+  if (!packageContainsCommit(pkg, tagCommit)) {
     return false
   }
 

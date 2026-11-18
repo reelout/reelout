@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
-import { execGit, isGitTagPresent, pushGitChanges } from '@reelout/core'
+import { execGit, hasGitTag, pushGitChanges } from '@reelout/core'
 import { temporaryDirectoryTask } from 'tempy'
 import { expect, test } from 'vitest'
 import {
@@ -31,9 +31,9 @@ test('verifies local presence of a given tag', async () => {
       await execGit(cwd, ['commit', '--allow-empty', '-m', 'add fifth commit'])
       await execGit(cwd, ['tag', 'v4.0.0-dev.0'])
 
-      expect(await isGitTagPresent(cwd, 'v1.0.0')).toBe(true)
-      expect(await isGitTagPresent(cwd, 'v2.1.0')).toBe(true)
-      expect(await isGitTagPresent(cwd, 'v4.0.0-dev.0')).toBe(true)
+      expect(await hasGitTag(cwd, 'v1.0.0')).toBe(true)
+      expect(await hasGitTag(cwd, 'v2.1.0')).toBe(true)
+      expect(await hasGitTag(cwd, 'v4.0.0-dev.0')).toBe(true)
 
       await execGit(cwd, ['checkout', 'main'])
 
@@ -48,7 +48,7 @@ test('verifies local presence of a given tag', async () => {
       ] as const) {
         expect({
           tag,
-          expected: await isGitTagPresent(cwd, tag),
+          expected: await hasGitTag(cwd, tag),
         }).toEqual({
           tag,
           expected,
@@ -89,9 +89,9 @@ test('verifies local presence of a given tag', async () => {
         ]
       `)
 
-      expect(await isGitTagPresent(cwd, 'v4.0.0-dev.0')).toBe(true)
-      expect(await isGitTagPresent(cwd, 'v2.1.0')).toBe(false)
-      expect(await isGitTagPresent(cwd, 'v1.0.0')).toBe(false)
+      expect(await hasGitTag(cwd, 'v4.0.0-dev.0')).toBe(true)
+      expect(await hasGitTag(cwd, 'v2.1.0')).toBe(false)
+      expect(await hasGitTag(cwd, 'v1.0.0')).toBe(false)
 
       expect(await getGitTags(cwd)).toMatchInlineSnapshot(`
         [
@@ -147,7 +147,7 @@ test('detects present and missing revisions locally', async () => {
       ['non-existent-branch', false],
       ['refs/heads/non-existent-branch', false],
     ] as const) {
-      expect(await isGitTagPresent(cwd, ref)).toBe(expected)
+      expect(await hasGitTag(cwd, ref)).toBe(expected)
     }
   })
 })

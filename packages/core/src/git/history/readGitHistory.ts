@@ -23,7 +23,7 @@ export interface ShowGitHistoryOptions extends ExpandGitHistoryOptions {
  * @param options Supports `from`, `until`, `pageSize`, and `filePath`
  * @yields Commit SHA strings in paginated order
  */
-export async function* showGitHistory(
+export async function* readGitHistory(
   cwd: string,
   options: ShowGitHistoryOptions = {}
 ): AsyncGenerator<string> {

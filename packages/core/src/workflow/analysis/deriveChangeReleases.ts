@@ -7,8 +7,8 @@ import type {
   ReleasePlan,
   ReleaseTypeHint,
 } from '#types'
-import { deriveReleaseType, pickPriorityReleaseType } from '../versioning'
-import { isCommitForPackage } from './isCommitForPackage'
+import { deriveReleaseType, pickPriorityReleaseType } from '../version'
+import { packageContainsCommit } from './packageContainsCommit'
 
 /**
  * Analyze commit history to update release plans for packages.
@@ -34,7 +34,7 @@ export async function deriveChangeReleases(
 ): Promise<ReleasePlan[]> {
   for await (const commit of history) {
     plans = plans.map((plan): ReleasePlan => {
-      if (!isCommitForPackage(plan.package, commit)) {
+      if (!packageContainsCommit(plan.package, commit)) {
         return plan
       }
 

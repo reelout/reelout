@@ -6,7 +6,7 @@ import {
   isGitAncestor,
   pushGitChanges,
   restoreFullGitHistory,
-  showGitHistory,
+  readGitHistory,
 } from '@reelout/core'
 import {
   removePackageJson,
@@ -39,7 +39,7 @@ async function showCommits(
   return Promise.all(
     (
       await fromAsync(
-        showGitHistory(
+        readGitHistory(
           cwd,
           from !== undefined || until !== undefined || pageSize !== undefined
             ? { from, until, pageSize }
@@ -66,7 +66,7 @@ async function showFileCommits(
   }
 
   return Promise.all(
-    (await fromAsync(showGitHistory(cwd, { filePath, until, pageSize })))
+    (await fromAsync(readGitHistory(cwd, { filePath, until, pageSize })))
       .toReversed()
       .map(async (commit) =>
         (await execGit(cwd, ['log', '-1', '--format=%s', commit])).trim()

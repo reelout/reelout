@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
-import { showParsedGitHistory, type ShowGitHistoryOptions } from '#git'
+import { readParsedGitHistory, type ShowGitHistoryOptions } from '#git'
 import type { GitCommit, Package } from '#types'
-import { isCommitForPackage } from './isCommitForPackage'
+import { packageContainsCommit } from './packageContainsCommit'
 
 const GLOB_MAGIC = /[*?[\]{}!+@]/
 
@@ -35,8 +35,8 @@ export async function* readPackageHistory(
         : pkg.location),
   }
 
-  for await (const commit of showParsedGitHistory(cwd, options)) {
-    if (isCommitForPackage(pkg, commit)) {
+  for await (const commit of readParsedGitHistory(cwd, options)) {
+    if (packageContainsCommit(pkg, commit)) {
       yield commit
     }
   }

@@ -10,7 +10,7 @@ import { resolveGitRevision } from '../revision/resolveGitRevision'
  * @param tag Name of the tag to evaluate
  * @returns True if the tag reference exists locally, false otherwise
  */
-export function isGitTagPresent(cwd: string, tag: string): Promise<boolean> {
+export function hasGitTag(cwd: string, tag: string): Promise<boolean> {
   return resolveGitRevision(cwd, `refs/tags/${tag}`)
     .then(() => true)
     .catch(() => false)

@@ -8,7 +8,7 @@ import type {
   VersionTransition,
 } from '#types'
 import semver from 'semver'
-import { extractVersionQualifier } from '../versioning/extractVersionQualifier'
+import { extractVersionQualifier } from '../version/extractVersionQualifier'
 
 /**
  * Derive transition release types for release plans based on version qualifiers.

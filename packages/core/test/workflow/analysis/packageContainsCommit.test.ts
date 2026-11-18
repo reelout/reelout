@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Fai
 
 import {
-  isCommitForPackage,
+  packageContainsCommit,
   type GitCommit,
   type ReleasePlan,
 } from '@reelout/core'
@@ -104,11 +104,11 @@ test('returns true if file matches pattern', () => {
       expect({
         file,
         root: index === 0,
-        isCommitForPackage: isCommitForPackage(plan.package, commit),
+        packageContainsCommit: packageContainsCommit(plan.package, commit),
       }).toEqual({
         file,
         root: index === 0,
-        isCommitForPackage: expected[index],
+        packageContainsCommit: expected[index],
       })
     })
   }
@@ -176,11 +176,11 @@ test('matches the pnpm workspace manifest for members managed by pnpm', () => {
       expect({
         file,
         pnpm: index === 0,
-        isCommitForPackage: isCommitForPackage(plan.package, commit),
+        packageContainsCommit: packageContainsCommit(plan.package, commit),
       }).toEqual({
         file,
         pnpm: index === 0,
-        isCommitForPackage: expected[index],
+        packageContainsCommit: expected[index],
       })
     })
   }

@@ -97,7 +97,7 @@ await program.parseAsync(process.argv)
 The re-exported packages expose the workflow's building blocks, which you can use independently:
 
 - **Versioning** — `bumpVersion`, `generateGitTagName`, `generateReleaseCommitMessage`, `buildReleaseNotes`
-- **Git** — `parseGitCommit`, `pushGitChanges`, `restoreFullGitHistory`, `showGitHistory`
+- **Git** — `parseGitCommit`, `pushGitChanges`, `restoreFullGitHistory`, `readGitHistory`
 - **Plugin system** — `HookManager`, `HookPriority`, `RELEASE_HOOK_NAMES`, `createPlugin`
 - **npm** (from `@reelout/npm`) — `readPackageJson`, `writePackageJson`, `resolveWorkspaceMembers`, `prepareAuth`, `publishPackage`
 

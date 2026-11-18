@@ -13,7 +13,10 @@ import path from 'node:path'
  * @param commit Parsed commit containing changed file paths
  * @returns `true` if any changed file matches the package pattern
  */
-export function isCommitForPackage(pkg: Package, commit: GitCommit): boolean {
+export function packageContainsCommit(
+  pkg: Package,
+  commit: GitCommit
+): boolean {
   return commit.files.some((file) => {
     const { location } = pkg
     const files = pkg.files || path.join(location, ALL_FILES)
