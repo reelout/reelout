@@ -15,7 +15,12 @@ const LITERAL_PATH = /^[^*?[\]{}!+@]*$/
  * `pkg` directory. When the package file pattern is a list, plain file
  * entries are added to the git path filter alongside the package directory
  * (duplicates removed), so commits touching extra package files (for example
- * the pnpm workspace manifest) are included.
+ * the pnpm workspace manifest) are included. Only entries without glob or
+ * pattern metacharacters (wildcards, braces, and the extglob or negation
+ * characters used by package file patterns) are passed to git, because git
+ * pathspecs would interpret those characters differently. Pattern-like
+ * entries are left to `packageContainsCommit`, which matches them with the
+ * package's own file-pattern semantics.
  *
  * @param cwd Path to the working directory for git commands
  * @param pkg Package configuration containing the target directory

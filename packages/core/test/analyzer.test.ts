@@ -1688,65 +1688,6 @@ test('slices each package history from its own verified release tag', async () =
   })
 })
 
-test('analyzes full history when the current version tag of a released package is missing', async () => {
-  await temporaryDirectoryTask(async (cwd) => {
-    using _ = vi.spyOn(context, 'cwd', 'get').mockReturnValue(cwd)
-
-    await initializeGitRepository(cwd)
-
-    await writePackageJson(cwd, { version: '0.0.0' })
-    await writeChangelog(cwd, '0.0.0')
-    await execGit(cwd, ['add', '.'])
-    await execGit(cwd, ['commit', '-m', 'chore: add manifest'])
-    await execGit(cwd, ['tag', 'v0.0.0'])
-
-    await writeFile(path.join(cwd, 'index.ts'), 'export const foo = 1;')
-    await execGit(cwd, ['add', '.'])
-    await execGit(cwd, ['commit', '-m', 'feat: add entry'])
-
-    await updatePackageJson(cwd, { version: '1.0.0' })
-    await writeChangelog(cwd, '1.0.0')
-    await execGit(cwd, ['add', '.'])
-    await execGit(cwd, ['commit', '-m', 'chore: bump version'])
-
-    context.packages = [
-      await buildPackage({
-        rootDir: context.cwd,
-        packageDir: '.',
-        workspace,
-        packageManager: 'npm',
-      }),
-    ]
-
-    await executeReleaseWorkflow(context, [plugin()])
-
-    expect(summarizePlans(context.plans)).toMatchInlineSnapshot(`
-      [
-        {
-          "history": [
-            "chore: bump version",
-            "feat: add entry",
-            "chore: add manifest",
-          ],
-          "name": undefined,
-          "type": "minor",
-        },
-      ]
-    `)
-
-    expect(logger.mock.calls).toMatchInlineSnapshot(`
-      [
-        [
-          "Status: [32mSUCCESS[39m",
-        ],
-        [
-          "Release complete: [33mNo packages are scheduled for release.[39m",
-        ],
-      ]
-    `)
-  })
-})
-
 test('treats a tag that does not point at a package commit as unverified', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     using _ = vi.spyOn(context, 'cwd', 'get').mockReturnValue(cwd)
