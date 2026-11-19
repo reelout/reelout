@@ -67,6 +67,12 @@ const handler = async (context, next) => {
 - If the plugin cannot safely continue, throw an actionable error that
   identifies the missing prerequisite. The workflow aborts, records the
   failure, prints the release report, and rejects.
+- `finalize` is terminal: it runs on every workflow outcome, including
+  failures and cancellations. Read `context.status` (`'success'` or
+  `'failure'`) and `context.error` to adapt behavior. A `finalize` handler
+  that throws does not stop the remaining `finalize` handlers: on a failed
+  workflow its error is logged as a warning after the report, and on a
+  successful workflow it fails the release once the other handlers have run.
 
 ## Plugin contract and registration
 

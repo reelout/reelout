@@ -591,7 +591,7 @@ test('orders hook execution by defined priority when executing a workflow phase'
   ])
 })
 
-test('triggers error cleanup handlers in reverse onion order when a phase hook throws', async () => {
+test('runs finalize after reverse-onion rollbacks when a phase hook throws', async () => {
   const executionOrder: string[] = []
   const rollback1 = vi.fn((err) => executionOrder.push('rollback1'))
   const rollback2 = vi.fn((err) => executionOrder.push('rollback2'))
@@ -618,6 +618,11 @@ test('triggers error cleanup handlers in reverse onion order when a phase hook t
     throw new Error('Something went wrong')
   })
 
+  plugin.finalize.mockImplementation((ctx, next) => {
+    executionOrder.push('finalize')
+    return next(ctx)
+  })
+
   await expect(executeReleaseWorkflow(context, plugins)).rejects.toThrow(
     'Something went wrong'
   )
@@ -628,19 +633,23 @@ test('triggers error cleanup handlers in reverse onion order when a phase hook t
   expect(plugin.build).toHaveBeenCalledTimes(1)
   expect(plugin.write).toHaveBeenCalledTimes(1)
   expect(plugin.publish).toHaveBeenCalledTimes(0)
-  expect(plugin.finalize).toHaveBeenCalledTimes(0)
+  expect(plugin.finalize).toHaveBeenCalledTimes(1)
   expect(executedHooks).toEqual([
     'configure',
     'discover',
     'analyze',
     'build',
     'write',
+    'finalize',
   ])
   expect(rollback1).toHaveBeenCalledTimes(1)
   expect(rollback1).toHaveBeenCalledWith(new Error('Something went wrong'))
   expect(rollback2).toHaveBeenCalledTimes(1)
   expect(rollback2).toHaveBeenCalledWith(new Error('Something went wrong'))
-  expect(executionOrder).toEqual(['rollback2', 'rollback1'])
+  expect(executionOrder).toEqual(['rollback2', 'rollback1', 'finalize'])
+  expect(context.status).toBe('failure')
+  expect(context.error).toEqual(new Error('Something went wrong'))
+  expect(context.phase).toEqual({ hook: 'write', plugin: 'plugin' })
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
       [
@@ -651,6 +660,189 @@ test('triggers error cleanup handlers in reverse onion order when a phase hook t
       ],
     ]
   `)
+})
+
+test('exposes the failure outcome to finalize handlers when a phase hook throws', async () => {
+  const failureError = new Error('Publish failed')
+  const outcome: { status: unknown; error: unknown; phase: unknown } = {
+    status: undefined,
+    error: undefined,
+    phase: undefined,
+  }
+
+  const failingPlugin: ReleasePlugin = {
+    name: 'notify',
+    version: '1.0.0',
+    write: () => {
+      throw failureError
+    },
+    finalize: (ctx, next) => {
+      outcome.status = ctx.status
+      outcome.error = ctx.error
+      outcome.phase = ctx.phase
+      return next(ctx)
+    },
+  }
+
+  await expect(
+    executeReleaseWorkflow(context, [failingPlugin])
+  ).rejects.toThrow('Publish failed')
+
+  expect(outcome.status).toBe('failure')
+  expect(outcome.error).toBe(failureError)
+  expect(outcome.phase).toEqual({ hook: 'finalize', plugin: 'notify' })
+})
+
+test('exposes the success outcome to finalize handlers when the workflow completes', async () => {
+  const outcome: { status: unknown; error: unknown } = {
+    status: undefined,
+    error: undefined,
+  }
+
+  const notifyPlugin: ReleasePlugin = {
+    name: 'notify',
+    version: '1.0.0',
+    finalize: (ctx, next) => {
+      outcome.status = ctx.status
+      outcome.error = ctx.error
+      return next(ctx)
+    },
+  }
+
+  await expect(
+    executeReleaseWorkflow(context, [notifyPlugin])
+  ).resolves.toBeUndefined()
+
+  expect(outcome.status).toBe('success')
+  expect(outcome.error).toBeNull()
+})
+
+test('runs remaining finalize handlers and warns when a finalize handler throws on a failed workflow', async () => {
+  const failureError = new Error('Publish failed')
+  const finalized: string[] = []
+
+  const plugin1: ReleasePlugin = {
+    name: 'notify-1',
+    version: '1.0.0',
+    write: () => {
+      throw failureError
+    },
+    finalize: () => {
+      finalized.push('notify-1')
+      throw new Error('Webhook timed out')
+    },
+  }
+
+  const plugin2: ReleasePlugin = {
+    name: 'notify-2',
+    version: '1.0.0',
+    finalize: (ctx, next) => {
+      finalized.push('notify-2')
+      return next(ctx)
+    },
+  }
+
+  await expect(
+    executeReleaseWorkflow(context, [plugin1, plugin2])
+  ).rejects.toThrow('Publish failed')
+
+  expect(finalized).toEqual(['notify-1', 'notify-2'])
+  expect(logger.mock.calls.at(-1)).toEqual([
+    'Plugin "notify-1" could not finalize: Webhook timed out',
+  ])
+})
+
+test('fails the workflow without triggering publish rollbacks when a finalize handler throws', async () => {
+  const rollback = vi.fn()
+  const finalizeError = new Error('Webhook timed out')
+
+  const notifyPlugin: ReleasePlugin = {
+    name: 'notify',
+    version: '1.0.0',
+    publish: async (ctx, next) => {
+      try {
+        return await next(ctx)
+      } catch (err) {
+        rollback(err)
+        throw err
+      }
+    },
+    finalize: () => {
+      throw finalizeError
+    },
+  }
+
+  await expect(executeReleaseWorkflow(context, [notifyPlugin])).rejects.toThrow(
+    'Webhook timed out'
+  )
+
+  expect(rollback).not.toHaveBeenCalled()
+  expect(context.status).toBe('failure')
+  expect(context.error).toBe(finalizeError)
+  expect(context.phase).toEqual({ hook: 'finalize', plugin: 'notify' })
+})
+
+test('cancels the workflow between phase hooks when the abort signal fires', async () => {
+  const controller = new AbortController()
+  const outcome: { status: unknown; error: unknown } = {
+    status: undefined,
+    error: undefined,
+  }
+
+  const cancellablePlugin: ReleasePlugin = {
+    name: 'plugin',
+    version: '1.0.0',
+    configure: (ctx, next) => {
+      controller.abort()
+      return next(ctx)
+    },
+    discover: vi.fn((ctx, next) => next(ctx)),
+    finalize: (ctx, next) => {
+      outcome.status = ctx.status
+      outcome.error = ctx.error
+      return next(ctx)
+    },
+  }
+
+  context.signal = controller.signal
+
+  const error = (await executeReleaseWorkflow(context, [
+    cancellablePlugin,
+  ]).then(
+    () => null,
+    (err) => err
+  )) as Error
+
+  expect(error).toBeInstanceOf(Error)
+  expect(error.message).toBe('Release cancelled.')
+  expect(error.cause).toMatchObject({ name: 'AbortError' })
+  expect(cancellablePlugin.discover).not.toHaveBeenCalled()
+  expect(outcome.status).toBe('failure')
+  expect(outcome.error).toBe(error)
+})
+
+test('runs finalize when the workflow fails in dry-run mode', async () => {
+  const finalized: string[] = []
+
+  const failingPlugin: ReleasePlugin = {
+    name: 'notify',
+    version: '1.0.0',
+    write: () => {
+      throw new Error('Something went wrong')
+    },
+    finalize: (ctx, next) => {
+      finalized.push(ctx.status ?? 'missing')
+      return next(ctx)
+    },
+  }
+
+  using _ = vi.spyOn(context, 'dryRun', 'get').mockReturnValue(true)
+
+  await expect(
+    executeReleaseWorkflow(context, [failingPlugin])
+  ).rejects.toThrow('Something went wrong')
+
+  expect(finalized).toEqual(['failure'])
 })
 
 test('logs hook execution duration when environment mode is set to development', async () => {
