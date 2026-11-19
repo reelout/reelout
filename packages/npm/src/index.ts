@@ -4,6 +4,7 @@
 export * from './buildPackage'
 export * from './buildPackageFilePattern'
 export * from './bumpPackageDependencies'
+export * from './comparePackageTarballs'
 export * from './extractPackageScope'
 export * from './getAuthTokenKey'
 export * from './getPackageManagerVersion'
