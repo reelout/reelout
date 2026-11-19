@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
-import { packageTagPrefix } from './packageTagPrefix'
-
 /**
  * Generate a git tag name for a package.
  *
@@ -13,6 +11,7 @@ import { packageTagPrefix } from './packageTagPrefix'
  * @param name Package name (required for non-entry packages)
  * @param version Package version
  * @returns Tag string, or `null` when `version` is absent
+ * @throws If a non-entry package has no name
  */
 export function generateGitTagName(
   entry: boolean,
@@ -33,5 +32,13 @@ export function generateGitTagName(
     return null
   }
 
-  return `${packageTagPrefix(entry, name)}${version}`
+  if (entry) {
+    return `v${version}`
+  }
+
+  if (!name) {
+    throw new Error('Package name is required to build a tag name.')
+  }
+
+  return `${name}@${version}`
 }

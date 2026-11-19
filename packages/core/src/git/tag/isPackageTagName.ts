@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
-import { isSemVerGitTag } from '#config'
-import { packageTagPrefix } from './packageTagPrefix'
+import { SEMVER_REGEX } from '#config'
 
 /**
  * Test whether a tag name follows the naming convention of a package.
@@ -12,9 +11,11 @@ import { packageTagPrefix } from './packageTagPrefix'
  * The version portion must satisfy the repository's SemVer tag rules.
  *
  * @remarks
- * Entry tags additionally exclude `@`: `isSemVerGitTag` also accepts
- * `<name>@<version>` tags whose name starts with `v` (for example
- * `vfoo@1.0.0`), which must not match the entry convention.
+ * Anchors `SEMVER_REGEX.source` for full-string matching, like
+ * {@link isSemVerGitTag}, and inspects the captured package name: entry
+ * tags must carry the `v` prefix without a captured package name, so a
+ * tag like `vfoo@1.0.0` (which captures `vfoo`) does not match the
+ * entry convention.
  *
  * @param entry Whether the package is the repository entry package
  * @param name Package name (used for non-entry packages)
@@ -26,13 +27,15 @@ export function isPackageTagName(
   name: string | null | undefined,
   tag: string
 ): boolean {
-  if (!isSemVerGitTag(tag)) {
+  const match = new RegExp(`^${SEMVER_REGEX.source}$`).exec(tag)
+
+  if (!match) {
     return false
   }
 
   if (entry) {
-    return tag.startsWith(packageTagPrefix(true, name)) && !tag.includes('@')
+    return tag.startsWith('v') && !match[1]
   }
 
-  return name ? tag.startsWith(packageTagPrefix(false, name)) : false
+  return name ? match[1] === name : false
 }
