@@ -5,7 +5,7 @@ import { readParsedGitHistory, type ReadGitHistoryOptions } from '#git'
 import type { GitCommit, Package } from '#types'
 import { packageContainsCommit } from './packageContainsCommit'
 
-const GLOB_MAGIC = /[*?[\]{}!+@]/
+const LITERAL_PATH = /^[^*?[\]{}!+@]*$/
 
 /**
  * Yield commits from git history associated with a package.
@@ -31,7 +31,7 @@ export async function* readPackageHistory(
     filePath:
       options.filePath ||
       (Array.isArray(pkg.files)
-        ? [pkg.location, ...pkg.files.filter((file) => !GLOB_MAGIC.test(file))]
+        ? [pkg.location, ...pkg.files.filter((file) => LITERAL_PATH.test(file))]
         : pkg.location),
   }
 

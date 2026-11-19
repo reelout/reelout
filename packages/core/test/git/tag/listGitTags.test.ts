@@ -6,7 +6,7 @@ import { temporaryDirectoryTask } from 'tempy'
 import { expect, test } from 'vitest'
 import { initializeGitRepository } from '../../../../../test/mock/git'
 
-test('lists tags in the repository', async () => {
+test('lists lightweight and annotated tags in refname order', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     await initializeGitRepository(cwd)
 

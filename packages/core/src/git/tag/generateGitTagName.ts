@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
+import { packageTagPrefix } from './packageTagPrefix'
+
 /**
  * Generate a git tag name for a package.
  *
@@ -31,13 +33,5 @@ export function generateGitTagName(
     return null
   }
 
-  if (entry) {
-    return `v${version}`
-  }
-
-  if (!name) {
-    throw new Error('Package name is required to build a tag name.')
-  }
-
-  return `${name}@${version}`
+  return `${packageTagPrefix(entry, name)}${version}`
 }

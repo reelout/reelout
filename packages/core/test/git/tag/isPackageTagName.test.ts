@@ -15,6 +15,10 @@ test('rejects malformed tags for entry packages', () => {
   expect(isPackageTagName(true, undefined, '1.0.0')).toBe(false)
 })
 
+test('rejects v-prefixed workspace tags for entry packages', () => {
+  expect(isPackageTagName(true, undefined, 'vfoo@1.0.0')).toBe(false)
+})
+
 test('matches scoped SemVer tags for named workspace packages', () => {
   expect(isPackageTagName(false, 'pkg', 'pkg@1.0.0')).toBe(true)
   expect(isPackageTagName(false, '@scope/pkg', '@scope/pkg@2.0.0-dev.1')).toBe(

@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Fai
 
 import { isPackageTagName, listGitTags } from '#git'
-import type { ReleasePlan, ReleasePlugin } from '#types'
+import type { GitCommit, ReleasePlan, ReleasePlugin } from '#types'
 import {
   deriveChangeReleases,
   deriveTransitionReleases,
@@ -50,40 +50,32 @@ const analyzer = (): ReleasePlugin => ({
     let tags: string[] | null = null
 
     for (const plan of context.plans) {
-      if (!plan.package.entry && !plan.package.name) {
-        plans.push(
-          ...(await deriveChangeReleases(
-            context.type,
-            context.classifier,
-            [plan],
-            []
-          ))
-        )
+      let history: Iterable<GitCommit> | AsyncIterable<GitCommit> = []
 
-        continue
-      }
+      if (plan.package.entry || plan.package.name) {
+        const tag = await resolvePackageTag(context.cwd, plan.package)
 
-      const tag =
-        plan.package.tag ?? (await resolvePackageTag(context.cwd, plan.package))
+        if (!tag) {
+          tags ??= await listGitTags(context.cwd)
 
-      if (tag && !plan.package.tag) {
-        plan.package.tag = tag
-      }
-
-      if (!tag) {
-        tags ??= await listGitTags(context.cwd)
-
-        if (
-          tags.some((name) =>
-            isPackageTagName(plan.package.entry, plan.package.name, name)
-          )
-        ) {
-          context.logger.warn(
-            colors.yellow(
-              `Release tag could not be verified for package at "${colors.bold(plan.package.location)}"; analyzing commits since the beginning of history.`
+          if (
+            tags.some((name) =>
+              isPackageTagName(plan.package.entry, plan.package.name, name)
             )
-          )
+          ) {
+            context.logger.warn(
+              colors.yellow(
+                `Release tag could not be verified for package at "${colors.bold(plan.package.location)}"; analyzing commits since the beginning of history.`
+              )
+            )
+          }
         }
+
+        history = readPackageHistory(
+          context.cwd,
+          plan.package,
+          tag ? { until: tag.name } : undefined
+        )
       }
 
       plans.push(
@@ -91,11 +83,7 @@ const analyzer = (): ReleasePlugin => ({
           context.type,
           context.classifier,
           [plan],
-          readPackageHistory(
-            context.cwd,
-            plan.package,
-            tag ? { until: tag.name } : undefined
-          )
+          history
         ))
       )
     }
