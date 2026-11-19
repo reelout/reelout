@@ -5,7 +5,7 @@ import type { CommitClassifier, GitCommit, ReleaseType } from '#types'
 import semver from 'semver'
 
 /**
- * Determine the release type for a single commit.
+ * Normalize the release type for a single commit.
  *
  * Returns `'minor'` for a commit marked as a breaking change while the
  * supplied `version` is zero-major (`0.y.z`), and `'major'` otherwise, since

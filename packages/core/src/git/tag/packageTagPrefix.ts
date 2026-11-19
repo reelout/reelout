@@ -5,11 +5,11 @@
  * Build the tag name prefix shared by a package's git tags.
  *
  * Entry packages use the `v` prefix, workspace packages use `<name>@`.
- * Throws when a non-entry package has no name.
  *
  * @param entry Whether the package is the repository entry package
  * @param name Package name (required for non-entry packages)
  * @returns Tag name prefix
+ * @throws If a non-entry package has no name
  */
 export function packageTagPrefix(
   entry: boolean,

@@ -12,7 +12,7 @@ import { temporaryDirectoryTask } from 'tempy'
 import { expect, test } from 'vitest'
 import { initializeGitRepository } from '../../../../../test/mock/git'
 
-async function showCommits(cwd: string, range: string) {
+async function readCommits(cwd: string, range: string) {
   return compact(
     await Promise.all(
       (await execGit(cwd, ['log', '--format=%H', range]))
@@ -28,8 +28,8 @@ async function mergeCommits(cwd: string, range1: string, range2: string) {
   return (
     await mergeGitHistory(
       cwd,
-      await showCommits(cwd, range1),
-      await showCommits(cwd, range2)
+      await readCommits(cwd, range1),
+      await readCommits(cwd, range2)
     )
   ).map((commit) => commit.header)
 }
