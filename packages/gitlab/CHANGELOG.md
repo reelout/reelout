@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.6](https://github.com/reelout/reelout/compare/%40reelout%2Fgitlab%400.4.5...%40reelout%2Fgitlab%400.4.6) (2026-11-19)
+
+### Features
+
+- **core:** slice package history by verified git tags ([#17](https://github.com/reelout/reelout/issues/17)) ([5fd8557](https://github.com/reelout/reelout/commit/5fd85573d41b3b1c2647f1711418cec31021c610))
+
 ## [0.4.5](https://github.com/reelout/reelout/compare/%40reelout%2Fgitlab%400.4.4...%40reelout%2Fgitlab%400.4.5) (2026-11-17)
 
 ### Features

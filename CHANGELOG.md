@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.0](https://github.com/reelout/reelout/compare/v0.3.0...v0.4.0) (2026-11-19)
+
+### Features
+
+- **core:** slice package history by verified git tags ([#17](https://github.com/reelout/reelout/issues/17)) ([5fd8557](https://github.com/reelout/reelout/commit/5fd85573d41b3b1c2647f1711418cec31021c610))
+
 ## [0.3.0](https://github.com/reelout/reelout/compare/v0.2.5...v0.3.0) (2026-11-17)
 
 ### Features
