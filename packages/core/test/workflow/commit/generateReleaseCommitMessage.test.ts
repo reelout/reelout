@@ -248,3 +248,38 @@ test('summarizes subject with package count and overflow when releasing more tha
     `)
   })
 })
+
+test('appends custom trailers while filtering out null or undefined values', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    await initializeGitRepository(cwd)
+
+    const plans = [
+      {
+        package: { entry: true, location: '.', version: '0.0.0' },
+        history: [] as GitCommit[],
+        release: { version: '0.1.0', tag: { name: 'v0.1.0' } },
+      },
+    ] as ReleasePlan[]
+
+    const customTrailers = {
+      'Signed-off-by': 'Developer <dev@example.com>',
+      'X-Custom': 123,
+      'Empty-Field': null,
+      'Undefined-Field': undefined,
+    }
+
+    const result = await generateReleaseCommitMessage(
+      cwd,
+      plans,
+      customTrailers
+    )
+
+    expect(result).toMatchInlineSnapshot(`
+      "chore: release 0.1.0
+
+      Release-Agent: ReelOut/0.0.0
+      Signed-off-by: Developer <dev@example.com>
+      X-Custom: 123"
+    `)
+  })
+})
