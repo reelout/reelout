@@ -5,17 +5,13 @@ import type { ReleaseReport } from '#types'
 import { isGitHubActions } from '#util'
 import type { ConsolaInstance } from 'consola/core'
 import { appendFileSync } from 'node:fs'
-import {
-  comparePlansByName,
-  FALLBACK_RELEASE_ERROR_MESSAGE,
-  formatPackageDirectory,
-  type ReportPlan,
-} from './utils'
 
 const STATUS_LABELS = {
   success: 'Success',
   failure: 'Failure',
 } as const
+
+type ReportPlan = ReleaseReport['plans'][number]
 
 /**
  * Append a Markdown release report to the GitHub Actions job summary.
@@ -53,7 +49,7 @@ export function appendReleaseReportSummary(
 const formatPackageLabel = (plan: ReportPlan): string => {
   if (plan.package.name) return `\`${plan.package.name}\``
 
-  return `\`${formatPackageDirectory(plan.package.location)}\``
+  return `\`${plan.package.location}\``
 }
 
 const formatReleaseReportSummary = (report: ReleaseReport): string => {
@@ -64,7 +60,8 @@ const formatReleaseReportSummary = (report: ReleaseReport): string => {
   }
 
   if (report.status === 'failure') {
-    const message = report.error || FALLBACK_RELEASE_ERROR_MESSAGE
+    const message =
+      report.error || 'An unexpected error occurred during the release process.'
 
     lines.push(...message.split('\n').map((line) => `> ${line}`), '')
 
@@ -77,7 +74,9 @@ const formatReleaseReportSummary = (report: ReleaseReport): string => {
     return lines.join('\n')
   }
 
-  const plans = report.plans.toSorted(comparePlansByName)
+  const plans = report.plans.toSorted((a, b) =>
+    (a.package.name || '').localeCompare(b.package.name || '')
+  )
 
   lines.push('| Package | Version | Type | Tag |', '| --- | --- | --- | --- |')
 
