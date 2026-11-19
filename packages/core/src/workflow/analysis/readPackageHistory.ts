@@ -3,6 +3,7 @@
 
 import { readParsedGitHistory, type ReadGitHistoryOptions } from '#git'
 import type { GitCommit, Package } from '#types'
+import { unique } from '#util'
 import { packageContainsCommit } from './packageContainsCommit'
 
 const LITERAL_PATH = /^[^*?[\]{}!+@]*$/
@@ -12,9 +13,9 @@ const LITERAL_PATH = /^[^*?[\]{}!+@]*$/
  *
  * Filters git commit history to yield only entries relevant to the target
  * `pkg` directory. When the package file pattern is a list, plain file
- * entries are added to the git path filter alongside the package directory,
- * so commits touching extra package files (for example the pnpm workspace
- * manifest) are included.
+ * entries are added to the git path filter alongside the package directory
+ * (duplicates removed), so commits touching extra package files (for example
+ * the pnpm workspace manifest) are included.
  *
  * @param cwd Path to the working directory for git commands
  * @param pkg Package configuration containing the target directory
@@ -26,13 +27,16 @@ export async function* readPackageHistory(
   pkg: Package,
   options: ReadGitHistoryOptions = {}
 ): AsyncGenerator<GitCommit> {
-  options = {
-    ...options,
-    filePath:
-      options.filePath ||
-      (Array.isArray(pkg.files)
-        ? [pkg.location, ...pkg.files.filter((file) => LITERAL_PATH.test(file))]
-        : pkg.location),
+  if (!options.filePath) {
+    options = {
+      ...options,
+      filePath: Array.isArray(pkg.files)
+        ? unique([
+            pkg.location,
+            ...pkg.files.filter((file) => LITERAL_PATH.test(file)),
+          ])
+        : pkg.location,
+    }
   }
 
   for await (const commit of readParsedGitHistory(cwd, options)) {
