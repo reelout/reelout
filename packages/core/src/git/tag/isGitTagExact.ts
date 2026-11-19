@@ -11,7 +11,7 @@ import { execGit } from '#util'
  * @param commit Commit hash to compare against
  * @returns `true` when the tag points at `commit`, otherwise `false`
  */
-export async function isGitTagPointed(
+export async function isGitTagExact(
   cwd: string,
   tag: string,
   commit: string

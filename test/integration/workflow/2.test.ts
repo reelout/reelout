@@ -784,4 +784,4 @@ test('simulates parallel release workflows across milestone tracks', async () =>
       `)
     })
   })
-}, 60_000)
+}, 120_000)

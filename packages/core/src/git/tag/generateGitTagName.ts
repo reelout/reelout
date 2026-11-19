@@ -11,6 +11,7 @@
  * @param name Package name (required for non-entry packages)
  * @param version Package version
  * @returns Tag string, or `null` when `version` is absent
+ * @throws If a non-entry package has no name
  */
 export function generateGitTagName(
   entry: boolean,

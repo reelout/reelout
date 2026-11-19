@@ -5,7 +5,7 @@ import type { CommitClassifier, GitCommit, ReleaseType } from '#types'
 import semver from 'semver'
 
 /**
- * Determine the release type for a single commit.
+ * Derive the release type for a single commit.
  *
  * Returns `'minor'` for a commit marked as a breaking change while the
  * supplied `version` is zero-major (`0.y.z`), and `'major'` otherwise, since
@@ -19,7 +19,7 @@ import semver from 'semver'
  * @param version Current package version used to adjust zero-major breaking releases
  * @returns `ReleaseType` string, or `null` when no matching rule applies
  */
-export function determineReleaseType(
+export function deriveCommitReleaseType(
   classifier: CommitClassifier,
   commit: GitCommit,
   version?: string | null | undefined

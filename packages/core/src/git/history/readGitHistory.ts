@@ -8,7 +8,7 @@ import {
   type ExpandGitHistoryOptions,
 } from './expandGitHistory'
 
-export interface ShowGitHistoryOptions extends ExpandGitHistoryOptions {
+export interface ReadGitHistoryOptions extends ExpandGitHistoryOptions {
   filePath?: string | readonly string[] | undefined
 }
 
@@ -23,9 +23,9 @@ export interface ShowGitHistoryOptions extends ExpandGitHistoryOptions {
  * @param options Supports `from`, `until`, `pageSize`, and `filePath`
  * @yields Commit SHA strings in paginated order
  */
-export async function* showGitHistory(
+export async function* readGitHistory(
   cwd: string,
-  options: ShowGitHistoryOptions = {}
+  options: ReadGitHistoryOptions = {}
 ): AsyncGenerator<string> {
   try {
     const { filePath, pageSize = 50 } = options

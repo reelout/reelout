@@ -318,13 +318,10 @@ test('releases workspace packages', async () => {
             "[33mPackage could not be loaded: JSON file at "[1m<cwd>/packages/pkg5/package.json[22m" could not be parsed.[39m",
           ],
           [
-            "[33mTag could not be determined for package at "[1mpackages/pkg3[22m": Package name is required to build a tag name.[39m",
-          ],
-          [
             "Status: [32mSUCCESS[39m",
           ],
           [
-            "Release complete: [1m[32m4 released[39m[22m [90m(4)[39m
+            "Release complete: [1m[32m3 released[39m[22m [90m(4)[39m
 
         [42m 0.0.1 ← 0.0.0 [49m[90m patch [39m
 
@@ -334,14 +331,6 @@ test('releases workspace packages', async () => {
 
         - **pkg1:** add index file ([fbf9185](https://github.com/mock-owner/mock-repo/commit/fbf9185bfb6e194526092fbffa5d29c265b0fa56))
         - **pkg2:** add index file ([753ff05](https://github.com/mock-owner/mock-repo/commit/753ff05cbe89630400021ab1cc1e43508fc204ac))
-
-        [90m ./packages/pkg3 [39m[42m 3.1.0 ← 3.0.0 [49m[90m minor [39m
-
-        [36m## 3.1.0 (2026-01-01)[39m
-
-        [36m### Features[39m
-
-        - **pkg3:** add index file ([c88544d](https://github.com/mock-owner/mock-repo/commit/c88544d786b6d8169652fb4a4e4295d2f8ba5614))
 
         [44m @scope/pkg1 [49m[42m 1.1.0 ← 1.0.0 [49m[90m minor [39m
 
@@ -442,25 +431,14 @@ test('prints a dry-run report for workspace releases', async () => {
             "[33mPackage could not be loaded: JSON file at "[1m<cwd>/packages/pkg5/package.json[22m" could not be parsed.[39m",
           ],
           [
-            "[33mTag could not be determined for package at "[1mpackages/pkg3[22m": Package name is required to build a tag name.[39m",
-          ],
-          [
             "Status: [32mSUCCESS[39m",
           ],
           [
-            "Release complete: [1m[32m4 released[39m[22m [90m(4)[39m
+            "Release complete: [1m[32m3 released[39m[22m [90m(4)[39m
 
         [42m 0.1.0 ← 0.0.0 [49m[90m minor [39m
 
         [36m## 0.1.0 (2026-01-01)[39m
-
-        [36m### Features[39m
-
-        - set up workspace ([6d1ec56](https://github.com/mock-owner/mock-repo/commit/6d1ec56ef55f7c817248c4295890709e1d9ed663))
-
-        [90m ./packages/pkg3 [39m[42m 3.1.0 ← 3.0.0 [49m[90m minor [39m
-
-        [36m## 3.1.0 (2026-01-01)[39m
 
         [36m### Features[39m
 

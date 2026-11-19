@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Fai
 
 import type { CommitClassifier, ReleasePlan, ReleaseType } from '#types'
-import { determineReleaseType } from './determineReleaseType'
+import { deriveCommitReleaseType } from './deriveCommitReleaseType'
 import { pickPriorityReleaseType } from './pickPriorityReleaseType'
 
 /**
@@ -27,7 +27,7 @@ export function deriveReleaseType(
   for (const commit of plan.history) {
     releaseType = pickPriorityReleaseType(
       releaseType,
-      determineReleaseType(classifier, commit, plan.package.version)
+      deriveCommitReleaseType(classifier, commit, plan.package.version)
     )
   }
 

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
-import { execGit, isGitTagPointed } from '@reelout/core'
+import { execGit, isGitTagExact } from '@reelout/core'
 import { temporaryDirectoryTask } from 'tempy'
 import { expect, test } from 'vitest'
 import {
@@ -40,7 +40,7 @@ test('returns true or false for tag at commit', async () => {
       expect({
         tag,
         commit,
-        expected: await isGitTagPointed(cwd, tag, commit as string),
+        expected: await isGitTagExact(cwd, tag, commit as string),
       }).toEqual({
         tag,
         commit,

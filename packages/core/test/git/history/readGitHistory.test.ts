@@ -6,7 +6,7 @@ import {
   isGitAncestor,
   pushGitChanges,
   restoreFullGitHistory,
-  showGitHistory,
+  readGitHistory,
 } from '@reelout/core'
 import {
   removePackageJson,
@@ -25,7 +25,7 @@ import {
   initializeGitRepository,
 } from '../../../../../test/mock/git'
 
-async function showCommits(
+async function readCommits(
   cwd: string,
   from?: string,
   pageSize?: number | string,
@@ -39,7 +39,7 @@ async function showCommits(
   return Promise.all(
     (
       await fromAsync(
-        showGitHistory(
+        readGitHistory(
           cwd,
           from !== undefined || until !== undefined || pageSize !== undefined
             ? { from, until, pageSize }
@@ -54,7 +54,7 @@ async function showCommits(
   )
 }
 
-async function showFileCommits(
+async function readFileCommits(
   cwd: string,
   filePath: string | readonly string[],
   pageSize?: number | string,
@@ -66,7 +66,7 @@ async function showFileCommits(
   }
 
   return Promise.all(
-    (await fromAsync(showGitHistory(cwd, { filePath, until, pageSize })))
+    (await fromAsync(readGitHistory(cwd, { filePath, until, pageSize })))
       .toReversed()
       .map(async (commit) =>
         (await execGit(cwd, ['log', '-1', '--format=%s', commit])).trim()
@@ -108,7 +108,7 @@ test('automatically expands shallow clones during traversal to expose the full r
     await temporaryDirectoryTask(async (cwd) => {
       await cloneGitRepository(cwd, remote)
 
-      expect(await showCommits(cwd)).toMatchInlineSnapshot(`
+      expect(await readCommits(cwd)).toMatchInlineSnapshot(`
         [
           "Initial commit",
           "Second commit",
@@ -140,7 +140,7 @@ test('correctly paginates commit enumeration across varied page size values', as
     await temporaryDirectoryTask(async (cwd) => {
       await cloneGitRepository(cwd, remote)
 
-      expect(await showCommits(cwd, undefined, 1)).toMatchInlineSnapshot(`
+      expect(await readCommits(cwd, undefined, 1)).toMatchInlineSnapshot(`
         [
           "Initial commit",
           "Second commit",
@@ -148,7 +148,7 @@ test('correctly paginates commit enumeration across varied page size values', as
           "Fourth commit",
         ]
       `)
-      expect(await showCommits(cwd, undefined, 2)).toMatchInlineSnapshot(`
+      expect(await readCommits(cwd, undefined, 2)).toMatchInlineSnapshot(`
         [
           "Initial commit",
           "Second commit",
@@ -156,7 +156,7 @@ test('correctly paginates commit enumeration across varied page size values', as
           "Fourth commit",
         ]
       `)
-      expect(await showCommits(cwd, undefined, 4)).toMatchInlineSnapshot(`
+      expect(await readCommits(cwd, undefined, 4)).toMatchInlineSnapshot(`
         [
           "Initial commit",
           "Second commit",
@@ -164,7 +164,7 @@ test('correctly paginates commit enumeration across varied page size values', as
           "Fourth commit",
         ]
       `)
-      expect(await showCommits(cwd, undefined, 99)).toMatchInlineSnapshot(`
+      expect(await readCommits(cwd, undefined, 99)).toMatchInlineSnapshot(`
         [
           "Initial commit",
           "Second commit",
@@ -196,12 +196,12 @@ test('limits commit enumeration to history reachable from the current checkout t
     await temporaryDirectoryTask(async (cwd) => {
       await cloneGitRepository(cwd, remote, 'v1.0.0')
 
-      expect(await showCommits(cwd, undefined, 1)).toMatchInlineSnapshot(`
+      expect(await readCommits(cwd, undefined, 1)).toMatchInlineSnapshot(`
         [
           "Initial commit",
         ]
       `)
-      expect(await showCommits(cwd, undefined, 99)).toMatchInlineSnapshot(`
+      expect(await readCommits(cwd, undefined, 99)).toMatchInlineSnapshot(`
         [
           "Initial commit",
         ]
@@ -211,13 +211,13 @@ test('limits commit enumeration to history reachable from the current checkout t
     await temporaryDirectoryTask(async (cwd) => {
       await cloneGitRepository(cwd, remote, 'v2.0.0')
 
-      expect(await showCommits(cwd, undefined, 1)).toMatchInlineSnapshot(`
+      expect(await readCommits(cwd, undefined, 1)).toMatchInlineSnapshot(`
         [
           "Initial commit",
           "Second commit",
         ]
       `)
-      expect(await showCommits(cwd, undefined, 99)).toMatchInlineSnapshot(`
+      expect(await readCommits(cwd, undefined, 99)).toMatchInlineSnapshot(`
         [
           "Initial commit",
           "Second commit",
@@ -227,14 +227,14 @@ test('limits commit enumeration to history reachable from the current checkout t
       await temporaryDirectoryTask(async (cwd) => {
         await cloneGitRepository(cwd, remote, 'v3.0.0')
 
-        expect(await showCommits(cwd, undefined, 1)).toMatchInlineSnapshot(`
+        expect(await readCommits(cwd, undefined, 1)).toMatchInlineSnapshot(`
           [
             "Initial commit",
             "Second commit",
             "Third commit",
           ]
         `)
-        expect(await showCommits(cwd, undefined, 99)).toMatchInlineSnapshot(`
+        expect(await readCommits(cwd, undefined, 99)).toMatchInlineSnapshot(`
           [
             "Initial commit",
             "Second commit",
@@ -246,7 +246,7 @@ test('limits commit enumeration to history reachable from the current checkout t
       await temporaryDirectoryTask(async (cwd) => {
         await cloneGitRepository(cwd, remote, 'v4.0.0')
 
-        expect(await showCommits(cwd, undefined, 1)).toMatchInlineSnapshot(`
+        expect(await readCommits(cwd, undefined, 1)).toMatchInlineSnapshot(`
           [
             "Initial commit",
             "Second commit",
@@ -254,7 +254,7 @@ test('limits commit enumeration to history reachable from the current checkout t
             "Fourth commit",
           ]
         `)
-        expect(await showCommits(cwd, undefined, 99)).toMatchInlineSnapshot(`
+        expect(await readCommits(cwd, undefined, 99)).toMatchInlineSnapshot(`
           [
             "Initial commit",
             "Second commit",
@@ -294,12 +294,12 @@ test('uses a designated tag reference as the starting boundary for history trave
         '--depth=1',
       ])
 
-      expect(await showCommits(cwd, 'v1.0.0', 1)).toMatchInlineSnapshot(`
+      expect(await readCommits(cwd, 'v1.0.0', 1)).toMatchInlineSnapshot(`
         [
           "Initial commit",
         ]
       `)
-      expect(await showCommits(cwd, 'v1.0.0', 99)).toMatchInlineSnapshot(`
+      expect(await readCommits(cwd, 'v1.0.0', 99)).toMatchInlineSnapshot(`
         [
           "Initial commit",
         ]
@@ -316,13 +316,13 @@ test('uses a designated tag reference as the starting boundary for history trave
         '--depth=1',
       ])
 
-      expect(await showCommits(cwd, 'v2.0.0', 1)).toMatchInlineSnapshot(`
+      expect(await readCommits(cwd, 'v2.0.0', 1)).toMatchInlineSnapshot(`
         [
           "Initial commit",
           "Second commit",
         ]
       `)
-      expect(await showCommits(cwd, 'v2.0.0', 99)).toMatchInlineSnapshot(`
+      expect(await readCommits(cwd, 'v2.0.0', 99)).toMatchInlineSnapshot(`
         [
           "Initial commit",
           "Second commit",
@@ -340,14 +340,14 @@ test('uses a designated tag reference as the starting boundary for history trave
         '--depth=1',
       ])
 
-      expect(await showCommits(cwd, 'v3.0.0', 1)).toMatchInlineSnapshot(`
+      expect(await readCommits(cwd, 'v3.0.0', 1)).toMatchInlineSnapshot(`
         [
           "Initial commit",
           "Second commit",
           "Third commit",
         ]
       `)
-      expect(await showCommits(cwd, 'v3.0.0', 99)).toMatchInlineSnapshot(`
+      expect(await readCommits(cwd, 'v3.0.0', 99)).toMatchInlineSnapshot(`
         [
           "Initial commit",
           "Second commit",
@@ -366,7 +366,7 @@ test('uses a designated tag reference as the starting boundary for history trave
         '--depth=1',
       ])
 
-      expect(await showCommits(cwd, 'v4.0.0', 1)).toMatchInlineSnapshot(`
+      expect(await readCommits(cwd, 'v4.0.0', 1)).toMatchInlineSnapshot(`
         [
           "Initial commit",
           "Second commit",
@@ -374,7 +374,7 @@ test('uses a designated tag reference as the starting boundary for history trave
           "Fourth commit",
         ]
       `)
-      expect(await showCommits(cwd, 'v4.0.0', 99)).toMatchInlineSnapshot(`
+      expect(await readCommits(cwd, 'v4.0.0', 99)).toMatchInlineSnapshot(`
         [
           "Initial commit",
           "Second commit",
@@ -413,7 +413,7 @@ test('correctly resolves bounded commit ranges while honoring annotated tags', a
         '--depth=1',
       ])
 
-      expect(await showCommits(cwd, 'HEAD', 'v2.0.0')).toMatchInlineSnapshot(`
+      expect(await readCommits(cwd, 'HEAD', 'v2.0.0')).toMatchInlineSnapshot(`
         [
           "Third commit",
           "Fourth commit",
@@ -431,7 +431,7 @@ test('correctly resolves bounded commit ranges while honoring annotated tags', a
         '--depth=1',
       ])
 
-      expect(await showCommits(cwd, 'HEAD', 'v3.0.0')).toMatchInlineSnapshot(`
+      expect(await readCommits(cwd, 'HEAD', 'v3.0.0')).toMatchInlineSnapshot(`
         [
           "Fourth commit",
         ]
@@ -469,7 +469,7 @@ test('accepts a raw commit hash as the terminating boundary for history traversa
 
       const hash = (await execGit(cwd, ['rev-parse', 'v2.0.0'])).trim()
 
-      expect(await showCommits(cwd, 'HEAD', hash)).toMatchInlineSnapshot(`
+      expect(await readCommits(cwd, 'HEAD', hash)).toMatchInlineSnapshot(`
         [
           "Third commit",
           "Fourth commit",
@@ -513,7 +513,7 @@ test('enumerates the precise commit range bounded between two separate tag refer
         '--depth=1',
       ])
 
-      expect(await showCommits(cwd, 'v3.0.0', 'v1.0.0')).toMatchInlineSnapshot(`
+      expect(await readCommits(cwd, 'v3.0.0', 'v1.0.0')).toMatchInlineSnapshot(`
         [
           "Second commit",
           "Third commit",
@@ -538,7 +538,7 @@ test('enumerates the precise commit range bounded between two separate tag refer
         '--depth=4',
       ])
 
-      expect(await showCommits(cwd, 'v4.0.0', 'v2.0.0')).toMatchInlineSnapshot(`
+      expect(await readCommits(cwd, 'v4.0.0', 'v2.0.0')).toMatchInlineSnapshot(`
         [
           "Third commit",
           "Fourth commit",
@@ -587,26 +587,26 @@ test('terminates traversal cleanly without bleeding into unrelated branch histor
       await pushGitChanges(cwd, 'main', '--tags')
       await pushGitChanges(cwd, 'feature/v3-patches', '--tags')
 
-      expect(await showCommits(cwd, 'v5.0.0', 'v3.0.2')).toMatchInlineSnapshot(`
+      expect(await readCommits(cwd, 'v5.0.0', 'v3.0.2')).toMatchInlineSnapshot(`
         [
           "v4 release",
           "v5 release",
         ]
       `)
-      expect(await showCommits(cwd, 'v6.0.0', 'v3.0.2')).toMatchInlineSnapshot(`
+      expect(await readCommits(cwd, 'v6.0.0', 'v3.0.2')).toMatchInlineSnapshot(`
         [
           "v4 release",
           "v5 release",
           "v6 release",
         ]
       `)
-      expect(await showCommits(cwd, 'v3.0.2', 'v5.0.0')).toMatchInlineSnapshot(`
+      expect(await readCommits(cwd, 'v3.0.2', 'v5.0.0')).toMatchInlineSnapshot(`
         [
           "v3.0.1 patch",
           "v3.0.2 patch",
         ]
       `)
-      expect(await showCommits(cwd, 'v3.0.2', 'v6.0.0')).toMatchInlineSnapshot(`
+      expect(await readCommits(cwd, 'v3.0.2', 'v6.0.0')).toMatchInlineSnapshot(`
         [
           "v3.0.1 patch",
           "v3.0.2 patch",
@@ -625,13 +625,13 @@ test('terminates traversal cleanly without bleeding into unrelated branch histor
         '--depth=1',
       ])
 
-      expect(await showCommits(cwd, 'v5.0.0', 'v3.0.2')).toMatchInlineSnapshot(`
+      expect(await readCommits(cwd, 'v5.0.0', 'v3.0.2')).toMatchInlineSnapshot(`
         [
           "v4 release",
           "v5 release",
         ]
       `)
-      expect(await showCommits(cwd, 'v6.0.0', 'v3.0.2')).toMatchInlineSnapshot(`
+      expect(await readCommits(cwd, 'v6.0.0', 'v3.0.2')).toMatchInlineSnapshot(`
         [
           "v4 release",
           "v5 release",
@@ -651,12 +651,12 @@ test('terminates traversal cleanly without bleeding into unrelated branch histor
         '--depth=1',
       ])
 
-      expect(await showCommits(cwd, 'v3.0.2', 'v5.0.0')).toMatchInlineSnapshot(`
+      expect(await readCommits(cwd, 'v3.0.2', 'v5.0.0')).toMatchInlineSnapshot(`
         [
           "v3.0.2 patch",
         ]
       `)
-      expect(await showCommits(cwd, 'v3.0.2', 'v6.0.0')).toMatchInlineSnapshot(`
+      expect(await readCommits(cwd, 'v3.0.2', 'v6.0.0')).toMatchInlineSnapshot(`
         [
           "v3.0.2 patch",
         ]
@@ -685,8 +685,8 @@ test('safely returns an empty collection when given an unresolvable or invalid e
     await temporaryDirectoryTask(async (cwd) => {
       await cloneGitRepository(cwd, remote)
 
-      expect(await showCommits(cwd, 'HEAD', 'non-existent')).toEqual([])
-      expect(await showCommits(cwd, 'HEAD', '--invalid-flag')).toEqual([])
+      expect(await readCommits(cwd, 'HEAD', 'non-existent')).toEqual([])
+      expect(await readCommits(cwd, 'HEAD', '--invalid-flag')).toEqual([])
     })
   })
 })
@@ -747,21 +747,21 @@ test('filters history logs accurately when targeting specific file path patterns
     const allFiles = ':(glob)**/*'
 
     expect(
-      await showFileCommits(cwd, 'packages/non-existent/package.json')
+      await readFileCommits(cwd, 'packages/non-existent/package.json')
     ).toEqual([])
 
     expect(
-      await showFileCommits(cwd, ':(glob)packages/non-existent/*')
+      await readFileCommits(cwd, ':(glob)packages/non-existent/*')
     ).toEqual([])
 
-    expect(await showFileCommits(cwd, pkgFile1)).toMatchInlineSnapshot(`
+    expect(await readFileCommits(cwd, pkgFile1)).toMatchInlineSnapshot(`
       [
         "Add foo package v1.0.0 - 2",
         "Bump foo to v1.1.0 - 5",
       ]
     `)
 
-    expect(await showFileCommits(cwd, pkgFile2)).toMatchInlineSnapshot(`
+    expect(await readFileCommits(cwd, pkgFile2)).toMatchInlineSnapshot(`
       [
         "Add bar package v2.0.0 - 3",
         "Remove bar package - 6",
@@ -769,7 +769,7 @@ test('filters history logs accurately when targeting specific file path patterns
       ]
     `)
 
-    expect(await showFileCommits(cwd, [pkgFile1, pkgFile2]))
+    expect(await readFileCommits(cwd, [pkgFile1, pkgFile2]))
       .toMatchInlineSnapshot(`
       [
         "Add foo package v1.0.0 - 2",
@@ -780,7 +780,7 @@ test('filters history logs accurately when targeting specific file path patterns
       ]
     `)
 
-    expect(await showFileCommits(cwd, allPkgFiles1)).toMatchInlineSnapshot(`
+    expect(await readFileCommits(cwd, allPkgFiles1)).toMatchInlineSnapshot(`
       [
         "Add foo package v1.0.0 - 2",
         "Add bar package v2.0.0 - 3",
@@ -790,7 +790,7 @@ test('filters history logs accurately when targeting specific file path patterns
       ]
     `)
 
-    expect(await showFileCommits(cwd, allPkgFiles2)).toMatchInlineSnapshot(`
+    expect(await readFileCommits(cwd, allPkgFiles2)).toMatchInlineSnapshot(`
       [
         "Add root package - 1",
         "Add foo package v1.0.0 - 2",
@@ -801,7 +801,7 @@ test('filters history logs accurately when targeting specific file path patterns
       ]
     `)
 
-    expect(await showFileCommits(cwd, allPkgFiles3)).toMatchInlineSnapshot(`
+    expect(await readFileCommits(cwd, allPkgFiles3)).toMatchInlineSnapshot(`
       [
         "Add foo index.js - 4",
         "Add README - 8",
@@ -809,7 +809,7 @@ test('filters history logs accurately when targeting specific file path patterns
       ]
     `)
 
-    expect(await showFileCommits(cwd, allPkgFiles4)).toMatchInlineSnapshot(`
+    expect(await readFileCommits(cwd, allPkgFiles4)).toMatchInlineSnapshot(`
       [
         "Add root package - 1",
         "Add foo package v1.0.0 - 2",
@@ -821,21 +821,7 @@ test('filters history logs accurately when targeting specific file path patterns
       ]
     `)
 
-    expect(await showFileCommits(cwd, allFiles)).toMatchInlineSnapshot(`
-      [
-        "Add root package - 1",
-        "Add foo package v1.0.0 - 2",
-        "Add bar package v2.0.0 - 3",
-        "Add foo index.js - 4",
-        "Bump foo to v1.1.0 - 5",
-        "Remove bar package - 6",
-        "Re-add bar package v2.1.0 - 7",
-        "Add README - 8",
-        "Add CHANGELOG - 9",
-      ]
-    `)
-
-    expect(await showFileCommits(cwd, allFiles, 1)).toMatchInlineSnapshot(`
+    expect(await readFileCommits(cwd, allFiles)).toMatchInlineSnapshot(`
       [
         "Add root package - 1",
         "Add foo package v1.0.0 - 2",
@@ -849,7 +835,7 @@ test('filters history logs accurately when targeting specific file path patterns
       ]
     `)
 
-    expect(await showFileCommits(cwd, allFiles, 2)).toMatchInlineSnapshot(`
+    expect(await readFileCommits(cwd, allFiles, 1)).toMatchInlineSnapshot(`
       [
         "Add root package - 1",
         "Add foo package v1.0.0 - 2",
@@ -863,7 +849,7 @@ test('filters history logs accurately when targeting specific file path patterns
       ]
     `)
 
-    expect(await showFileCommits(cwd, allFiles, 3)).toMatchInlineSnapshot(`
+    expect(await readFileCommits(cwd, allFiles, 2)).toMatchInlineSnapshot(`
       [
         "Add root package - 1",
         "Add foo package v1.0.0 - 2",
@@ -877,7 +863,21 @@ test('filters history logs accurately when targeting specific file path patterns
       ]
     `)
 
-    expect(await showFileCommits(cwd, allFiles, 4)).toMatchInlineSnapshot(`
+    expect(await readFileCommits(cwd, allFiles, 3)).toMatchInlineSnapshot(`
+      [
+        "Add root package - 1",
+        "Add foo package v1.0.0 - 2",
+        "Add bar package v2.0.0 - 3",
+        "Add foo index.js - 4",
+        "Bump foo to v1.1.0 - 5",
+        "Remove bar package - 6",
+        "Re-add bar package v2.1.0 - 7",
+        "Add README - 8",
+        "Add CHANGELOG - 9",
+      ]
+    `)
+
+    expect(await readFileCommits(cwd, allFiles, 4)).toMatchInlineSnapshot(`
       [
         "Add root package - 1",
         "Add foo package v1.0.0 - 2",
@@ -946,7 +946,7 @@ test('dynamically resolves and restores file-specific history records inside sha
 
       await pushGitChanges(cwd, 'main', '--tags')
 
-      expect(await showFileCommits(cwd, pkgFile1, 1)).toMatchInlineSnapshot(`
+      expect(await readFileCommits(cwd, pkgFile1, 1)).toMatchInlineSnapshot(`
         [
           "chore(foo): initialize package - 1",
           "chore(foo): bump to v1.0.0 - 5",
@@ -954,7 +954,7 @@ test('dynamically resolves and restores file-specific history records inside sha
           "chore(foo): bump to v1.2.0 - 8",
         ]
       `)
-      expect(await showFileCommits(cwd, pkgFile2, 1)).toMatchInlineSnapshot(`
+      expect(await readFileCommits(cwd, pkgFile2, 1)).toMatchInlineSnapshot(`
         [
           "chore(bar): initialize package - 2",
           "chore(bar): bump to v2.0.0 - 3",
@@ -985,7 +985,7 @@ test('dynamically resolves and restores file-specific history records inside sha
         ]
       `)
 
-      expect(await showFileCommits(cwd, pkgFile1, 1)).toMatchInlineSnapshot(`
+      expect(await readFileCommits(cwd, pkgFile1, 1)).toMatchInlineSnapshot(`
         [
           "chore(foo): initialize package - 1",
           "chore(foo): bump to v1.0.0 - 5",
@@ -1017,7 +1017,7 @@ test('dynamically resolves and restores file-specific history records inside sha
         ]
       `)
 
-      expect(await showFileCommits(cwd, pkgFile2, 1)).toMatchInlineSnapshot(`
+      expect(await readFileCommits(cwd, pkgFile2, 1)).toMatchInlineSnapshot(`
         [
           "chore(bar): initialize package - 2",
           "chore(bar): bump to v2.0.0 - 3",
@@ -1043,7 +1043,7 @@ test('dynamically resolves and restores file-specific history records inside sha
     await temporaryDirectoryTask(async (cwd) => {
       await cloneGitRepository(cwd, remote)
 
-      expect(await showFileCommits(cwd, pkgFile1)).toMatchInlineSnapshot(`
+      expect(await readFileCommits(cwd, pkgFile1)).toMatchInlineSnapshot(`
         [
           "chore(foo): initialize package - 1",
           "chore(foo): bump to v1.0.0 - 5",
@@ -1056,7 +1056,7 @@ test('dynamically resolves and restores file-specific history records inside sha
     await temporaryDirectoryTask(async (cwd) => {
       await cloneGitRepository(cwd, remote)
 
-      expect(await showFileCommits(cwd, pkgFile2)).toMatchInlineSnapshot(`
+      expect(await readFileCommits(cwd, pkgFile2)).toMatchInlineSnapshot(`
         [
           "chore(bar): initialize package - 2",
           "chore(bar): bump to v2.0.0 - 3",
@@ -1071,7 +1071,7 @@ test('dynamically resolves and restores file-specific history records inside sha
 
       await restoreFullGitHistory(cwd)
 
-      expect(await showFileCommits(cwd, pkgFile1, 'foo@1.0.0'))
+      expect(await readFileCommits(cwd, pkgFile1, 'foo@1.0.0'))
         .toMatchInlineSnapshot(`
         [
           "chore(foo): bump to v1.1.0 - 6",
@@ -1085,7 +1085,7 @@ test('dynamically resolves and restores file-specific history records inside sha
 
       await restoreFullGitHistory(cwd)
 
-      expect(await showFileCommits(cwd, pkgFile1, 'bar@2.1.0'))
+      expect(await readFileCommits(cwd, pkgFile1, 'bar@2.1.0'))
         .toMatchInlineSnapshot(`
         [
           "chore(foo): bump to v1.0.0 - 5",
@@ -1109,7 +1109,7 @@ test('dynamically resolves and restores file-specific history records inside sha
 
       expect(await isGitAncestor(cwd, 'foo@1.1.0', 'HEAD')).toBe(true)
 
-      expect(await showFileCommits(cwd, pkgFile2, 'foo@1.1.0'))
+      expect(await readFileCommits(cwd, pkgFile2, 'foo@1.1.0'))
         .toMatchInlineSnapshot(`
         [
           "chore(bar): bump to v2.2.0 - 7",
@@ -1187,7 +1187,7 @@ test('respects historical checkout boundaries when filtering file history within
     await temporaryDirectoryTask(async (cwd) => {
       await cloneGitRepository(cwd, remote)
 
-      expect(await showFileCommits(cwd, filePath, 1)).toMatchInlineSnapshot(`
+      expect(await readFileCommits(cwd, filePath, 1)).toMatchInlineSnapshot(`
         [
           "Add package.json - 1",
           "Update package.json to 1.0.0 - 2",
@@ -1196,7 +1196,7 @@ test('respects historical checkout boundaries when filtering file history within
           "Update package.json to 4.0.0 - 5",
         ]
       `)
-      expect(await showFileCommits(cwd, filePath, 2)).toMatchInlineSnapshot(`
+      expect(await readFileCommits(cwd, filePath, 2)).toMatchInlineSnapshot(`
         [
           "Add package.json - 1",
           "Update package.json to 1.0.0 - 2",
@@ -1205,7 +1205,7 @@ test('respects historical checkout boundaries when filtering file history within
           "Update package.json to 4.0.0 - 5",
         ]
       `)
-      expect(await showFileCommits(cwd, filePath, 4)).toMatchInlineSnapshot(`
+      expect(await readFileCommits(cwd, filePath, 4)).toMatchInlineSnapshot(`
         [
           "Add package.json - 1",
           "Update package.json to 1.0.0 - 2",
@@ -1214,7 +1214,7 @@ test('respects historical checkout boundaries when filtering file history within
           "Update package.json to 4.0.0 - 5",
         ]
       `)
-      expect(await showFileCommits(cwd, filePath, 8)).toMatchInlineSnapshot(`
+      expect(await readFileCommits(cwd, filePath, 8)).toMatchInlineSnapshot(`
         [
           "Add package.json - 1",
           "Update package.json to 1.0.0 - 2",
@@ -1223,7 +1223,7 @@ test('respects historical checkout boundaries when filtering file history within
           "Update package.json to 4.0.0 - 5",
         ]
       `)
-      expect(await showFileCommits(cwd, filePath)).toMatchInlineSnapshot(`
+      expect(await readFileCommits(cwd, filePath)).toMatchInlineSnapshot(`
         [
           "Add package.json - 1",
           "Update package.json to 1.0.0 - 2",
@@ -1237,7 +1237,7 @@ test('respects historical checkout boundaries when filtering file history within
     await temporaryDirectoryTask(async (cwd) => {
       await cloneGitRepository(cwd, remote, 'v3.0.0')
 
-      expect(await showFileCommits(cwd, filePath, 1)).toMatchInlineSnapshot(`
+      expect(await readFileCommits(cwd, filePath, 1)).toMatchInlineSnapshot(`
         [
           "Add package.json - 1",
           "Update package.json to 1.0.0 - 2",
@@ -1245,7 +1245,7 @@ test('respects historical checkout boundaries when filtering file history within
           "Update package.json to 3.0.0 - 4",
         ]
       `)
-      expect(await showFileCommits(cwd, filePath)).toMatchInlineSnapshot(`
+      expect(await readFileCommits(cwd, filePath)).toMatchInlineSnapshot(`
         [
           "Add package.json - 1",
           "Update package.json to 1.0.0 - 2",
@@ -1258,14 +1258,14 @@ test('respects historical checkout boundaries when filtering file history within
     await temporaryDirectoryTask(async (cwd) => {
       await cloneGitRepository(cwd, remote, 'v2.0.0')
 
-      expect(await showFileCommits(cwd, filePath, 1)).toMatchInlineSnapshot(`
+      expect(await readFileCommits(cwd, filePath, 1)).toMatchInlineSnapshot(`
         [
           "Add package.json - 1",
           "Update package.json to 1.0.0 - 2",
           "Update package.json to 2.0.0 - 3",
         ]
       `)
-      expect(await showFileCommits(cwd, filePath)).toMatchInlineSnapshot(`
+      expect(await readFileCommits(cwd, filePath)).toMatchInlineSnapshot(`
         [
           "Add package.json - 1",
           "Update package.json to 1.0.0 - 2",
@@ -1277,13 +1277,13 @@ test('respects historical checkout boundaries when filtering file history within
     await temporaryDirectoryTask(async (cwd) => {
       await cloneGitRepository(cwd, remote, 'v1.0.0')
 
-      expect(await showFileCommits(cwd, filePath, 1)).toMatchInlineSnapshot(`
+      expect(await readFileCommits(cwd, filePath, 1)).toMatchInlineSnapshot(`
         [
           "Add package.json - 1",
           "Update package.json to 1.0.0 - 2",
         ]
       `)
-      expect(await showFileCommits(cwd, filePath)).toMatchInlineSnapshot(`
+      expect(await readFileCommits(cwd, filePath)).toMatchInlineSnapshot(`
         [
           "Add package.json - 1",
           "Update package.json to 1.0.0 - 2",

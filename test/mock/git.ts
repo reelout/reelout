@@ -41,14 +41,14 @@ vi.mock(import('@reelout/core/util/execGit'), async (importActual) => {
 })
 
 vi.mock(
-  import('@reelout/core/git/history/showGitHistory'),
+  import('@reelout/core/git/history/readGitHistory'),
   async (importActual) => {
-    const { showGitHistory } = await importActual()
+    const { readGitHistory } = await importActual()
 
     return {
-      showGitHistory: (...args: Parameters<typeof showGitHistory>) => {
+      readGitHistory: (...args: Parameters<typeof readGitHistory>) => {
         args[1] = { ...args[1], pageSize: 1 }
-        return showGitHistory(...args)
+        return readGitHistory(...args)
       },
     }
   }

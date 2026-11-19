@@ -7,7 +7,7 @@ import {
   execGit,
   getParsedGitCommit,
   pushGitChanges,
-  showParsedGitHistory,
+  readParsedGitHistory,
 } from '@reelout/core'
 import { updatePackageJson, writePackageJson } from '@reelout/npm'
 import { fromAsync } from 'from-async'
@@ -38,7 +38,7 @@ async function fetchCommits(
   return (
     await fromAsync(
       (async function* () {
-        for await (const commit of showParsedGitHistory(
+        for await (const commit of readParsedGitHistory(
           cwd,
           from !== undefined || until !== undefined
             ? { from, until }
@@ -63,7 +63,7 @@ async function fetchFileCommits(cwd: string, filePath: string, limit: number) {
   return (
     await fromAsync(
       (async function* () {
-        for await (const commit of showParsedGitHistory(cwd, { filePath })) {
+        for await (const commit of readParsedGitHistory(cwd, { filePath })) {
           yield commit
           if (--limit <= 0) break
         }
@@ -79,7 +79,7 @@ async function fetchFileCommits(cwd: string, filePath: string, limit: number) {
     }))
 }
 
-async function showCommits(cwd: string, ref?: string) {
+async function readCommits(cwd: string, ref?: string) {
   return Promise.all(
     (await getGitCommitHashes(cwd, ref)).map(async (commit) => {
       try {
@@ -242,7 +242,7 @@ test('yields parsed commits when querying repository history', async () => {
           "pkg2@0.3.0",
         ]
       `)
-      expect(await showCommits(cwd)).toMatchInlineSnapshot(`
+      expect(await readCommits(cwd)).toMatchInlineSnapshot(`
         [
           {
             "files": [
@@ -298,7 +298,7 @@ test('yields parsed commits when querying repository history', async () => {
           "pkg2@0.3.0",
         ]
       `)
-      expect(await showCommits(cwd)).toMatchInlineSnapshot(`
+      expect(await readCommits(cwd)).toMatchInlineSnapshot(`
         [
           {
             "files": [
@@ -479,7 +479,7 @@ test('yields parsed commits when bounded by revision range', async () => {
           "v0.1.0",
         ]
       `)
-      expect(await showCommits(cwd, until)).toMatchInlineSnapshot(`
+      expect(await readCommits(cwd, until)).toMatchInlineSnapshot(`
         [
           {
             "files": [
@@ -495,7 +495,7 @@ test('yields parsed commits when bounded by revision range', async () => {
           },
         ]
       `)
-      expect(await showCommits(cwd, from)).toMatchInlineSnapshot(`
+      expect(await readCommits(cwd, from)).toMatchInlineSnapshot(`
         [
           {
             "files": [
@@ -667,7 +667,7 @@ test('yields limited parsed commits when starting from tag reference', async () 
           "pkg1@0.2.0",
         ]
       `)
-      expect(await showCommits(cwd, 'pkg1@0.2.0')).toMatchInlineSnapshot(`
+      expect(await readCommits(cwd, 'pkg1@0.2.0')).toMatchInlineSnapshot(`
         [
           {
             "files": [
@@ -841,7 +841,7 @@ test('yields parsed commits when filtered by file path', async () => {
           },
         ]
       `)
-      expect(await showCommits(cwd)).toMatchInlineSnapshot(`
+      expect(await readCommits(cwd)).toMatchInlineSnapshot(`
         [
           {
             "files": [
@@ -940,7 +940,7 @@ test('yields parsed commits when filtered by file path', async () => {
           },
         ]
       `)
-      expect(await showCommits(cwd)).toMatchInlineSnapshot(`
+      expect(await readCommits(cwd)).toMatchInlineSnapshot(`
         [
           {
             "files": [
@@ -1038,7 +1038,7 @@ test('yields parsed commits when filtered by file path', async () => {
           },
         ]
       `)
-      expect(await showCommits(cwd)).toMatchInlineSnapshot(`
+      expect(await readCommits(cwd)).toMatchInlineSnapshot(`
         [
           {
             "files": [
@@ -1088,7 +1088,7 @@ test('yields parsed commits when filtered by file path', async () => {
           },
         ]
       `)
-      expect(await showCommits(cwd)).toMatchInlineSnapshot(`
+      expect(await readCommits(cwd)).toMatchInlineSnapshot(`
         [
           {
             "files": [

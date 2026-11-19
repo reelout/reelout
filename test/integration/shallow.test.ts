@@ -191,13 +191,10 @@ test('releases packages in shallow clone across varying manifests', async () => 
             "[33mPackage could not be loaded: JSON file at "[1m<cwd>/packages/pkg5/package.json[22m" could not be parsed.[39m",
           ],
           [
-            "[33mTag could not be determined for package at "[1mpackages/pkg3[22m": Package name is required to build a tag name.[39m",
-          ],
-          [
             "Status: [32mSUCCESS[39m",
           ],
           [
-            "Release complete: [1m[32m4 released[39m[22m [90m(4)[39m
+            "Release complete: [1m[32m3 released[39m[22m [90m(4)[39m
 
         [42m 0.0.1 ← 0.0.0 [49m[90m patch [39m
 
@@ -207,14 +204,6 @@ test('releases packages in shallow clone across varying manifests', async () => 
 
         - **pkg1:** add index file ([6eb7792](https://github.com/mock-owner/mock-repo/commit/6eb7792b3d85bafb5b0bd7f6210c9cd6ed3d5d73))
         - **pkg2:** add entry script ([cf09344](https://github.com/mock-owner/mock-repo/commit/cf09344e5a9d33ffe070d526db3e12a9405e6b35))
-
-        [90m ./packages/pkg3 [39m[42m 3.1.0 ← 3.0.0 [49m[90m minor [39m
-
-        [36m## 3.1.0 (2026-01-01)[39m
-
-        [36m### Features[39m
-
-        - **pkg3:** omit package name ([89354e7](https://github.com/mock-owner/mock-repo/commit/89354e77aad3d3579eca45cf3aca382f9322f990))
 
         [44m @scope/pkg1 [49m[42m 1.1.0 ← 1.0.0 [49m[90m minor [39m
 
@@ -280,7 +269,6 @@ test('releases packages in shallow clone across varying manifests', async () => 
 
       expect(await getGitCommitSubjects(cwd)).toMatchInlineSnapshot(`
         [
-          "feat(pkg5): use invalid manifest json",
           "chore: release v0.0.1, @scope/pkg1@1.1.0, @scope/pkg2@2.1.0",
           "fix(pkg1): update entry exports",
           "fix(pkg2): correct module logic",
@@ -295,22 +283,22 @@ test('releases packages in shallow clone across varying manifests', async () => 
         - **pkg2:** add entry script ([cf09344](https://github.com/mock-owner/mock-repo/commit/cf09344e5a9d33ffe070d526db3e12a9405e6b35))",
           "@scope/pkg1@1.1.1 ## Bug Fixes
 
-        - **pkg1:** update entry exports ([8be045d](https://github.com/mock-owner/mock-repo/commit/8be045de87e3c0d6cc25d6a865fa9aa543ac9b64))
-        - **pkg2:** correct module logic ([8f013a7](https://github.com/mock-owner/mock-repo/commit/8f013a7983c41e5d461d62dec15944f707a076c8))",
+        - **pkg1:** update entry exports ([246a446](https://github.com/mock-owner/mock-repo/commit/246a4469e4c3611adb8fe0b23e1a5ea4315cad51))
+        - **pkg2:** correct module logic ([2534126](https://github.com/mock-owner/mock-repo/commit/2534126d24a61476fdcab1329dc23fd337c6f9c7))",
           "@scope/pkg2@2.1.0 ## Features
 
         - **pkg2:** add entry script ([cf09344](https://github.com/mock-owner/mock-repo/commit/cf09344e5a9d33ffe070d526db3e12a9405e6b35))",
           "@scope/pkg2@2.1.1 ## Bug Fixes
 
-        - **pkg2:** correct module logic ([8f013a7](https://github.com/mock-owner/mock-repo/commit/8f013a7983c41e5d461d62dec15944f707a076c8))",
+        - **pkg2:** correct module logic ([2534126](https://github.com/mock-owner/mock-repo/commit/2534126d24a61476fdcab1329dc23fd337c6f9c7))",
           "v0.0.1 ## Features
 
         - **pkg1:** add index file ([6eb7792](https://github.com/mock-owner/mock-repo/commit/6eb7792b3d85bafb5b0bd7f6210c9cd6ed3d5d73))
         - **pkg2:** add entry script ([cf09344](https://github.com/mock-owner/mock-repo/commit/cf09344e5a9d33ffe070d526db3e12a9405e6b35))",
           "v0.0.2 ## Bug Fixes
 
-        - **pkg1:** update entry exports ([8be045d](https://github.com/mock-owner/mock-repo/commit/8be045de87e3c0d6cc25d6a865fa9aa543ac9b64))
-        - **pkg2:** correct module logic ([8f013a7](https://github.com/mock-owner/mock-repo/commit/8f013a7983c41e5d461d62dec15944f707a076c8))",
+        - **pkg1:** update entry exports ([246a446](https://github.com/mock-owner/mock-repo/commit/246a4469e4c3611adb8fe0b23e1a5ea4315cad51))
+        - **pkg2:** correct module logic ([2534126](https://github.com/mock-owner/mock-repo/commit/2534126d24a61476fdcab1329dc23fd337c6f9c7))",
         ]
       `)
       expect(await showLastCommit(remote)).toMatchInlineSnapshot(`
@@ -362,8 +350,8 @@ test('releases packages in shallow clone across varying manifests', async () => 
 
         [36m### Bug Fixes[39m
 
-        - **pkg1:** update entry exports ([8be045d](https://github.com/mock-owner/mock-repo/commit/8be045de87e3c0d6cc25d6a865fa9aa543ac9b64))
-        - **pkg2:** correct module logic ([8f013a7](https://github.com/mock-owner/mock-repo/commit/8f013a7983c41e5d461d62dec15944f707a076c8))
+        - **pkg1:** update entry exports ([246a446](https://github.com/mock-owner/mock-repo/commit/246a4469e4c3611adb8fe0b23e1a5ea4315cad51))
+        - **pkg2:** correct module logic ([2534126](https://github.com/mock-owner/mock-repo/commit/2534126d24a61476fdcab1329dc23fd337c6f9c7))
 
         [44m @scope/pkg1 [49m[42m 1.1.1 ← 1.1.0 [49m[90m patch [39m
 
@@ -371,8 +359,8 @@ test('releases packages in shallow clone across varying manifests', async () => 
 
         [36m### Bug Fixes[39m
 
-        - **pkg1:** update entry exports ([8be045d](https://github.com/mock-owner/mock-repo/commit/8be045de87e3c0d6cc25d6a865fa9aa543ac9b64))
-        - **pkg2:** correct module logic ([8f013a7](https://github.com/mock-owner/mock-repo/commit/8f013a7983c41e5d461d62dec15944f707a076c8))
+        - **pkg1:** update entry exports ([246a446](https://github.com/mock-owner/mock-repo/commit/246a4469e4c3611adb8fe0b23e1a5ea4315cad51))
+        - **pkg2:** correct module logic ([2534126](https://github.com/mock-owner/mock-repo/commit/2534126d24a61476fdcab1329dc23fd337c6f9c7))
 
         [44m @scope/pkg2 [49m[42m 2.1.1 ← 2.1.0 [49m[90m patch [39m
 
@@ -380,7 +368,7 @@ test('releases packages in shallow clone across varying manifests', async () => 
 
         [36m### Bug Fixes[39m
 
-        - **pkg2:** correct module logic ([8f013a7](https://github.com/mock-owner/mock-repo/commit/8f013a7983c41e5d461d62dec15944f707a076c8))
+        - **pkg2:** correct module logic ([2534126](https://github.com/mock-owner/mock-repo/commit/2534126d24a61476fdcab1329dc23fd337c6f9c7))
         ",
           ],
         ]
@@ -451,30 +439,30 @@ test('releases packages in shallow clone across varying manifests', async () => 
         - **pkg2:** add entry script ([cf09344](https://github.com/mock-owner/mock-repo/commit/cf09344e5a9d33ffe070d526db3e12a9405e6b35))",
           "@scope/pkg1@1.1.1 ## Bug Fixes
 
-        - **pkg1:** update entry exports ([8be045d](https://github.com/mock-owner/mock-repo/commit/8be045de87e3c0d6cc25d6a865fa9aa543ac9b64))
-        - **pkg2:** correct module logic ([8f013a7](https://github.com/mock-owner/mock-repo/commit/8f013a7983c41e5d461d62dec15944f707a076c8))",
+        - **pkg1:** update entry exports ([246a446](https://github.com/mock-owner/mock-repo/commit/246a4469e4c3611adb8fe0b23e1a5ea4315cad51))
+        - **pkg2:** correct module logic ([2534126](https://github.com/mock-owner/mock-repo/commit/2534126d24a61476fdcab1329dc23fd337c6f9c7))",
           "@scope/pkg1@1.1.2 ## Bug Fixes
 
-        - **pkg1:** change target value to 4 ([7ce1a15](https://github.com/mock-owner/mock-repo/commit/7ce1a15b75be65d9265e3b033c87062aeca09a92))
-        - **pkg1:** update target value to 5 ([9eae461](https://github.com/mock-owner/mock-repo/commit/9eae46109fbc5d8a3ddee934534abb4154680d53))",
+        - **pkg1:** change target value to 4 ([99b1c79](https://github.com/mock-owner/mock-repo/commit/99b1c798322f884d339d4c8470f7e61ea886bceb))
+        - **pkg1:** update target value to 5 ([b38b60e](https://github.com/mock-owner/mock-repo/commit/b38b60e25cbd7c87fd992c0dfa193a2dc3c019f5))",
           "@scope/pkg2@2.1.0 ## Features
 
         - **pkg2:** add entry script ([cf09344](https://github.com/mock-owner/mock-repo/commit/cf09344e5a9d33ffe070d526db3e12a9405e6b35))",
           "@scope/pkg2@2.1.1 ## Bug Fixes
 
-        - **pkg2:** correct module logic ([8f013a7](https://github.com/mock-owner/mock-repo/commit/8f013a7983c41e5d461d62dec15944f707a076c8))",
+        - **pkg2:** correct module logic ([2534126](https://github.com/mock-owner/mock-repo/commit/2534126d24a61476fdcab1329dc23fd337c6f9c7))",
           "v0.0.1 ## Features
 
         - **pkg1:** add index file ([6eb7792](https://github.com/mock-owner/mock-repo/commit/6eb7792b3d85bafb5b0bd7f6210c9cd6ed3d5d73))
         - **pkg2:** add entry script ([cf09344](https://github.com/mock-owner/mock-repo/commit/cf09344e5a9d33ffe070d526db3e12a9405e6b35))",
           "v0.0.2 ## Bug Fixes
 
-        - **pkg1:** update entry exports ([8be045d](https://github.com/mock-owner/mock-repo/commit/8be045de87e3c0d6cc25d6a865fa9aa543ac9b64))
-        - **pkg2:** correct module logic ([8f013a7](https://github.com/mock-owner/mock-repo/commit/8f013a7983c41e5d461d62dec15944f707a076c8))",
+        - **pkg1:** update entry exports ([246a446](https://github.com/mock-owner/mock-repo/commit/246a4469e4c3611adb8fe0b23e1a5ea4315cad51))
+        - **pkg2:** correct module logic ([2534126](https://github.com/mock-owner/mock-repo/commit/2534126d24a61476fdcab1329dc23fd337c6f9c7))",
           "v0.0.3 ## Bug Fixes
 
-        - **pkg1:** change target value to 4 ([7ce1a15](https://github.com/mock-owner/mock-repo/commit/7ce1a15b75be65d9265e3b033c87062aeca09a92))
-        - **pkg1:** update target value to 5 ([9eae461](https://github.com/mock-owner/mock-repo/commit/9eae46109fbc5d8a3ddee934534abb4154680d53))",
+        - **pkg1:** change target value to 4 ([99b1c79](https://github.com/mock-owner/mock-repo/commit/99b1c798322f884d339d4c8470f7e61ea886bceb))
+        - **pkg1:** update target value to 5 ([b38b60e](https://github.com/mock-owner/mock-repo/commit/b38b60e25cbd7c87fd992c0dfa193a2dc3c019f5))",
         ]
       `)
       expect(await showLastCommit(remote)).toMatchInlineSnapshot(`
@@ -528,8 +516,8 @@ test('releases packages in shallow clone across varying manifests', async () => 
 
         [36m### Bug Fixes[39m
 
-        - **pkg1:** change target value to 4 ([7ce1a15](https://github.com/mock-owner/mock-repo/commit/7ce1a15b75be65d9265e3b033c87062aeca09a92))
-        - **pkg1:** update target value to 5 ([9eae461](https://github.com/mock-owner/mock-repo/commit/9eae46109fbc5d8a3ddee934534abb4154680d53))
+        - **pkg1:** change target value to 4 ([99b1c79](https://github.com/mock-owner/mock-repo/commit/99b1c798322f884d339d4c8470f7e61ea886bceb))
+        - **pkg1:** update target value to 5 ([b38b60e](https://github.com/mock-owner/mock-repo/commit/b38b60e25cbd7c87fd992c0dfa193a2dc3c019f5))
 
         [44m @scope/pkg1 [49m[42m 1.1.2 ← 1.1.1 [49m[90m patch [39m
 
@@ -537,8 +525,8 @@ test('releases packages in shallow clone across varying manifests', async () => 
 
         [36m### Bug Fixes[39m
 
-        - **pkg1:** change target value to 4 ([7ce1a15](https://github.com/mock-owner/mock-repo/commit/7ce1a15b75be65d9265e3b033c87062aeca09a92))
-        - **pkg1:** update target value to 5 ([9eae461](https://github.com/mock-owner/mock-repo/commit/9eae46109fbc5d8a3ddee934534abb4154680d53))
+        - **pkg1:** change target value to 4 ([99b1c79](https://github.com/mock-owner/mock-repo/commit/99b1c798322f884d339d4c8470f7e61ea886bceb))
+        - **pkg1:** update target value to 5 ([b38b60e](https://github.com/mock-owner/mock-repo/commit/b38b60e25cbd7c87fd992c0dfa193a2dc3c019f5))
         ",
           ],
         ]
@@ -611,42 +599,42 @@ test('releases packages in shallow clone across varying manifests', async () => 
         - **pkg2:** add entry script ([cf09344](https://github.com/mock-owner/mock-repo/commit/cf09344e5a9d33ffe070d526db3e12a9405e6b35))",
           "@scope/pkg1@1.1.1 ## Bug Fixes
 
-        - **pkg1:** update entry exports ([8be045d](https://github.com/mock-owner/mock-repo/commit/8be045de87e3c0d6cc25d6a865fa9aa543ac9b64))
-        - **pkg2:** correct module logic ([8f013a7](https://github.com/mock-owner/mock-repo/commit/8f013a7983c41e5d461d62dec15944f707a076c8))",
+        - **pkg1:** update entry exports ([246a446](https://github.com/mock-owner/mock-repo/commit/246a4469e4c3611adb8fe0b23e1a5ea4315cad51))
+        - **pkg2:** correct module logic ([2534126](https://github.com/mock-owner/mock-repo/commit/2534126d24a61476fdcab1329dc23fd337c6f9c7))",
           "@scope/pkg1@1.1.2 ## Bug Fixes
 
-        - **pkg1:** change target value to 4 ([7ce1a15](https://github.com/mock-owner/mock-repo/commit/7ce1a15b75be65d9265e3b033c87062aeca09a92))
-        - **pkg1:** update target value to 5 ([9eae461](https://github.com/mock-owner/mock-repo/commit/9eae46109fbc5d8a3ddee934534abb4154680d53))",
+        - **pkg1:** change target value to 4 ([99b1c79](https://github.com/mock-owner/mock-repo/commit/99b1c798322f884d339d4c8470f7e61ea886bceb))
+        - **pkg1:** update target value to 5 ([b38b60e](https://github.com/mock-owner/mock-repo/commit/b38b60e25cbd7c87fd992c0dfa193a2dc3c019f5))",
           "@scope/pkg1@1.1.3 ## Bug Fixes
 
-        - **pkg2:** adjust local buffer to 7 ([4645196](https://github.com/mock-owner/mock-repo/commit/4645196b336419ea337bf938b4379ab89587bf72))
-        - **pkg2:** increment local buffer to 6 ([15370c0](https://github.com/mock-owner/mock-repo/commit/15370c00253ac607636fa5691fbc60e59d27f694))",
+        - **pkg2:** adjust local buffer to 7 ([69000e7](https://github.com/mock-owner/mock-repo/commit/69000e740c6614746e88a3ebbdd7367f75c4e645))
+        - **pkg2:** increment local buffer to 6 ([0a1aab1](https://github.com/mock-owner/mock-repo/commit/0a1aab13749266ef3c5ed42ca18f6e3c2a7b0782))",
           "@scope/pkg2@2.1.0 ## Features
 
         - **pkg2:** add entry script ([cf09344](https://github.com/mock-owner/mock-repo/commit/cf09344e5a9d33ffe070d526db3e12a9405e6b35))",
           "@scope/pkg2@2.1.1 ## Bug Fixes
 
-        - **pkg2:** correct module logic ([8f013a7](https://github.com/mock-owner/mock-repo/commit/8f013a7983c41e5d461d62dec15944f707a076c8))",
+        - **pkg2:** correct module logic ([2534126](https://github.com/mock-owner/mock-repo/commit/2534126d24a61476fdcab1329dc23fd337c6f9c7))",
           "@scope/pkg2@2.1.2 ## Bug Fixes
 
-        - **pkg2:** adjust local buffer to 7 ([4645196](https://github.com/mock-owner/mock-repo/commit/4645196b336419ea337bf938b4379ab89587bf72))
-        - **pkg2:** increment local buffer to 6 ([15370c0](https://github.com/mock-owner/mock-repo/commit/15370c00253ac607636fa5691fbc60e59d27f694))",
+        - **pkg2:** adjust local buffer to 7 ([69000e7](https://github.com/mock-owner/mock-repo/commit/69000e740c6614746e88a3ebbdd7367f75c4e645))
+        - **pkg2:** increment local buffer to 6 ([0a1aab1](https://github.com/mock-owner/mock-repo/commit/0a1aab13749266ef3c5ed42ca18f6e3c2a7b0782))",
           "v0.0.1 ## Features
 
         - **pkg1:** add index file ([6eb7792](https://github.com/mock-owner/mock-repo/commit/6eb7792b3d85bafb5b0bd7f6210c9cd6ed3d5d73))
         - **pkg2:** add entry script ([cf09344](https://github.com/mock-owner/mock-repo/commit/cf09344e5a9d33ffe070d526db3e12a9405e6b35))",
           "v0.0.2 ## Bug Fixes
 
-        - **pkg1:** update entry exports ([8be045d](https://github.com/mock-owner/mock-repo/commit/8be045de87e3c0d6cc25d6a865fa9aa543ac9b64))
-        - **pkg2:** correct module logic ([8f013a7](https://github.com/mock-owner/mock-repo/commit/8f013a7983c41e5d461d62dec15944f707a076c8))",
+        - **pkg1:** update entry exports ([246a446](https://github.com/mock-owner/mock-repo/commit/246a4469e4c3611adb8fe0b23e1a5ea4315cad51))
+        - **pkg2:** correct module logic ([2534126](https://github.com/mock-owner/mock-repo/commit/2534126d24a61476fdcab1329dc23fd337c6f9c7))",
           "v0.0.3 ## Bug Fixes
 
-        - **pkg1:** change target value to 4 ([7ce1a15](https://github.com/mock-owner/mock-repo/commit/7ce1a15b75be65d9265e3b033c87062aeca09a92))
-        - **pkg1:** update target value to 5 ([9eae461](https://github.com/mock-owner/mock-repo/commit/9eae46109fbc5d8a3ddee934534abb4154680d53))",
+        - **pkg1:** change target value to 4 ([99b1c79](https://github.com/mock-owner/mock-repo/commit/99b1c798322f884d339d4c8470f7e61ea886bceb))
+        - **pkg1:** update target value to 5 ([b38b60e](https://github.com/mock-owner/mock-repo/commit/b38b60e25cbd7c87fd992c0dfa193a2dc3c019f5))",
           "v0.0.4 ## Bug Fixes
 
-        - **pkg2:** adjust local buffer to 7 ([4645196](https://github.com/mock-owner/mock-repo/commit/4645196b336419ea337bf938b4379ab89587bf72))
-        - **pkg2:** increment local buffer to 6 ([15370c0](https://github.com/mock-owner/mock-repo/commit/15370c00253ac607636fa5691fbc60e59d27f694))",
+        - **pkg2:** adjust local buffer to 7 ([69000e7](https://github.com/mock-owner/mock-repo/commit/69000e740c6614746e88a3ebbdd7367f75c4e645))
+        - **pkg2:** increment local buffer to 6 ([0a1aab1](https://github.com/mock-owner/mock-repo/commit/0a1aab13749266ef3c5ed42ca18f6e3c2a7b0782))",
         ]
       `)
       expect(await showLastCommit(remote)).toMatchInlineSnapshot(`
@@ -704,8 +692,8 @@ test('releases packages in shallow clone across varying manifests', async () => 
 
         [36m### Bug Fixes[39m
 
-        - **pkg2:** adjust local buffer to 7 ([4645196](https://github.com/mock-owner/mock-repo/commit/4645196b336419ea337bf938b4379ab89587bf72))
-        - **pkg2:** increment local buffer to 6 ([15370c0](https://github.com/mock-owner/mock-repo/commit/15370c00253ac607636fa5691fbc60e59d27f694))
+        - **pkg2:** adjust local buffer to 7 ([69000e7](https://github.com/mock-owner/mock-repo/commit/69000e740c6614746e88a3ebbdd7367f75c4e645))
+        - **pkg2:** increment local buffer to 6 ([0a1aab1](https://github.com/mock-owner/mock-repo/commit/0a1aab13749266ef3c5ed42ca18f6e3c2a7b0782))
 
         [44m @scope/pkg1 [49m[42m 1.1.3 ← 1.1.2 [49m[90m patch [39m
 
@@ -713,8 +701,8 @@ test('releases packages in shallow clone across varying manifests', async () => 
 
         [36m### Bug Fixes[39m
 
-        - **pkg2:** adjust local buffer to 7 ([4645196](https://github.com/mock-owner/mock-repo/commit/4645196b336419ea337bf938b4379ab89587bf72))
-        - **pkg2:** increment local buffer to 6 ([15370c0](https://github.com/mock-owner/mock-repo/commit/15370c00253ac607636fa5691fbc60e59d27f694))
+        - **pkg2:** adjust local buffer to 7 ([69000e7](https://github.com/mock-owner/mock-repo/commit/69000e740c6614746e88a3ebbdd7367f75c4e645))
+        - **pkg2:** increment local buffer to 6 ([0a1aab1](https://github.com/mock-owner/mock-repo/commit/0a1aab13749266ef3c5ed42ca18f6e3c2a7b0782))
 
         [44m @scope/pkg2 [49m[42m 2.1.2 ← 2.1.1 [49m[90m patch [39m
 
@@ -722,8 +710,8 @@ test('releases packages in shallow clone across varying manifests', async () => 
 
         [36m### Bug Fixes[39m
 
-        - **pkg2:** adjust local buffer to 7 ([4645196](https://github.com/mock-owner/mock-repo/commit/4645196b336419ea337bf938b4379ab89587bf72))
-        - **pkg2:** increment local buffer to 6 ([15370c0](https://github.com/mock-owner/mock-repo/commit/15370c00253ac607636fa5691fbc60e59d27f694))
+        - **pkg2:** adjust local buffer to 7 ([69000e7](https://github.com/mock-owner/mock-repo/commit/69000e740c6614746e88a3ebbdd7367f75c4e645))
+        - **pkg2:** increment local buffer to 6 ([0a1aab1](https://github.com/mock-owner/mock-repo/commit/0a1aab13749266ef3c5ed42ca18f6e3c2a7b0782))
         ",
           ],
         ]

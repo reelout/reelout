@@ -15,10 +15,10 @@ ReelOut is an ESM-only TypeScript monorepo managed with pnpm workspaces. The roo
 ## Development
 
 - Install workspace dependencies with `pnpm install`.
-- Run a focused test with `pnpm test run <file-or-pattern>` or the full suite with `pnpm test run`. Use `pnpm test` for Vitest watch mode.
+- Run a focused test with `pnpm test run <file-or-pattern>`. Use `pnpm test` for Vitest watch mode. Do not run the full suite locally — CI runs it.
 - Run `pnpm lint` for lint, formatting, and repository-specific checks. Run `pnpm build` to build the workspace.
 - Use `pnpm dev` to start the workspace and root build watchers.
-- Prefer focused checks relevant to your changes. Do not run `pnpm validate` by default: it installs dependencies, cleans generated output, runs linting, generates API docs, builds the workspace, and runs tests with coverage. CI runs this full pipeline.
+- NEVER run `pnpm validate` locally. It installs dependencies, cleans generated output, runs linting, generates API docs, builds the workspace, and runs tests with coverage — this full pipeline belongs to CI only. Locally, use focused tests, `pnpm lint`, and `pnpm build` instead.
 
 ## Change Guidelines
 

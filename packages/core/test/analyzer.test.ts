@@ -267,6 +267,169 @@ test('derives release plans for packages with an existing version', async () => 
   })
 })
 
+test('slices each package history from its own verified release tag', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    using _ = vi.spyOn(context, 'cwd', 'get').mockReturnValue(cwd)
+    workspace.entry = '.'
+    workspace.members = ['*']
+
+    await initializeGitRepository(cwd)
+
+    const pkgDir1 = path.join(cwd, 'foo')
+    const pkgDir2 = path.join(cwd, 'bar')
+
+    await writePackageJson(cwd, {
+      name: undefined,
+      version: '0.0.0',
+      workspaces: ['*'],
+    })
+    await writePackageJson(pkgDir1, { name: 'foo', version: '0.0.0' })
+    await writePackageJson(pkgDir2, { name: 'bar', version: '0.0.0' })
+    await execGit(cwd, ['add', '.'])
+    await execGit(cwd, ['commit', '-m', 'chore: init pkgs'])
+
+    await writeFile(path.join(pkgDir2, 'index.ts'), 'export const bar = 1;')
+    await execGit(cwd, ['add', '.'])
+    await execGit(cwd, ['commit', '-m', 'feat(bar): add entry'])
+
+    await updatePackageJson(pkgDir1, { version: '1.0.0' })
+    await writeChangelog(pkgDir1, '1.0.0')
+    await execGit(cwd, ['add', '.'])
+    await execGit(cwd, ['commit', '-m', 'chore: release foo'])
+    await execGit(cwd, ['tag', 'foo@1.0.0'])
+
+    await writeFile(path.join(pkgDir1, 'index.ts'), 'export const foo = 2;')
+    await execGit(cwd, ['add', '.'])
+    await execGit(cwd, ['commit', '-m', 'fix(foo): update entry'])
+
+    await writeFile(path.join(pkgDir2, 'index.ts'), 'export const bar = 2;')
+    await execGit(cwd, ['add', '.'])
+    await execGit(cwd, ['commit', '-m', 'feat(bar): update entry'])
+
+    context.packages = [
+      await buildPackage({
+        rootDir: context.cwd,
+        packageDir: 'foo',
+        workspace,
+        packageManager: 'npm',
+      }),
+      await buildPackage({
+        rootDir: context.cwd,
+        packageDir: 'bar',
+        workspace,
+        packageManager: 'npm',
+      }),
+    ]
+
+    await executeReleaseWorkflow(context, [plugin()])
+
+    expect(summarizePlans(context.plans)).toMatchInlineSnapshot(`
+      [
+        {
+          "history": [
+            "fix(foo): update entry",
+          ],
+          "name": "foo",
+          "type": "patch",
+        },
+        {
+          "history": [
+            "feat(bar): update entry",
+            "feat(bar): add entry",
+            "chore: init pkgs",
+          ],
+          "name": "bar",
+          "type": "minor",
+        },
+      ]
+    `)
+
+    expect(context.plans[0]?.package.tag).toEqual({ name: 'foo@1.0.0' })
+    expect(context.plans[1]?.package.tag).toBeUndefined()
+  })
+})
+
+test('treats a tag that does not point at a package commit as unverified', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    using _ = vi.spyOn(context, 'cwd', 'get').mockReturnValue(cwd)
+    workspace.entry = '.'
+    workspace.members = ['*']
+
+    await initializeGitRepository(cwd)
+
+    const pkgDir1 = path.join(cwd, 'foo')
+    const pkgDir2 = path.join(cwd, 'bar')
+
+    await writePackageJson(cwd, {
+      name: undefined,
+      version: '0.0.0',
+      workspaces: ['*'],
+    })
+    await writePackageJson(pkgDir1, { name: 'foo', version: '1.0.0' })
+    await writePackageJson(pkgDir2, { name: 'bar', version: '0.0.0' })
+    await execGit(cwd, ['add', '.'])
+    await execGit(cwd, ['commit', '-m', 'chore: init pkgs'])
+
+    await writeFile(path.join(pkgDir2, 'index.ts'), 'export const bar = 1;')
+    await execGit(cwd, ['add', '.'])
+    await execGit(cwd, ['commit', '-m', 'feat(bar): add entry'])
+    await execGit(cwd, ['tag', 'foo@1.0.0'])
+
+    await writeFile(path.join(pkgDir1, 'index.ts'), 'export const foo = 1;')
+    await execGit(cwd, ['add', '.'])
+    await execGit(cwd, ['commit', '-m', 'feat(foo): add entry'])
+
+    context.packages = [
+      await buildPackage({
+        rootDir: context.cwd,
+        packageDir: 'foo',
+        workspace,
+        packageManager: 'npm',
+      }),
+      await buildPackage({
+        rootDir: context.cwd,
+        packageDir: 'bar',
+        workspace,
+        packageManager: 'npm',
+      }),
+    ]
+
+    await executeReleaseWorkflow(context, [plugin()])
+
+    expect(summarizePlans(context.plans)).toMatchInlineSnapshot(`
+      [
+        {
+          "history": [
+            "feat(foo): add entry",
+            "chore: init pkgs",
+          ],
+          "name": "foo",
+          "type": "minor",
+        },
+        {
+          "history": [
+            "feat(bar): add entry",
+            "chore: init pkgs",
+          ],
+          "name": "bar",
+          "type": "minor",
+        },
+      ]
+    `)
+
+    expect(logger.mock.calls).toMatchInlineSnapshot(`
+      [
+        [
+          "Status: [32mSUCCESS[39m",
+        ],
+        [
+          "Release complete: [33mNo packages are scheduled for release.[39m",
+        ],
+      ]
+    `)
+  })
+})
+
 test('ignores version mismatches between package context and repository tags', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     using _ = vi.spyOn(context, 'cwd', 'get').mockReturnValue(cwd)
@@ -300,20 +463,20 @@ test('ignores version mismatches between package context and repository tags', a
         {
           "history": [
             {
-              "authorDate": "2026-01-01T00:00:06.000Z",
+              "authorDate": "2026-01-01T00:00:16.000Z",
               "body": null,
-              "committerDate": "2026-01-01T00:00:06.000Z",
+              "committerDate": "2026-01-01T00:00:16.000Z",
               "files": [
                 "index.ts",
               ],
               "footer": null,
-              "hash": "bb7db3dea5d583257fe650a94ad2ded0c1b87e34",
+              "hash": "6cd9b4e37f5ee25e0e6b17231b92cba3704ffa46",
               "header": "feat: add entry",
               "mentions": [],
               "merge": null,
               "notes": [],
               "parent": [
-                "fa5b46c841dc2c01287885e291bbcd582ec38c21",
+                "2f40f55afc714414aba74f76b61ad7a5199efd2e",
               ],
               "references": [],
               "revert": null,
@@ -323,15 +486,15 @@ test('ignores version mismatches between package context and repository tags', a
               "type": "feat",
             },
             {
-              "authorDate": "2026-01-01T00:00:05.000Z",
+              "authorDate": "2026-01-01T00:00:15.000Z",
               "body": null,
-              "committerDate": "2026-01-01T00:00:05.000Z",
+              "committerDate": "2026-01-01T00:00:15.000Z",
               "files": [
                 "CHANGELOG.md",
                 "package.json",
               ],
               "footer": null,
-              "hash": "fa5b46c841dc2c01287885e291bbcd582ec38c21",
+              "hash": "2f40f55afc714414aba74f76b61ad7a5199efd2e",
               "header": "chore: add manifest",
               "mentions": [],
               "merge": null,
@@ -420,20 +583,20 @@ test('preserves pre-existing release plans and formats changelog entries', async
               "type": "build",
             },
             {
-              "authorDate": "2026-01-01T00:00:08.000Z",
+              "authorDate": "2026-01-01T00:00:18.000Z",
               "body": null,
-              "committerDate": "2026-01-01T00:00:08.000Z",
+              "committerDate": "2026-01-01T00:00:18.000Z",
               "files": [
                 "index.ts",
               ],
               "footer": null,
-              "hash": "9b3bee4eb75e90b1164b94028b11f482058b8b70",
+              "hash": "be0fa49f87240da03f0e133290407d77afd92377",
               "header": "feat: add entry",
               "mentions": [],
               "merge": null,
               "notes": [],
               "parent": [
-                "432000cd133c92a663a4f670d1ddacb10b3050d4",
+                "fa184e62b7857f0a09dbb8967eaca60c30ebe5e9",
               ],
               "references": [],
               "revert": null,
@@ -443,14 +606,14 @@ test('preserves pre-existing release plans and formats changelog entries', async
               "type": "feat",
             },
             {
-              "authorDate": "2026-01-01T00:00:07.000Z",
+              "authorDate": "2026-01-01T00:00:17.000Z",
               "body": null,
-              "committerDate": "2026-01-01T00:00:07.000Z",
+              "committerDate": "2026-01-01T00:00:17.000Z",
               "files": [
                 "package.json",
               ],
               "footer": null,
-              "hash": "432000cd133c92a663a4f670d1ddacb10b3050d4",
+              "hash": "fa184e62b7857f0a09dbb8967eaca60c30ebe5e9",
               "header": "chore: add manifest",
               "mentions": [],
               "merge": null,
@@ -495,6 +658,75 @@ test('preserves pre-existing release plans and formats changelog entries', async
       Add some changes
       ",
         ],
+      ]
+    `)
+  })
+})
+
+test('releases pre-seeded plans regardless of the filter', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    using _ = vi.spyOn(context, 'cwd', 'get').mockReturnValue(cwd)
+    workspace.entry = '.'
+    workspace.members = ['*']
+
+    await initializeGitRepository(cwd)
+
+    const pkgDir1 = path.join(cwd, 'foo')
+    const pkgDir2 = path.join(cwd, 'bar')
+
+    await writePackageJson(cwd, {
+      name: undefined,
+      version: '0.0.0',
+      workspaces: ['*'],
+    })
+    await writePackageJson(pkgDir1, { name: 'foo', version: '0.0.0' })
+    await writePackageJson(pkgDir2, { name: 'bar', version: '0.0.0' })
+    await execGit(cwd, ['add', '.'])
+    await execGit(cwd, ['commit', '-m', 'chore: init pkgs'])
+
+    await writeFile(path.join(pkgDir2, 'index.ts'), 'export const bar = 1;')
+    await execGit(cwd, ['add', '.'])
+    await execGit(cwd, ['commit', '-m', 'feat(bar): add entry'])
+
+    const foo = await buildPackage({
+      rootDir: context.cwd,
+      packageDir: 'foo',
+      workspace,
+      packageManager: 'npm',
+    })
+    const bar = await buildPackage({
+      rootDir: context.cwd,
+      packageDir: 'bar',
+      workspace,
+      packageManager: 'npm',
+    })
+
+    context.packages = [foo, bar]
+    context.plans = [
+      { package: foo, history: [], release: null },
+      { package: bar, history: [], release: null },
+    ]
+    context.filter = ['bar']
+
+    await executeReleaseWorkflow(context, [plugin()])
+
+    expect(summarizePlans(context.plans)).toMatchInlineSnapshot(`
+      [
+        {
+          "history": [
+            "chore: init pkgs",
+          ],
+          "name": "foo",
+          "type": null,
+        },
+        {
+          "history": [
+            "feat(bar): add entry",
+            "chore: init pkgs",
+          ],
+          "name": "bar",
+          "type": "minor",
+        },
       ]
     `)
   })
@@ -650,20 +882,20 @@ test('identifies package changes across a multi-package workspace', async () => 
         {
           "history": [
             {
-              "authorDate": "2026-01-01T00:00:30.000Z",
+              "authorDate": "2026-01-01T00:00:42.000Z",
               "body": null,
-              "committerDate": "2026-01-01T00:00:30.000Z",
+              "committerDate": "2026-01-01T00:00:42.000Z",
               "files": [
                 "README.md",
               ],
               "footer": null,
-              "hash": "4b210a3b37c107552b169895fc1d4cef97d07ec8",
+              "hash": "d950fabfbfc810c6c65fbe7c0679868ab14448f4",
               "header": "docs: update readme",
               "mentions": [],
               "merge": null,
               "notes": [],
               "parent": [
-                "be6251f9a736450dca7fbf22b3f4a1d01a5d7fa8",
+                "dc1a6618b6e7f136022ba018cae2204e6ceff843",
               ],
               "references": [],
               "revert": null,
@@ -673,20 +905,20 @@ test('identifies package changes across a multi-package workspace', async () => 
               "type": "docs",
             },
             {
-              "authorDate": "2026-01-01T00:00:25.000Z",
+              "authorDate": "2026-01-01T00:00:37.000Z",
               "body": null,
-              "committerDate": "2026-01-01T00:00:25.000Z",
+              "committerDate": "2026-01-01T00:00:37.000Z",
               "files": [
                 "foo/index.ts",
               ],
               "footer": null,
-              "hash": "0564b8dfcae6a82147d8f3dc523647c07b91adce",
+              "hash": "83aeb94df7c256d385847f6184a1a881221c038e",
               "header": "fix(foo): update entry",
               "mentions": [],
               "merge": null,
               "notes": [],
               "parent": [
-                "600ed8a1b1e9f463777b161b59f09cd66792f4fa",
+                "0cda9656205031eb427c5621de968d77d8d49052",
               ],
               "references": [],
               "revert": null,
@@ -706,6 +938,10 @@ test('identifies package changes across a multi-package workspace', async () => 
             "name": undefined,
             "private": undefined,
             "root": true,
+            "tag": {
+              "message": undefined,
+              "name": "v1.0.0",
+            },
             "version": "1.0.0",
           },
           "release": {
@@ -715,20 +951,20 @@ test('identifies package changes across a multi-package workspace', async () => 
         {
           "history": [
             {
-              "authorDate": "2026-01-01T00:00:25.000Z",
+              "authorDate": "2026-01-01T00:00:37.000Z",
               "body": null,
-              "committerDate": "2026-01-01T00:00:25.000Z",
+              "committerDate": "2026-01-01T00:00:37.000Z",
               "files": [
                 "foo/index.ts",
               ],
               "footer": null,
-              "hash": "0564b8dfcae6a82147d8f3dc523647c07b91adce",
+              "hash": "83aeb94df7c256d385847f6184a1a881221c038e",
               "header": "fix(foo): update entry",
               "mentions": [],
               "merge": null,
               "notes": [],
               "parent": [
-                "600ed8a1b1e9f463777b161b59f09cd66792f4fa",
+                "0cda9656205031eb427c5621de968d77d8d49052",
               ],
               "references": [],
               "revert": null,
@@ -746,6 +982,10 @@ test('identifies package changes across a multi-package workspace', async () => 
             "name": "foo",
             "private": undefined,
             "root": false,
+            "tag": {
+              "message": undefined,
+              "name": "foo@1.0.0",
+            },
             "version": "1.0.0",
           },
           "release": {
@@ -755,20 +995,20 @@ test('identifies package changes across a multi-package workspace', async () => 
         {
           "history": [
             {
-              "authorDate": "2026-01-01T00:00:26.000Z",
+              "authorDate": "2026-01-01T00:00:38.000Z",
               "body": null,
-              "committerDate": "2026-01-01T00:00:26.000Z",
+              "committerDate": "2026-01-01T00:00:38.000Z",
               "files": [
                 "bar/index.ts",
               ],
               "footer": null,
-              "hash": "c1c10b015ec53eabe6c4cd1ca72cb0111b55fa82",
+              "hash": "a1764f52f8c35bdaffc190ebf4cfc31bc31db626",
               "header": "feat(bar): add entry",
               "mentions": [],
               "merge": null,
               "notes": [],
               "parent": [
-                "0564b8dfcae6a82147d8f3dc523647c07b91adce",
+                "83aeb94df7c256d385847f6184a1a881221c038e",
               ],
               "references": [],
               "revert": null,
@@ -786,6 +1026,10 @@ test('identifies package changes across a multi-package workspace', async () => 
             "name": "bar",
             "private": undefined,
             "root": false,
+            "tag": {
+              "message": undefined,
+              "name": "bar@0.0.0",
+            },
             "version": "0.0.0",
           },
           "release": {
@@ -802,83 +1046,16 @@ test('identifies package changes across a multi-package workspace', async () => 
             "name": "baz",
             "private": undefined,
             "root": false,
+            "tag": {
+              "message": undefined,
+              "name": "baz@0.0.0",
+            },
             "version": "0.0.0",
           },
           "release": null,
         },
         {
-          "history": [
-            {
-              "authorDate": "2026-01-01T00:00:29.000Z",
-              "body": null,
-              "committerDate": "2026-01-01T00:00:29.000Z",
-              "files": [
-                "qux/CHANGELOG.md",
-                "qux/package.json",
-              ],
-              "footer": null,
-              "hash": "be6251f9a736450dca7fbf22b3f4a1d01a5d7fa8",
-              "header": "chore: set qux v0",
-              "mentions": [],
-              "merge": null,
-              "notes": [],
-              "parent": [
-                "15c723bbac802e3b6d6a8023cd71e791109e77a4",
-              ],
-              "references": [],
-              "revert": null,
-              "scope": null,
-              "subject": "set qux v0",
-              "trailers": [],
-              "type": "chore",
-            },
-            {
-              "authorDate": "2026-01-01T00:00:28.000Z",
-              "body": null,
-              "committerDate": "2026-01-01T00:00:28.000Z",
-              "files": [
-                "qux/index.ts",
-              ],
-              "footer": null,
-              "hash": "15c723bbac802e3b6d6a8023cd71e791109e77a4",
-              "header": "feat(qux): add entry",
-              "mentions": [],
-              "merge": null,
-              "notes": [],
-              "parent": [
-                "1abbdcc656314fca4a810268a6b3380307c3da40",
-              ],
-              "references": [],
-              "revert": null,
-              "scope": "qux",
-              "subject": "add entry",
-              "trailers": [],
-              "type": "feat",
-            },
-            {
-              "authorDate": "2026-01-01T00:00:27.000Z",
-              "body": null,
-              "committerDate": "2026-01-01T00:00:27.000Z",
-              "files": [
-                "qux/package.json",
-              ],
-              "footer": null,
-              "hash": "1abbdcc656314fca4a810268a6b3380307c3da40",
-              "header": "chore: break qux",
-              "mentions": [],
-              "merge": null,
-              "notes": [],
-              "parent": [
-                "c1c10b015ec53eabe6c4cd1ca72cb0111b55fa82",
-              ],
-              "references": [],
-              "revert": null,
-              "scope": null,
-              "subject": "break qux",
-              "trailers": [],
-              "type": "chore",
-            },
-          ],
+          "history": [],
           "package": {
             "dependencies": [],
             "entry": false,
@@ -889,9 +1066,7 @@ test('identifies package changes across a multi-package workspace', async () => 
             "root": false,
             "version": "0.1.0-dev",
           },
-          "release": {
-            "type": "minor",
-          },
+          "release": null,
         },
       ]
     `)
@@ -968,20 +1143,20 @@ test('propagates release plans to dependent packages on workspace updates', asyn
         {
           "history": [
             {
-              "authorDate": "2026-01-01T00:00:32.000Z",
+              "authorDate": "2026-01-01T00:00:44.000Z",
               "body": null,
-              "committerDate": "2026-01-01T00:00:32.000Z",
+              "committerDate": "2026-01-01T00:00:44.000Z",
               "files": [
                 "bar/index.ts",
               ],
               "footer": null,
-              "hash": "1698737ebc586a73aad79d2ad0a876456d409059",
+              "hash": "33eca16d6038e62080ca1f60dd235dd451ebcca3",
               "header": "feat(bar): add entry",
               "mentions": [],
               "merge": null,
               "notes": [],
               "parent": [
-                "a86954b5777b093a74986cbd7c3b6b75bcaa694f",
+                "94c19b4087e45cfd6bcbd64b0e805359a4782841",
               ],
               "references": [],
               "revert": null,
@@ -991,9 +1166,9 @@ test('propagates release plans to dependent packages on workspace updates', asyn
               "type": "feat",
             },
             {
-              "authorDate": "2026-01-01T00:00:31.000Z",
+              "authorDate": "2026-01-01T00:00:43.000Z",
               "body": null,
-              "committerDate": "2026-01-01T00:00:31.000Z",
+              "committerDate": "2026-01-01T00:00:43.000Z",
               "files": [
                 "bar/package.json",
                 "baz/package.json",
@@ -1001,7 +1176,7 @@ test('propagates release plans to dependent packages on workspace updates', asyn
                 "package.json",
               ],
               "footer": null,
-              "hash": "a86954b5777b093a74986cbd7c3b6b75bcaa694f",
+              "hash": "94c19b4087e45cfd6bcbd64b0e805359a4782841",
               "header": "chore: init pkgs",
               "mentions": [],
               "merge": null,
@@ -1034,20 +1209,20 @@ test('propagates release plans to dependent packages on workspace updates', asyn
         {
           "history": [
             {
-              "authorDate": "2026-01-01T00:00:32.000Z",
+              "authorDate": "2026-01-01T00:00:44.000Z",
               "body": null,
-              "committerDate": "2026-01-01T00:00:32.000Z",
+              "committerDate": "2026-01-01T00:00:44.000Z",
               "files": [
                 "bar/index.ts",
               ],
               "footer": null,
-              "hash": "1698737ebc586a73aad79d2ad0a876456d409059",
+              "hash": "33eca16d6038e62080ca1f60dd235dd451ebcca3",
               "header": "feat(bar): add entry",
               "mentions": [],
               "merge": null,
               "notes": [],
               "parent": [
-                "a86954b5777b093a74986cbd7c3b6b75bcaa694f",
+                "94c19b4087e45cfd6bcbd64b0e805359a4782841",
               ],
               "references": [],
               "revert": null,
@@ -1057,9 +1232,9 @@ test('propagates release plans to dependent packages on workspace updates', asyn
               "type": "feat",
             },
             {
-              "authorDate": "2026-01-01T00:00:31.000Z",
+              "authorDate": "2026-01-01T00:00:43.000Z",
               "body": null,
-              "committerDate": "2026-01-01T00:00:31.000Z",
+              "committerDate": "2026-01-01T00:00:43.000Z",
               "files": [
                 "bar/package.json",
                 "baz/package.json",
@@ -1067,7 +1242,7 @@ test('propagates release plans to dependent packages on workspace updates', asyn
                 "package.json",
               ],
               "footer": null,
-              "hash": "a86954b5777b093a74986cbd7c3b6b75bcaa694f",
+              "hash": "94c19b4087e45cfd6bcbd64b0e805359a4782841",
               "header": "chore: init pkgs",
               "mentions": [],
               "merge": null,
@@ -1100,20 +1275,20 @@ test('propagates release plans to dependent packages on workspace updates', asyn
         {
           "history": [
             {
-              "authorDate": "2026-01-01T00:00:32.000Z",
+              "authorDate": "2026-01-01T00:00:44.000Z",
               "body": null,
-              "committerDate": "2026-01-01T00:00:32.000Z",
+              "committerDate": "2026-01-01T00:00:44.000Z",
               "files": [
                 "bar/index.ts",
               ],
               "footer": null,
-              "hash": "1698737ebc586a73aad79d2ad0a876456d409059",
+              "hash": "33eca16d6038e62080ca1f60dd235dd451ebcca3",
               "header": "feat(bar): add entry",
               "mentions": [],
               "merge": null,
               "notes": [],
               "parent": [
-                "a86954b5777b093a74986cbd7c3b6b75bcaa694f",
+                "94c19b4087e45cfd6bcbd64b0e805359a4782841",
               ],
               "references": [],
               "revert": null,
@@ -1123,9 +1298,9 @@ test('propagates release plans to dependent packages on workspace updates', asyn
               "type": "feat",
             },
             {
-              "authorDate": "2026-01-01T00:00:31.000Z",
+              "authorDate": "2026-01-01T00:00:43.000Z",
               "body": null,
-              "committerDate": "2026-01-01T00:00:31.000Z",
+              "committerDate": "2026-01-01T00:00:43.000Z",
               "files": [
                 "bar/package.json",
                 "baz/package.json",
@@ -1133,7 +1308,7 @@ test('propagates release plans to dependent packages on workspace updates', asyn
                 "package.json",
               ],
               "footer": null,
-              "hash": "a86954b5777b093a74986cbd7c3b6b75bcaa694f",
+              "hash": "94c19b4087e45cfd6bcbd64b0e805359a4782841",
               "header": "chore: init pkgs",
               "mentions": [],
               "merge": null,
@@ -1166,9 +1341,9 @@ test('propagates release plans to dependent packages on workspace updates', asyn
         {
           "history": [
             {
-              "authorDate": "2026-01-01T00:00:31.000Z",
+              "authorDate": "2026-01-01T00:00:43.000Z",
               "body": null,
-              "committerDate": "2026-01-01T00:00:31.000Z",
+              "committerDate": "2026-01-01T00:00:43.000Z",
               "files": [
                 "bar/package.json",
                 "baz/package.json",
@@ -1176,7 +1351,7 @@ test('propagates release plans to dependent packages on workspace updates', asyn
                 "package.json",
               ],
               "footer": null,
-              "hash": "a86954b5777b093a74986cbd7c3b6b75bcaa694f",
+              "hash": "94c19b4087e45cfd6bcbd64b0e805359a4782841",
               "header": "chore: init pkgs",
               "mentions": [],
               "merge": null,
@@ -1310,6 +1485,10 @@ test('promotes prerelease and zero-major versions when allowEmpty is true', asyn
             "name": "pkg1",
             "private": undefined,
             "root": false,
+            "tag": {
+              "message": undefined,
+              "name": "pkg1@0.0.0",
+            },
             "version": "0.0.0",
           },
           "release": null,
@@ -1324,6 +1503,10 @@ test('promotes prerelease and zero-major versions when allowEmpty is true', asyn
             "name": "pkg2",
             "private": undefined,
             "root": false,
+            "tag": {
+              "message": undefined,
+              "name": "pkg2@0.1.0-dev.0",
+            },
             "version": "0.1.0-dev.0",
           },
           "release": {
@@ -1341,6 +1524,10 @@ test('promotes prerelease and zero-major versions when allowEmpty is true', asyn
             "name": "pkg3",
             "private": undefined,
             "root": false,
+            "tag": {
+              "message": undefined,
+              "name": "pkg3@0.1.0",
+            },
             "version": "0.1.0",
           },
           "release": {
@@ -1358,6 +1545,10 @@ test('promotes prerelease and zero-major versions when allowEmpty is true', asyn
             "name": "pkg4",
             "private": undefined,
             "root": false,
+            "tag": {
+              "message": undefined,
+              "name": "pkg4@1.0.0-dev.0",
+            },
             "version": "1.0.0-dev.0",
           },
           "release": {
@@ -1375,6 +1566,10 @@ test('promotes prerelease and zero-major versions when allowEmpty is true', asyn
             "name": "pkg5",
             "private": undefined,
             "root": false,
+            "tag": {
+              "message": undefined,
+              "name": "pkg5@1.1.0",
+            },
             "version": "1.1.0",
           },
           "release": null,
@@ -1389,6 +1584,10 @@ test('promotes prerelease and zero-major versions when allowEmpty is true', asyn
             "name": "pkg6",
             "private": undefined,
             "root": false,
+            "tag": {
+              "message": undefined,
+              "name": "pkg6@1.2.0-dev.0",
+            },
             "version": "1.2.0-dev.0",
           },
           "release": {
@@ -1397,7 +1596,36 @@ test('promotes prerelease and zero-major versions when allowEmpty is true', asyn
           },
         },
         {
-          "history": [],
+          "history": [
+            {
+              "authorDate": "2026-01-01T00:00:45.000Z",
+              "body": null,
+              "committerDate": "2026-01-01T00:00:45.000Z",
+              "files": [
+                "pkg1/package.json",
+                "pkg2/package.json",
+                "pkg3/package.json",
+                "pkg4/package.json",
+                "pkg5/package.json",
+                "pkg6/package.json",
+                "pkg7/package.json",
+                "pkg8/package.json",
+              ],
+              "footer": null,
+              "hash": "7bdeb0240523481b5e9bfcb63e61a970d8c808fa",
+              "header": "chore: init project",
+              "mentions": [],
+              "merge": null,
+              "notes": [],
+              "parent": [],
+              "references": [],
+              "revert": null,
+              "scope": null,
+              "subject": "init project",
+              "trailers": [],
+              "type": "chore",
+            },
+          ],
           "package": {
             "dependencies": [],
             "entry": false,
@@ -1414,7 +1642,36 @@ test('promotes prerelease and zero-major versions when allowEmpty is true', asyn
           },
         },
         {
-          "history": [],
+          "history": [
+            {
+              "authorDate": "2026-01-01T00:00:45.000Z",
+              "body": null,
+              "committerDate": "2026-01-01T00:00:45.000Z",
+              "files": [
+                "pkg1/package.json",
+                "pkg2/package.json",
+                "pkg3/package.json",
+                "pkg4/package.json",
+                "pkg5/package.json",
+                "pkg6/package.json",
+                "pkg7/package.json",
+                "pkg8/package.json",
+              ],
+              "footer": null,
+              "hash": "7bdeb0240523481b5e9bfcb63e61a970d8c808fa",
+              "header": "chore: init project",
+              "mentions": [],
+              "merge": null,
+              "notes": [],
+              "parent": [],
+              "references": [],
+              "revert": null,
+              "scope": null,
+              "subject": "init project",
+              "trailers": [],
+              "type": "chore",
+            },
+          ],
           "package": {
             "dependencies": [],
             "entry": false,
@@ -1477,6 +1734,10 @@ test('releases stable packages when type is patch and allowEmpty is true', async
             "name": "pkg1",
             "private": undefined,
             "root": false,
+            "tag": {
+              "message": undefined,
+              "name": "pkg1@0.2.3",
+            },
             "version": "0.2.3",
           },
           "release": {
@@ -1540,6 +1801,10 @@ test('continues prerelease cycles when type is patch and allowEmpty is true', as
             "name": "pkg1",
             "private": undefined,
             "root": false,
+            "tag": {
+              "message": undefined,
+              "name": "pkg1@1.0.0-dev.1",
+            },
             "version": "1.0.0-dev.1",
           },
           "release": {
@@ -1557,229 +1822,16 @@ test('continues prerelease cycles when type is patch and allowEmpty is true', as
             "name": "pkg2",
             "private": undefined,
             "root": false,
+            "tag": {
+              "message": undefined,
+              "name": "pkg2@1.0.3-dev.1",
+            },
             "version": "1.0.3-dev.1",
           },
           "release": {
             "transition": "continue",
             "type": "patch",
           },
-        },
-      ]
-    `)
-  })
-})
-
-test('splits window and per-package histories when the latest release commit was a filtered release', async () => {
-  await temporaryDirectoryTask(async (cwd) => {
-    using _ = vi.spyOn(context, 'cwd', 'get').mockReturnValue(cwd)
-    workspace.entry = '.'
-    workspace.members = ['*']
-
-    await initializeGitRepository(cwd)
-
-    const pkgDir1 = path.join(cwd, 'foo')
-    const pkgDir2 = path.join(cwd, 'bar')
-
-    await writePackageJson(cwd, {
-      name: undefined,
-      version: '0.0.0',
-      workspaces: ['*'],
-    })
-    await writePackageJson(pkgDir1, { name: 'foo', version: '0.0.0' })
-    await writePackageJson(pkgDir2, { name: 'bar', version: '0.0.0' })
-    await execGit(cwd, ['add', '.'])
-    await execGit(cwd, ['commit', '-m', 'chore: init pkgs'])
-
-    await writeFile(path.join(pkgDir2, 'index.ts'), 'export const bar = 1;')
-    await execGit(cwd, ['add', '.'])
-    await execGit(cwd, ['commit', '-m', 'feat(bar): add entry'])
-
-    await updatePackageJson(pkgDir1, { version: '1.0.0' })
-    await writeChangelog(pkgDir1, '1.0.0')
-    await execGit(cwd, ['add', '.'])
-    await execGit(cwd, [
-      'commit',
-      '-m',
-      'chore: release foo\n\nRelease-Filter: foo',
-    ])
-    await execGit(cwd, ['tag', 'foo@1.0.0'])
-
-    await writeFile(path.join(pkgDir2, 'index.ts'), 'export const bar = 2;')
-    await execGit(cwd, ['add', '.'])
-    await execGit(cwd, ['commit', '-m', 'fix(bar): update entry'])
-
-    context.packages = [
-      await buildPackage({
-        rootDir: context.cwd,
-        packageDir: 'foo',
-        workspace,
-        packageManager: 'npm',
-      }),
-      await buildPackage({
-        rootDir: context.cwd,
-        packageDir: 'bar',
-        workspace,
-        packageManager: 'npm',
-      }),
-    ]
-
-    await executeReleaseWorkflow(context, [plugin()])
-
-    expect(summarizePlans(context.plans)).toMatchInlineSnapshot(`
-      [
-        {
-          "history": [],
-          "name": "foo",
-          "type": null,
-        },
-        {
-          "history": [
-            "fix(bar): update entry",
-            "feat(bar): add entry",
-            "chore: init pkgs",
-          ],
-          "name": "bar",
-          "type": "minor",
-        },
-      ]
-    `)
-  })
-})
-
-test('keeps global slicing when the latest release commit was not a filtered release', async () => {
-  await temporaryDirectoryTask(async (cwd) => {
-    using _ = vi.spyOn(context, 'cwd', 'get').mockReturnValue(cwd)
-    workspace.entry = '.'
-    workspace.members = ['*']
-
-    await initializeGitRepository(cwd)
-
-    const pkgDir1 = path.join(cwd, 'foo')
-    const pkgDir2 = path.join(cwd, 'bar')
-
-    await writePackageJson(cwd, {
-      name: undefined,
-      version: '0.0.0',
-      workspaces: ['*'],
-    })
-    await writePackageJson(pkgDir1, { name: 'foo', version: '0.0.0' })
-    await writePackageJson(pkgDir2, { name: 'bar', version: '0.0.0' })
-    await execGit(cwd, ['add', '.'])
-    await execGit(cwd, ['commit', '-m', 'chore: init pkgs'])
-
-    await writeFile(path.join(pkgDir2, 'index.ts'), 'export const bar = 1;')
-    await execGit(cwd, ['add', '.'])
-    await execGit(cwd, ['commit', '-m', 'feat(bar): add entry'])
-
-    await updatePackageJson(pkgDir1, { version: '1.0.0' })
-    await writeChangelog(pkgDir1, '1.0.0')
-    await execGit(cwd, ['add', '.'])
-    await execGit(cwd, ['commit', '-m', 'chore: release foo'])
-    await execGit(cwd, ['tag', 'foo@1.0.0'])
-
-    await writeFile(path.join(pkgDir2, 'index.ts'), 'export const bar = 2;')
-    await execGit(cwd, ['add', '.'])
-    await execGit(cwd, ['commit', '-m', 'fix(bar): update entry'])
-
-    context.packages = [
-      await buildPackage({
-        rootDir: context.cwd,
-        packageDir: 'foo',
-        workspace,
-        packageManager: 'npm',
-      }),
-      await buildPackage({
-        rootDir: context.cwd,
-        packageDir: 'bar',
-        workspace,
-        packageManager: 'npm',
-      }),
-    ]
-
-    await executeReleaseWorkflow(context, [plugin()])
-
-    expect(summarizePlans(context.plans)).toMatchInlineSnapshot(`
-      [
-        {
-          "history": [],
-          "name": "foo",
-          "type": null,
-        },
-        {
-          "history": [
-            "fix(bar): update entry",
-          ],
-          "name": "bar",
-          "type": "patch",
-        },
-      ]
-    `)
-  })
-})
-
-test('releases pre-seeded plans regardless of the filter', async () => {
-  await temporaryDirectoryTask(async (cwd) => {
-    using _ = vi.spyOn(context, 'cwd', 'get').mockReturnValue(cwd)
-    workspace.entry = '.'
-    workspace.members = ['*']
-
-    await initializeGitRepository(cwd)
-
-    const pkgDir1 = path.join(cwd, 'foo')
-    const pkgDir2 = path.join(cwd, 'bar')
-
-    await writePackageJson(cwd, {
-      name: undefined,
-      version: '0.0.0',
-      workspaces: ['*'],
-    })
-    await writePackageJson(pkgDir1, { name: 'foo', version: '0.0.0' })
-    await writePackageJson(pkgDir2, { name: 'bar', version: '0.0.0' })
-    await execGit(cwd, ['add', '.'])
-    await execGit(cwd, ['commit', '-m', 'chore: init pkgs'])
-
-    await writeFile(path.join(pkgDir2, 'index.ts'), 'export const bar = 1;')
-    await execGit(cwd, ['add', '.'])
-    await execGit(cwd, ['commit', '-m', 'feat(bar): add entry'])
-
-    const foo = await buildPackage({
-      rootDir: context.cwd,
-      packageDir: 'foo',
-      workspace,
-      packageManager: 'npm',
-    })
-    const bar = await buildPackage({
-      rootDir: context.cwd,
-      packageDir: 'bar',
-      workspace,
-      packageManager: 'npm',
-    })
-
-    context.packages = [foo, bar]
-    context.plans = [
-      { package: foo, history: [], release: null },
-      { package: bar, history: [], release: null },
-    ]
-    context.filter = ['bar']
-
-    await executeReleaseWorkflow(context, [plugin()])
-
-    expect(summarizePlans(context.plans)).toMatchInlineSnapshot(`
-      [
-        {
-          "history": [
-            "chore: init pkgs",
-          ],
-          "name": "foo",
-          "type": null,
-        },
-        {
-          "history": [
-            "feat(bar): add entry",
-            "chore: init pkgs",
-          ],
-          "name": "bar",
-          "type": "minor",
         },
       ]
     `)
