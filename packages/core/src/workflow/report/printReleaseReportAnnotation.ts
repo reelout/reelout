@@ -3,7 +3,7 @@
 
 import type { ReleaseReport } from '#types'
 import { isGitHubActions } from '#util'
-import { resolveErrorMessage } from './resolveErrorMessage'
+import { resolveOutcomeErrorMessage } from './resolveErrorMessage'
 
 /**
  * Print a GitHub Actions error annotation for a failed release.
@@ -26,8 +26,7 @@ export function printReleaseReportAnnotation(
   if (!isGitHubActions(env) || report.outcome?.status !== 'failure') return
 
   const message = formatAnnotationMessage(
-    resolveErrorMessage(report.outcome.error) ||
-      'An unexpected error occurred during the release process.'
+    resolveOutcomeErrorMessage(report.outcome)
   )
 
   stdout.write(`::error title=Release failed::${message}\n`)

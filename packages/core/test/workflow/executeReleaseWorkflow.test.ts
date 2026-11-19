@@ -665,6 +665,46 @@ test('runs finalize after reverse-onion rollbacks when a phase hook throws', asy
   `)
 })
 
+test('rethrows the root-cause error when a rollback throws a different error', async () => {
+  const failureError = new Error('Publish failed')
+  const rollbackError = new Error('Rollback failed')
+  let outcome: ReleaseOutcome | null = null
+
+  const rollingBackPlugin: ReleasePlugin = {
+    name: 'rolling-back',
+    version: '1.0.0',
+    configure: async (ctx, next) => {
+      try {
+        return await next(ctx)
+      } catch {
+        throw rollbackError
+      }
+    },
+    finalize: (ctx, next) => {
+      outcome = ctx.outcome
+      return next(ctx)
+    },
+  }
+
+  const failingPlugin: ReleasePlugin = {
+    name: 'failing',
+    version: '1.0.0',
+    write: () => {
+      throw failureError
+    },
+  }
+
+  await expect(
+    executeReleaseWorkflow(context, [rollingBackPlugin, failingPlugin])
+  ).rejects.toBe(failureError)
+
+  expect(outcome).toEqual({
+    status: 'failure',
+    error: failureError,
+    phase: { hook: 'write', plugin: 'failing' },
+  })
+})
+
 test('exposes the failure outcome to finalize handlers when a phase hook throws', async () => {
   const failureError = new Error('Publish failed')
   let outcome: ReleaseOutcome | null = null
@@ -813,6 +853,44 @@ test('cancels the workflow between phase hooks when the abort signal fires', asy
     status: 'failure',
     error,
     phase: { hook: 'configure', plugin: 'plugin' },
+  })
+})
+
+test('cancels the workflow before the first phase hook when the abort signal has already fired', async () => {
+  const controller = new AbortController()
+  let outcome: ReleaseOutcome | null = null
+
+  const cancellablePlugin: ReleasePlugin = {
+    name: 'plugin',
+    version: '1.0.0',
+    configure: vi.fn((ctx, next) => next(ctx)),
+    discover: vi.fn((ctx, next) => next(ctx)),
+    finalize: (ctx, next) => {
+      outcome = ctx.outcome
+      return next(ctx)
+    },
+  }
+
+  controller.abort()
+
+  context.signal = controller.signal
+
+  const error = (await executeReleaseWorkflow(context, [
+    cancellablePlugin,
+  ]).then(
+    () => null,
+    (err) => err
+  )) as Error
+
+  expect(error).toBeInstanceOf(Error)
+  expect(error.message).toBe('Release cancelled.')
+  expect(error.cause).toMatchObject({ name: 'AbortError' })
+  expect(cancellablePlugin.configure).not.toHaveBeenCalled()
+  expect(cancellablePlugin.discover).not.toHaveBeenCalled()
+  expect(outcome).toEqual({
+    status: 'failure',
+    error,
+    phase: null,
   })
 })
 

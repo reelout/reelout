@@ -149,7 +149,8 @@ export interface ReleasePhase {
  * Terminal outcome of a release workflow.
  *
  * On failure, `error` holds the thrown error and `phase` attributes it to
- * the hook and plugin whose handler threw; on success both are `null`.
+ * the hook and plugin whose handler threw, or `null` when the failure arose
+ * outside any plugin hook handler; on success both are `null`.
  */
 export interface ReleaseOutcome {
   status: ReleaseStatus

@@ -8,6 +8,7 @@ import {
 } from '@reelout/core'
 import { expect, test, vi } from 'vitest'
 import { context, logger } from '../../../../../test/mock/context'
+import { createOutcome } from '../../../../../test/mock/report'
 
 test('outputs formatted release summary and changelogs when packages have scheduled releases', () => {
   using dryRun = vi.spyOn(context, 'dryRun', 'get')
@@ -101,13 +102,13 @@ test('outputs formatted release summary and changelogs when packages have schedu
   dryRun.mockReturnValue(true)
   printReleaseReport(context.logger, {
     ...report,
-    outcome: { status: 'success', error: null, phase: null },
+    outcome: createOutcome(),
   })
 
   dryRun.mockReturnValue(false)
   printReleaseReport(context.logger, {
     ...report,
-    outcome: { status: 'success', error: null, phase: null },
+    outcome: createOutcome(),
   })
 
   expect(logger.mock.calls).toMatchInlineSnapshot(`
@@ -213,7 +214,7 @@ test('outputs formatted release summary and changelogs when packages have schedu
 test('displays empty state message when no packages are scheduled for release', () => {
   using dryRun = vi.spyOn(context, 'dryRun', 'get')
 
-  context.outcome = { status: 'success', error: null, phase: null }
+  context.outcome = createOutcome()
 
   context.plans = [
     { package: { name: 'foo', version: '1.0.0' }, release: null },
@@ -253,12 +254,12 @@ test('logs error details when report status is failure', () => {
 
   printReleaseReport(context.logger, {
     ...report,
-    outcome: { status: 'failure', error: 'Custom error reason', phase: null },
+    outcome: createOutcome({ status: 'failure', error: 'Custom error reason' }),
   })
 
   printReleaseReport(context.logger, {
     ...report,
-    outcome: { status: 'failure', error: null, phase: null },
+    outcome: createOutcome({ status: 'failure' }),
   })
 
   expect(logger.mock.calls).toMatchInlineSnapshot(`

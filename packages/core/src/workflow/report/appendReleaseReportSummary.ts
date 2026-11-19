@@ -5,7 +5,7 @@ import type { ReleaseReport } from '#types'
 import { isGitHubActions } from '#util'
 import type { ConsolaInstance } from 'consola/core'
 import { appendFileSync } from 'node:fs'
-import { resolveErrorMessage } from './resolveErrorMessage'
+import { resolveOutcomeErrorMessage } from './resolveErrorMessage'
 
 const STATUS_LABELS = {
   success: 'Success',
@@ -61,9 +61,7 @@ const formatReleaseReportSummary = (report: ReleaseReport): string => {
   }
 
   if (report.outcome?.status === 'failure') {
-    const message =
-      resolveErrorMessage(report.outcome.error) ||
-      'An unexpected error occurred during the release process.'
+    const message = resolveOutcomeErrorMessage(report.outcome)
 
     lines.push(...message.split('\n').map((line) => `> ${line}`), '')
 

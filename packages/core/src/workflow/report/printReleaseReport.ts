@@ -5,7 +5,7 @@ import type { ReleaseReport } from '#types'
 import type { ConsolaInstance } from 'consola/core'
 import { colors } from 'consola/utils'
 import path from 'node:path'
-import { resolveErrorMessage } from './resolveErrorMessage'
+import { resolveOutcomeErrorMessage } from './resolveErrorMessage'
 
 /**
  * Print a formatted release report to the logger.
@@ -34,10 +34,7 @@ export function printReleaseReport(
     return logger.error(
       [
         'Release complete:',
-        colors.red(
-          resolveErrorMessage(report.outcome.error) ||
-            'An unexpected error occurred during the release process.'
-        ),
+        colors.red(resolveOutcomeErrorMessage(report.outcome)),
       ].join(' ')
     )
   }
