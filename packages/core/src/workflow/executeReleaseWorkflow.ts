@@ -5,7 +5,12 @@ import { RELEASE_HOOK_NAMES } from '#config'
 import { HookManager, type HookHandler } from '#plugin'
 import type { ReleaseContext, ReleaseHookName, ReleasePlugin } from '#types'
 import { colors } from 'consola/utils'
-import { generateReleaseReport, printReleaseReport } from './report'
+import {
+  appendReleaseReportSummary,
+  generateReleaseReport,
+  printReleaseReport,
+  printReleaseReportAnnotation,
+} from './report'
 
 /**
  * Execute the complete release workflow across all configured plugins.
@@ -125,6 +130,10 @@ export async function executeReleaseWorkflow(
     context.error = err
     throw err
   } finally {
-    printReleaseReport(context.logger, generateReleaseReport(context))
+    const report = generateReleaseReport(context)
+
+    printReleaseReport(context.logger, report)
+    appendReleaseReportSummary(context.logger, context.env, report)
+    printReleaseReportAnnotation(context.env, context.stdout, report)
   }
 }

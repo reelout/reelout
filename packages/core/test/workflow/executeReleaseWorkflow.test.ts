@@ -12,6 +12,10 @@ import {
   RELEASE_HOOK_NAMES,
   executeReleaseWorkflow,
 } from '@reelout/core'
+import fs from 'node:fs/promises'
+import path from 'node:path'
+import { Writable } from 'node:stream'
+import { temporaryDirectoryTask } from 'tempy'
 import { afterEach, beforeAll, beforeEach, expect, test, vi } from 'vitest'
 import { context, logger } from '../../../../test/mock/context'
 
@@ -731,4 +735,73 @@ test('logs failed duration and error status when a hook throws in development mo
       ],
     ]
   `)
+})
+
+test('appends the release report to the GitHub Actions job summary when running on GitHub Actions', async () => {
+  await temporaryDirectoryTask(async (directory) => {
+    const filePath = path.join(directory, 'summary.md')
+
+    context.env = { GITHUB_ACTIONS: 'true', GITHUB_STEP_SUMMARY: filePath }
+
+    plugin.discover.mockImplementation((ctx, next) => {
+      ctx.packages = [{ name: 'foo' }, { name: 'bar' }] as Package[]
+      return next()
+    })
+
+    plugin.build.mockImplementation((ctx, next) => {
+      ctx.plans = [
+        {
+          package: { name: 'foo', location: 'foo', version: '1.0.0' },
+          release: {
+            type: 'minor',
+            version: '1.1.0',
+            tag: { name: 'foo@1.1.0' },
+          },
+        },
+        {
+          package: { name: 'bar', location: 'bar' },
+          release: null,
+        },
+      ] as ReleasePlan[]
+      return next()
+    })
+
+    await executeReleaseWorkflow(context, plugins)
+
+    expect(await fs.readFile(filePath, 'utf-8')).toMatchInlineSnapshot(`
+      "
+      ## ReelOut Release Report
+
+      **Status:** Success
+
+      | Package | Version | Type | Tag |
+      | --- | --- | --- | --- |
+      | \`foo\` | \`1.1.0\` ← \`1.0.0\` | minor | \`foo@1.1.0\` |
+      "
+    `)
+  })
+})
+
+test('prints a GitHub Actions error annotation when the release fails on GitHub Actions', async () => {
+  const write = vi.fn()
+
+  context.env = { GITHUB_ACTIONS: 'true' }
+  context.stdout = new Writable({
+    write(chunk, _encoding, callback) {
+      write(String(chunk))
+      callback()
+    },
+  })
+
+  plugin.write.mockImplementation(() => {
+    throw new Error('Something went wrong')
+  })
+
+  await expect(executeReleaseWorkflow(context, plugins)).rejects.toThrow(
+    'Something went wrong'
+  )
+
+  expect(write.mock.calls).toEqual([
+    ['::error title=Release failed::Something went wrong\n'],
+  ])
 })
