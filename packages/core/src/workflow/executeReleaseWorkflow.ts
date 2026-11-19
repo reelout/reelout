@@ -177,6 +177,7 @@ export async function executeReleaseWorkflow(
 
   let workflowError: unknown
   let hasWorkflowError = false
+  let failedPhase: ReleaseContext['phase'] = null
 
   try {
     await dispatch(0, context)
@@ -185,11 +186,10 @@ export async function executeReleaseWorkflow(
   } catch (err) {
     hasWorkflowError = true
     workflowError = err
+    failedPhase = context.phase
     context.status = 'failure'
     context.error = err
   }
-
-  const failedPhase = context.phase
 
   await manager.emit('finalize', context)
 
