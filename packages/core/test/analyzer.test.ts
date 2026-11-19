@@ -1688,7 +1688,7 @@ test('slices each package history from its own verified release tag', async () =
   })
 })
 
-test('warns and analyzes full history when the current version tag of a released package is missing', async () => {
+test('analyzes full history when the current version tag of a released package is missing', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     using _ = vi.spyOn(context, 'cwd', 'get').mockReturnValue(cwd)
 
@@ -1736,9 +1736,6 @@ test('warns and analyzes full history when the current version tag of a released
 
     expect(logger.mock.calls).toMatchInlineSnapshot(`
       [
-        [
-          "[33mRelease tag could not be verified for package at "[1m.[22m"; analyzing commits since the beginning of history.[39m",
-        ],
         [
           "Status: [32mSUCCESS[39m",
         ],
@@ -1820,9 +1817,6 @@ test('treats a tag that does not point at a package commit as unverified', async
 
     expect(logger.mock.calls).toMatchInlineSnapshot(`
       [
-        [
-          "[33mRelease tag could not be verified for package at "[1mfoo[22m"; analyzing commits since the beginning of history.[39m",
-        ],
         [
           "Status: [32mSUCCESS[39m",
         ],

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
-import { isPackageTagName, listGitTags } from '#git'
 import type { GitCommit, ReleasePlan, ReleasePlugin } from '#types'
 import {
   deriveChangeReleases,
@@ -10,7 +9,6 @@ import {
   readPackageHistory,
   resolvePackageTag,
 } from '#workflow'
-import { colors } from 'consola/utils'
 import { version } from '../package.json'
 
 /**
@@ -28,9 +26,7 @@ import { version } from '../package.json'
  *   only commits after it are analyzed. Packages that can never be tagged
  *   (workspace packages without a name) are ignored: they keep their release
  *   plan but receive no history-based release. Packages without a verified
- *   tag are analyzed from the beginning of history, and a warning is logged
- *   when the repository contains tags that follow the package's naming
- *   convention.
+ *   tag are analyzed from the beginning of history.
  *
  * @returns A release plugin configured for package change analysis.
  */
@@ -47,7 +43,6 @@ const analyzer = (): ReleasePlugin => ({
     }
 
     const plans: ReleasePlan[] = []
-    let tags: string[] | null = null
 
     for (const plan of context.plans) {
       let history: Iterable<GitCommit> | AsyncIterable<GitCommit> = []
@@ -59,22 +54,6 @@ const analyzer = (): ReleasePlugin => ({
 
         if (tag && !plan.package.tag) {
           plan.package.tag = tag
-        }
-
-        if (!tag) {
-          tags ??= await listGitTags(context.cwd)
-
-          if (
-            tags.some((name) =>
-              isPackageTagName(plan.package.entry, plan.package.name, name)
-            )
-          ) {
-            context.logger.warn(
-              colors.yellow(
-                `Release tag could not be verified for package at "${colors.bold(plan.package.location)}"; analyzing commits since the beginning of history.`
-              )
-            )
-          }
         }
 
         history = readPackageHistory(

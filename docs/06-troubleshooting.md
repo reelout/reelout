@@ -70,5 +70,4 @@ These warnings are non-fatal but usually worth investigating:
 - `Package could not be loaded: ...` — a workspace manifest could not be read or parsed.
 - `Version could not be determined for package at ...` — a package has no readable version.
 - `Tag could not be determined for package at ...` — no previous tag resolved for a package.
-- `Release tag could not be verified for package at ...` — the tag matching the package's current version could not be verified, so commits are analyzed from the beginning of history.
 - `Changelog could not be generated for package at ...` — changelog generation failed for a package.
