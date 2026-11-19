@@ -266,6 +266,7 @@ export type ReleaseHookName = Exclude<keyof ReleasePlugin, 'name' | 'version'>
 
 export interface ReleaseReport {
   outcome: ReleaseOutcome | null
+  skipped: SkippedStep[]
   packages: {
     location: string
     name: string | undefined

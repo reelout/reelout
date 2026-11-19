@@ -18,7 +18,8 @@ type ReportPlan = ReleaseReport['plans'][number]
  * Append a Markdown release report to the GitHub Actions job summary.
  *
  * Detects a GitHub Actions runner through the `GITHUB_ACTIONS` environment
- * variable and appends the rendered `report` to the file referenced by
+ * variable and appends the rendered `report` — including a table of skipped
+ * steps when any were recorded — to the file referenced by
  * `GITHUB_STEP_SUMMARY`, so GitHub displays it on the run summary page. Does
  * nothing outside GitHub Actions or when no summary file is configured, and
  * logs a warning instead of throwing when the summary file cannot be written.
@@ -53,12 +54,27 @@ const formatPackageLabel = (plan: ReportPlan): string => {
   return `\`${plan.package.location}\``
 }
 
+const formatSkippedSection = (skipped: ReleaseReport['skipped']): string[] => {
+  if (skipped.length === 0) return []
+
+  return [
+    '### Skipped',
+    '',
+    '| Plugin | Reason |',
+    '| --- | --- |',
+    ...skipped.map((step) => `| \`${step.plugin}\` | ${step.reason} |`),
+    '',
+  ]
+}
+
 const formatReleaseReportSummary = (report: ReleaseReport): string => {
   const lines: string[] = ['## ReelOut Release Report', '']
 
   if (report.outcome) {
     lines.push(`**Status:** ${STATUS_LABELS[report.outcome.status]}`, '')
   }
+
+  lines.push(...formatSkippedSection(report.skipped))
 
   if (report.outcome?.status === 'failure') {
     const message = resolveOutcomeErrorMessage(report.outcome)
