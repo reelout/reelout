@@ -9,8 +9,8 @@ import { verifyPackageTag } from './verifyPackageTag'
  * Resolve the release tag for a single package version.
  *
  * Returns the cached `pkg.tag` immediately if it already exists. Generates an
- * expected tag name from the package metadata, verifies its integrity using
- * `verifyPackageTag`, and caches a verified tag on `pkg` before returning it.
+ * expected tag name from the package metadata and verifies its integrity using
+ * `verifyPackageTag`.
  *
  * @param cwd Repository working directory
  * @param pkg Package descriptor containing version and location context
@@ -35,14 +35,10 @@ export async function resolvePackageTag(
   }
 
   if (await verifyPackageTag(cwd, pkg, expectedTagName)) {
-    const tag: Tag = {
+    return {
       name: expectedTagName,
       message: await getGitTagMessage(cwd, expectedTagName),
     }
-
-    pkg.tag = tag
-
-    return tag
   }
 
   return null

@@ -53,7 +53,13 @@ const analyzer = (): ReleasePlugin => ({
       let history: Iterable<GitCommit> | AsyncIterable<GitCommit> = []
 
       if (plan.package.entry || plan.package.name) {
-        const tag = await resolvePackageTag(context.cwd, plan.package)
+        const tag =
+          plan.package.tag ??
+          (await resolvePackageTag(context.cwd, plan.package))
+
+        if (tag && !plan.package.tag) {
+          plan.package.tag = tag
+        }
 
         if (!tag) {
           tags ??= await listGitTags(context.cwd)
