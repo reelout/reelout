@@ -20,9 +20,122 @@ const PHASE_HOOK_NAMES = RELEASE_HOOK_NAMES.filter(
   (name) => name !== 'finalize'
 )
 
+type WorkflowHookManager = HookManager<
+  Record<ReleaseHookName, HookHandler<ReleaseContext>>
+>
+
 interface FinalizeFailure {
   plugin: string
   error: unknown
+}
+
+interface PluginHookRegistration {
+  /** Hook name the plugin handler registers under. */
+  hookName: ReleaseHookName
+  /** Plugin owning the hook entry. */
+  plugin: ReleasePlugin
+  /**
+   * Handle a thrown handler error instead of rethrowing it.
+   *
+   * When provided, the wrapper passes a thrown error to this callback and
+   * continues the middleware chain, so later handlers still run.
+   */
+  onHandlerError?: (error: unknown) => void
+}
+
+/**
+ * Register a plugin's hook handler on the workflow hook manager.
+ *
+ * Normalizes the plugin's hook entry into a handler and priority, wraps the
+ * handler in the shared phase-tracking, timing, and logging middleware, and
+ * registers it under the registration's hook name. When `onHandlerError` is
+ * provided, a thrown handler error is passed to it and the middleware chain
+ * continues so later handlers still run; without it the error rethrows and
+ * unwinds the chain.
+ *
+ * @param manager Hook manager receiving the wrapped handler
+ * @param registration Plugin hook registration carrying the error strategy
+ */
+function registerPluginHook(
+  manager: WorkflowHookManager,
+  registration: PluginHookRegistration
+): void {
+  const { hookName, plugin } = registration
+
+  let hook = plugin[hookName]
+
+  if (typeof hook === 'function') {
+    hook = { handler: hook }
+  }
+
+  const handler = hook?.handler
+  const priority = hook?.priority
+
+  if (!handler) return
+
+  const isSilent = import.meta.env.MODE === 'test'
+
+  manager.on(
+    hookName,
+    async (context, next) => {
+      const current = (context.phase = {
+        hook: hookName,
+        plugin: plugin.name,
+      })
+
+      const label = `${colors.gray(`[${current.hook}]`)} ${current.plugin}`
+      let startedLogging = false
+      let hasError = false
+
+      if (!isSilent) {
+        startedLogging = true
+        context.logger.start(label)
+      }
+
+      const currentFrame = { startTime: performance.now() }
+      const nextFrame = { duration: 0 }
+
+      const runNext = async () => {
+        const startTime = performance.now()
+
+        try {
+          return await next(context)
+        } finally {
+          nextFrame.duration = performance.now() - startTime
+        }
+      }
+
+      try {
+        return await handler.call(plugin, context, runNext)
+      } catch (err) {
+        hasError = true
+
+        if (registration.onHandlerError) {
+          registration.onHandlerError(err)
+          return await runNext()
+        }
+
+        throw err
+      } finally {
+        if (startedLogging) {
+          const duration =
+            performance.now() - currentFrame.startTime - nextFrame.duration
+          const color = duration >= 5000 ? colors.yellow : colors.cyan
+          const message = [
+            label,
+            color(`${(duration / 1000).toFixed(2)}s`),
+          ].join(' ')
+
+          if (hasError) {
+            context.logger.error(message)
+          } else {
+            context.logger.success(message)
+          }
+        }
+      }
+    },
+    priority
+  )
 }
 
 /**
@@ -70,8 +183,6 @@ export async function executeReleaseWorkflow(
   context: ReleaseContext,
   plugins: readonly ReleasePlugin[]
 ): Promise<void> {
-  const isSilent = import.meta.env.MODE === 'test'
-
   context.status = null
   context.error = null
 
@@ -81,83 +192,19 @@ export async function executeReleaseWorkflow(
 
   const finalizeFailures: FinalizeFailure[] = []
 
-  for (const hookName of RELEASE_HOOK_NAMES) {
+  for (const hookName of PHASE_HOOK_NAMES) {
     for (const plugin of plugins) {
-      let hook = plugin[hookName]
-
-      if (typeof hook === 'function') {
-        hook = { handler: hook }
-      }
-
-      const handler = hook?.handler
-      const priority = hook?.priority
-
-      if (handler) {
-        manager.on(
-          hookName,
-          async (context, next) => {
-            const current = (context.phase = {
-              hook: hookName,
-              plugin: plugin.name,
-            })
-
-            const label = `${colors.gray(`[${current.hook}]`)} ${current.plugin}`
-            let startedLogging = false
-            let hasError = false
-
-            if (!isSilent) {
-              startedLogging = true
-              context.logger.start(label)
-            }
-
-            const currentFrame = { startTime: performance.now() }
-            const nextFrame = { duration: 0 }
-
-            const runNext = async () => {
-              const startTime = performance.now()
-
-              try {
-                return await next(context)
-              } finally {
-                nextFrame.duration = performance.now() - startTime
-              }
-            }
-
-            try {
-              return await handler.call(plugin, context, runNext)
-            } catch (err) {
-              hasError = true
-
-              if (hookName === 'finalize') {
-                finalizeFailures.push({ plugin: plugin.name, error: err })
-                return await runNext()
-              }
-
-              throw err
-            } finally {
-              if (startedLogging) {
-                const duration =
-                  performance.now() -
-                  currentFrame.startTime -
-                  nextFrame.duration
-                const color = duration >= 5000 ? colors.yellow : colors.cyan
-                const message = [
-                  label,
-                  color(`${(duration / 1000).toFixed(2)}s`),
-                ].join(' ')
-
-                if (hasError) {
-                  context.logger.error(message)
-                } else {
-                  context.logger.success(message)
-                }
-              }
-            }
-          },
-          priority
-        )
-      }
+      registerPluginHook(manager, { hookName, plugin })
     }
+  }
+
+  for (const plugin of plugins) {
+    registerPluginHook(manager, {
+      hookName: 'finalize',
+      plugin,
+      onHandlerError: (error) =>
+        finalizeFailures.push({ plugin: plugin.name, error }),
+    })
   }
 
   const dispatch = async (
