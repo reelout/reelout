@@ -5,22 +5,13 @@ import {
   appendReleaseReportSummary,
   generateReleaseReport,
   type ReleasePlan,
-  type ReleaseReport,
 } from '@reelout/core'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { temporaryDirectoryTask } from 'tempy'
 import { expect, test } from 'vitest'
 import { context, logger } from '../../../../../test/mock/context'
-
-const createReport = (report: Partial<ReleaseReport>): ReleaseReport => ({
-  status: null,
-  phase: null,
-  error: null,
-  packages: [],
-  plans: [],
-  ...report,
-})
+import { createReport } from '../../../../../test/mock/report'
 
 test('appends the markdown report to the job summary when running on GitHub Actions', async () => {
   await temporaryDirectoryTask(async (directory) => {
@@ -55,7 +46,8 @@ test('appends the markdown report to the job summary when running on GitHub Acti
     )
 
     expect(await fs.readFile(filePath, 'utf-8')).toMatchInlineSnapshot(`
-      "## ReelOut Release Report
+      "
+      ## ReelOut Release Report
 
       **Status:** Success
 
@@ -104,7 +96,8 @@ test('appends the failure status and error message when the release failed', asy
     )
 
     expect(await fs.readFile(filePath, 'utf-8')).toMatchInlineSnapshot(`
-      "## ReelOut Release Report
+      "
+      ## ReelOut Release Report
 
       **Status:** Failure
 
@@ -126,7 +119,8 @@ test('appends the empty-state message when no packages are scheduled for release
     )
 
     expect(await fs.readFile(filePath, 'utf-8')).toMatchInlineSnapshot(`
-      "## ReelOut Release Report
+      "
+      ## ReelOut Release Report
 
       **Status:** Success
 
@@ -177,7 +171,7 @@ test('logs a warning when the summary file cannot be written', async () => {
     const [warning] = logger.mock.calls
 
     expect(warning?.[0]).toMatch(
-      /^GitHub Actions job summary could not be written: ENOENT/
+      /^GitHub Actions job summary could not be written to ".+": ENOENT/
     )
   })
 })

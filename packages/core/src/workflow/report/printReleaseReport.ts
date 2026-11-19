@@ -4,7 +4,11 @@
 import type { ReleaseReport } from '#types'
 import type { ConsolaInstance } from 'consola/core'
 import { colors } from 'consola/utils'
-import path from 'node:path'
+import {
+  comparePlansByName,
+  FALLBACK_RELEASE_ERROR_MESSAGE,
+  formatPackageDirectory,
+} from './utils'
 
 /**
  * Print a formatted release report to the logger.
@@ -33,10 +37,7 @@ export function printReleaseReport(
     return logger.error(
       [
         'Release complete:',
-        colors.red(
-          report.error ||
-            'An unexpected error occurred during the release process.'
-        ),
+        colors.red(report.error || FALLBACK_RELEASE_ERROR_MESSAGE),
       ].join(' ')
     )
   }
@@ -57,13 +58,9 @@ export function printReleaseReport(
   ].join(' ')
 
   const list = report.plans
-    .toSorted((a, b) =>
-      (a.package.name || '').localeCompare(b.package.name || '')
-    )
+    .toSorted(comparePlansByName)
     .map((plan) => {
-      let dir = path.normalize(path.join(plan.package.location, '.'))
-
-      dir = dir === '.' ? dir : `./${dir}`
+      const dir = formatPackageDirectory(plan.package.location)
 
       const name = plan.package.name
         ? colors.bgBlue(` ${plan.package.name} `)

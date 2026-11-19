@@ -769,7 +769,8 @@ test('appends the release report to the GitHub Actions job summary when running 
     await executeReleaseWorkflow(context, plugins)
 
     expect(await fs.readFile(filePath, 'utf-8')).toMatchInlineSnapshot(`
-      "## ReelOut Release Report
+      "
+      ## ReelOut Release Report
 
       **Status:** Success
 

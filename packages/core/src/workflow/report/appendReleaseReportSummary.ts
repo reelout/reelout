@@ -5,14 +5,17 @@ import type { ReleaseReport } from '#types'
 import { isGitHubActions } from '#util'
 import type { ConsolaInstance } from 'consola/core'
 import { appendFileSync } from 'node:fs'
-import path from 'node:path'
+import {
+  comparePlansByName,
+  FALLBACK_RELEASE_ERROR_MESSAGE,
+  formatPackageDirectory,
+  type ReportPlan,
+} from './utils'
 
 const STATUS_LABELS = {
   success: 'Success',
   failure: 'Failure',
 } as const
-
-type ReportPlan = ReleaseReport['plans'][number]
 
 /**
  * Append a Markdown release report to the GitHub Actions job summary.
@@ -39,10 +42,10 @@ export function appendReleaseReportSummary(
   if (!filePath) return
 
   try {
-    appendFileSync(filePath, formatReleaseReportSummary(report))
+    appendFileSync(filePath, `\n${formatReleaseReportSummary(report)}`)
   } catch (error) {
     logger.warn(
-      `GitHub Actions job summary could not be written: ${error instanceof Error ? error.message : error}`
+      `GitHub Actions job summary could not be written to "${filePath}": ${error instanceof Error ? error.message : error}`
     )
   }
 }
@@ -50,11 +53,7 @@ export function appendReleaseReportSummary(
 const formatPackageLabel = (plan: ReportPlan): string => {
   if (plan.package.name) return `\`${plan.package.name}\``
 
-  let dir = path.normalize(path.join(plan.package.location, '.'))
-
-  dir = dir === '.' ? dir : `./${dir}`
-
-  return `\`${dir}\``
+  return `\`${formatPackageDirectory(plan.package.location)}\``
 }
 
 const formatReleaseReportSummary = (report: ReleaseReport): string => {
@@ -65,8 +64,7 @@ const formatReleaseReportSummary = (report: ReleaseReport): string => {
   }
 
   if (report.status === 'failure') {
-    const message =
-      report.error || 'An unexpected error occurred during the release process.'
+    const message = report.error || FALLBACK_RELEASE_ERROR_MESSAGE
 
     lines.push(...message.split('\n').map((line) => `> ${line}`), '')
 
@@ -79,9 +77,7 @@ const formatReleaseReportSummary = (report: ReleaseReport): string => {
     return lines.join('\n')
   }
 
-  const plans = report.plans.toSorted((a, b) =>
-    (a.package.name || '').localeCompare(b.package.name || '')
-  )
+  const plans = report.plans.toSorted(comparePlansByName)
 
   lines.push('| Package | Version | Type | Tag |', '| --- | --- | --- | --- |')
 

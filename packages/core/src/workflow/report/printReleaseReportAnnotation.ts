@@ -3,6 +3,7 @@
 
 import type { ReleaseReport } from '#types'
 import { isGitHubActions } from '#util'
+import { FALLBACK_RELEASE_ERROR_MESSAGE } from './utils'
 
 /**
  * Print a GitHub Actions error annotation for a failed release.
@@ -25,7 +26,7 @@ export function printReleaseReportAnnotation(
   if (!isGitHubActions(env) || report.status !== 'failure') return
 
   const message = formatAnnotationMessage(
-    report.error || 'An unexpected error occurred during the release process.'
+    report.error || FALLBACK_RELEASE_ERROR_MESSAGE
   )
 
   stdout.write(`::error title=Release failed::${message}\n`)

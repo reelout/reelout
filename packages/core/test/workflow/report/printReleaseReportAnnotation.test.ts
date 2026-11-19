@@ -1,17 +1,9 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
-import { printReleaseReportAnnotation, type ReleaseReport } from '@reelout/core'
+import { printReleaseReportAnnotation } from '@reelout/core'
 import { expect, test, vi } from 'vitest'
-
-const createReport = (report: Partial<ReleaseReport>): ReleaseReport => ({
-  status: null,
-  phase: null,
-  error: null,
-  packages: [],
-  plans: [],
-  ...report,
-})
+import { createReport } from '../../../../../test/mock/report'
 
 test('writes an error annotation with the escaped failure reason when the release fails on GitHub Actions', () => {
   using write = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
