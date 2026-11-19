@@ -1,6 +1,6 @@
 {
   "name": "@reelout/config",
-  "version": "0.4.7",
+  "version": "0.4.8",
   "description": "Discovers, merges, and normalizes ReelOut configuration, including plugin registrations.",
   "repository": {
     "type": "git",

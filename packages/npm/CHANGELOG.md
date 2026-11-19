@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.6.2](https://github.com/reelout/reelout/compare/%40reelout%2Fnpm%400.6.1...%40reelout%2Fnpm%400.6.2) (2026-11-19)
+
+### Features
+
+- **core:** report releases to the GitHub Actions job summary ([#18](https://github.com/reelout/reelout/issues/18)) ([cbb6c48](https://github.com/reelout/reelout/commit/cbb6c4880f88930ae99e71c3ddb156e5789d25c9))
+
 ## [0.6.1](https://github.com/reelout/reelout/compare/%40reelout%2Fnpm%400.6.0...%40reelout%2Fnpm%400.6.1) (2026-11-19)
 
 ### Features

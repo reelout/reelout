@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.8.0](https://github.com/reelout/reelout/compare/%40reelout%2Fcore%400.7.0...%40reelout%2Fcore%400.8.0) (2026-11-19)
+
+### Features
+
+- **core:** report releases to the GitHub Actions job summary ([#18](https://github.com/reelout/reelout/issues/18)) ([cbb6c48](https://github.com/reelout/reelout/commit/cbb6c4880f88930ae99e71c3ddb156e5789d25c9))
+
 ## [0.7.0](https://github.com/reelout/reelout/compare/%40reelout%2Fcore%400.6.0...%40reelout%2Fcore%400.7.0) (2026-11-19)
 
 ### Features

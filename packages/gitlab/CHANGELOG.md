@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.7](https://github.com/reelout/reelout/compare/%40reelout%2Fgitlab%400.4.6...%40reelout%2Fgitlab%400.4.7) (2026-11-19)
+
+### Features
+
+- **core:** report releases to the GitHub Actions job summary ([#18](https://github.com/reelout/reelout/issues/18)) ([cbb6c48](https://github.com/reelout/reelout/commit/cbb6c4880f88930ae99e71c3ddb156e5789d25c9))
+
 ## [0.4.6](https://github.com/reelout/reelout/compare/%40reelout%2Fgitlab%400.4.5...%40reelout%2Fgitlab%400.4.6) (2026-11-19)
 
 ### Features

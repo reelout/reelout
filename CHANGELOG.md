@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.5.0](https://github.com/reelout/reelout/compare/v0.4.0...v0.5.0) (2026-11-19)
+
+### Features
+
+- **core:** report releases to the GitHub Actions job summary ([#18](https://github.com/reelout/reelout/issues/18)) ([cbb6c48](https://github.com/reelout/reelout/commit/cbb6c4880f88930ae99e71c3ddb156e5789d25c9))
+
 ## [0.4.0](https://github.com/reelout/reelout/compare/v0.3.0...v0.4.0) (2026-11-19)
 
 ### Features
