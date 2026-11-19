@@ -42,7 +42,10 @@ test('appends the markdown report to the job summary when running on GitHub Acti
     appendReleaseReportSummary(
       context.logger,
       { GITHUB_ACTIONS: 'true', GITHUB_STEP_SUMMARY: filePath },
-      { ...report, status: 'success' }
+      {
+        ...report,
+        outcome: { status: 'success', error: null, phase: null },
+      }
     )
 
     expect(await fs.readFile(filePath, 'utf-8')).toMatchInlineSnapshot(`
@@ -90,8 +93,11 @@ test('appends the failure status and error message when the release failed', asy
       context.logger,
       { GITHUB_ACTIONS: 'true', GITHUB_STEP_SUMMARY: filePath },
       createReport({
-        status: 'failure',
-        error: 'Publish failed\nPlease check NPM_TOKEN',
+        outcome: {
+          status: 'failure',
+          error: 'Publish failed\nPlease check NPM_TOKEN',
+          phase: null,
+        },
       })
     )
 
@@ -115,7 +121,7 @@ test('appends the empty-state message when no packages are scheduled for release
     appendReleaseReportSummary(
       context.logger,
       { GITHUB_ACTIONS: 'true', GITHUB_STEP_SUMMARY: filePath },
-      createReport({ status: 'success' })
+      createReport({ outcome: { status: 'success', error: null, phase: null } })
     )
 
     expect(await fs.readFile(filePath, 'utf-8')).toMatchInlineSnapshot(`
@@ -146,7 +152,10 @@ test('labels unnamed packages with their directory in the release table', async 
     appendReleaseReportSummary(
       context.logger,
       { GITHUB_ACTIONS: 'true', GITHUB_STEP_SUMMARY: filePath },
-      { ...report, status: 'success' }
+      {
+        ...report,
+        outcome: { status: 'success', error: null, phase: null },
+      }
     )
 
     expect(await fs.readFile(filePath, 'utf-8')).toMatchInlineSnapshot(`
@@ -170,7 +179,7 @@ test('does not create the summary file when the GitHub Actions flag is absent', 
     appendReleaseReportSummary(
       context.logger,
       { GITHUB_STEP_SUMMARY: filePath },
-      createReport({ status: 'success' })
+      createReport({ outcome: { status: 'success', error: null, phase: null } })
     )
 
     await expect(fs.readFile(filePath, 'utf-8')).rejects.toThrow()
@@ -182,7 +191,7 @@ test('does not write a summary when no summary file is configured', () => {
   appendReleaseReportSummary(
     context.logger,
     { GITHUB_ACTIONS: 'true' },
-    createReport({ status: 'success' })
+    createReport({ outcome: { status: 'success', error: null, phase: null } })
   )
 
   expect(logger.mock.calls).toEqual([])
@@ -196,7 +205,7 @@ test('logs a warning when the summary file cannot be written', async () => {
         GITHUB_ACTIONS: 'true',
         GITHUB_STEP_SUMMARY: path.join(directory, 'missing', 'summary.md'),
       },
-      createReport({ status: 'success' })
+      createReport({ outcome: { status: 'success', error: null, phase: null } })
     )
 
     expect(logger.mock.calls).toHaveLength(1)

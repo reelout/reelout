@@ -25,10 +25,9 @@ Every hook is optional. A plugin typically implements only the hooks it needs.
 
 The `finalize` hook is terminal: it runs on every workflow outcome. When a
 phase hook throws, plugin rollbacks run while the error unwinds, then every
-`finalize` handler still runs with `context.status` set to `failure` and
-`context.error` holding the thrown error. The same applies when the workflow is
-cancelled between phases. Handlers can use this to notify on both success and
-failure.
+`finalize` handler still runs with the failure recorded on `context.outcome`.
+The same applies when the workflow is cancelled between phases. Handlers can
+use this to notify on both success and failure.
 
 ## Priorities
 
@@ -61,11 +60,10 @@ const notifyPlugin: ReleasePlugin = {
   finalize: {
     priority: HookPriority.Low,
     async handler(context, next) {
-      const outcome = context.status === 'failure' ? 'failed' : 'succeeded'
+      const result =
+        context.outcome?.status === 'failure' ? 'failed' : 'succeeded'
       const released = context.plans.filter((plan) => plan.release != null)
-      context.logger.info(
-        `Notifying ${released.length} release(s) (${outcome})`
-      )
+      context.logger.info(`Notifying ${released.length} release(s) (${result})`)
       await next(context)
     },
   },

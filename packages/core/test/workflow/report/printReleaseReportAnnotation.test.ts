@@ -12,8 +12,11 @@ test('writes an error annotation with the escaped failure reason when the releas
     { GITHUB_ACTIONS: 'true' },
     process.stdout,
     createReport({
-      status: 'failure',
-      error: 'Publish failed: 100% of files\nNPM_TOKEN is required',
+      outcome: {
+        status: 'failure',
+        error: 'Publish failed: 100% of files\nNPM_TOKEN is required',
+        phase: null,
+      },
     })
   )
 
@@ -30,7 +33,7 @@ test('falls back to the default failure message when the report has no error', (
   printReleaseReportAnnotation(
     { GITHUB_ACTIONS: 'true' },
     process.stdout,
-    createReport({ status: 'failure' })
+    createReport({ outcome: { status: 'failure', error: null, phase: null } })
   )
 
   expect(write.mock.calls).toEqual([
@@ -46,7 +49,7 @@ test('does not write an annotation when the release does not fail', () => {
   printReleaseReportAnnotation(
     { GITHUB_ACTIONS: 'true' },
     process.stdout,
-    createReport({ status: 'success' })
+    createReport({ outcome: { status: 'success', error: null, phase: null } })
   )
 
   expect(write.mock.calls).toEqual([])
@@ -58,7 +61,9 @@ test('does not write an annotation when not running on GitHub Actions', () => {
   printReleaseReportAnnotation(
     {},
     process.stdout,
-    createReport({ status: 'failure', error: 'Publish failed' })
+    createReport({
+      outcome: { status: 'failure', error: 'Publish failed', phase: null },
+    })
   )
 
   expect(write.mock.calls).toEqual([])

@@ -99,10 +99,16 @@ test('outputs formatted release summary and changelogs when packages have schedu
   const report = generateReleaseReport(context)
 
   dryRun.mockReturnValue(true)
-  printReleaseReport(context.logger, { ...report, status: 'success' })
+  printReleaseReport(context.logger, {
+    ...report,
+    outcome: { status: 'success', error: null, phase: null },
+  })
 
   dryRun.mockReturnValue(false)
-  printReleaseReport(context.logger, { ...report, status: 'success' })
+  printReleaseReport(context.logger, {
+    ...report,
+    outcome: { status: 'success', error: null, phase: null },
+  })
 
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
@@ -207,7 +213,7 @@ test('outputs formatted release summary and changelogs when packages have schedu
 test('displays empty state message when no packages are scheduled for release', () => {
   using dryRun = vi.spyOn(context, 'dryRun', 'get')
 
-  context.status = 'success'
+  context.outcome = { status: 'success', error: null, phase: null }
 
   context.plans = [
     { package: { name: 'foo', version: '1.0.0' }, release: null },
@@ -247,14 +253,12 @@ test('logs error details when report status is failure', () => {
 
   printReleaseReport(context.logger, {
     ...report,
-    status: 'failure',
-    error: 'Custom error reason',
+    outcome: { status: 'failure', error: 'Custom error reason', phase: null },
   })
 
   printReleaseReport(context.logger, {
     ...report,
-    status: 'failure',
-    error: null,
+    outcome: { status: 'failure', error: null, phase: null },
   })
 
   expect(logger.mock.calls).toMatchInlineSnapshot(`
@@ -289,7 +293,7 @@ test('does not log status banner when status field is missing', () => {
 
   const report = generateReleaseReport(context)
 
-  printReleaseReport(context.logger, { ...report, status: null })
+  printReleaseReport(context.logger, { ...report, outcome: null })
 
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [

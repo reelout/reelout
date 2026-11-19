@@ -6,9 +6,7 @@ import type { ReleaseReport } from '@reelout/core'
 export const createReport = (
   report: Partial<ReleaseReport>
 ): ReleaseReport => ({
-  status: null,
-  phase: null,
-  error: null,
+  outcome: null,
   packages: [],
   plans: [],
   ...report,

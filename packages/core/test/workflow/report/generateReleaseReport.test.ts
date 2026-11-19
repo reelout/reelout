@@ -112,9 +112,8 @@ test('constructs structured package and release objects when release plans are p
 
   expect(report).toMatchInlineSnapshot(`
     {
-      "error": null,
+      "outcome": null,
       "packages": [],
-      "phase": null,
       "plans": [
         {
           "package": {
@@ -222,7 +221,6 @@ test('constructs structured package and release objects when release plans are p
           },
         },
       ],
-      "status": null,
     }
   `)
 })
@@ -235,11 +233,9 @@ test('includes versionQualifier and releaseChannel in report when present in con
 
   expect(report).toMatchInlineSnapshot(`
     {
-      "error": null,
+      "outcome": null,
       "packages": [],
-      "phase": null,
       "plans": [],
-      "status": null,
     }
   `)
 })
@@ -254,46 +250,59 @@ test('omits release plan from report when release version is null or missing', (
 
   expect(report).toMatchInlineSnapshot(`
     {
-      "error": null,
+      "outcome": null,
       "packages": [],
-      "phase": null,
       "plans": [],
-      "status": null,
     }
   `)
 })
 
-test('extracts error message string when error context is an Error instance or string', () => {
+test('carries the raw release outcome in the report when the workflow failed', () => {
   context.plans = [
     { package: { name: 'foo', version: '1.0.0' }, release: null },
     { package: { name: 'bar', version: '2.0.0' }, release: null },
   ] as ReleasePlan[]
 
-  context.error = new Error('Something went wrong')
+  context.outcome = {
+    status: 'failure',
+    error: new Error('Something went wrong'),
+    phase: { hook: 'write', plugin: 'npm' },
+  }
 
   let report = generateReleaseReport(context)
 
   expect(report).toMatchInlineSnapshot(`
     {
-      "error": "Something went wrong",
+      "outcome": {
+        "error": [Error: Something went wrong],
+        "phase": {
+          "hook": "write",
+          "plugin": "npm",
+        },
+        "status": "failure",
+      },
       "packages": [],
-      "phase": null,
       "plans": [],
-      "status": null,
     }
   `)
 
-  context.error = 'Nothing went wrong, actually'
+  context.outcome = {
+    status: 'failure',
+    error: 'Nothing went wrong, actually',
+    phase: null,
+  }
 
   report = generateReleaseReport(context)
 
   expect(report).toMatchInlineSnapshot(`
     {
-      "error": "Nothing went wrong, actually",
+      "outcome": {
+        "error": "Nothing went wrong, actually",
+        "phase": null,
+        "status": "failure",
+      },
       "packages": [],
-      "phase": null,
       "plans": [],
-      "status": null,
     }
   `)
 })

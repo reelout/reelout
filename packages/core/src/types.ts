@@ -145,6 +145,18 @@ export interface ReleasePhase {
   plugin: string
 }
 
+/**
+ * Terminal outcome of a release workflow.
+ *
+ * On failure, `error` holds the thrown error and `phase` attributes it to
+ * the hook and plugin whose handler threw; on success both are `null`.
+ */
+export interface ReleaseOutcome {
+  status: ReleaseStatus
+  error: unknown
+  phase: ReleasePhase | null
+}
+
 export interface ReleaseContext<P extends Package = Package> {
   cwd: string
   env: Readonly<NodeJS.ProcessEnv>
@@ -167,9 +179,7 @@ export interface ReleaseContext<P extends Package = Package> {
   dryRun: boolean
   packages: P[]
   plans: ReleasePlan<P>[]
-  status: ReleaseStatus | null
-  phase: ReleasePhase | null
-  error: unknown
+  outcome: ReleaseOutcome | null
 }
 
 export interface Workspace {
@@ -233,9 +243,7 @@ export interface ReleasePlugin<P extends Package = Package> {
 export type ReleaseHookName = Exclude<keyof ReleasePlugin, 'name' | 'version'>
 
 export interface ReleaseReport {
-  status: ReleaseStatus | null
-  phase: ReleasePhase | null
-  error: string | null
+  outcome: ReleaseOutcome | null
   packages: {
     location: string
     name: string | undefined

@@ -5,6 +5,7 @@ import type { ReleaseReport } from '#types'
 import { isGitHubActions } from '#util'
 import type { ConsolaInstance } from 'consola/core'
 import { appendFileSync } from 'node:fs'
+import { resolveErrorMessage } from './resolveErrorMessage'
 
 const STATUS_LABELS = {
   success: 'Success',
@@ -24,7 +25,7 @@ type ReportPlan = ReleaseReport['plans'][number]
  *
  * @param logger Logger instance for reporting summary write failures
  * @param env Readonly process environment variables object
- * @param report Release report containing status and package details
+ * @param report Release report containing outcome and package details
  */
 export function appendReleaseReportSummary(
   logger: ConsolaInstance,
@@ -55,13 +56,14 @@ const formatPackageLabel = (plan: ReportPlan): string => {
 const formatReleaseReportSummary = (report: ReleaseReport): string => {
   const lines: string[] = ['## ReelOut Release Report', '']
 
-  if (report.status) {
-    lines.push(`**Status:** ${STATUS_LABELS[report.status]}`, '')
+  if (report.outcome) {
+    lines.push(`**Status:** ${STATUS_LABELS[report.outcome.status]}`, '')
   }
 
-  if (report.status === 'failure') {
+  if (report.outcome?.status === 'failure') {
     const message =
-      report.error || 'An unexpected error occurred during the release process.'
+      resolveErrorMessage(report.outcome.error) ||
+      'An unexpected error occurred during the release process.'
 
     lines.push(...message.split('\n').map((line) => `> ${line}`), '')
 

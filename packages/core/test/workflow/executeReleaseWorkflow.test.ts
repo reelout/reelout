@@ -4,6 +4,7 @@
 import type {
   Package,
   ReleaseContext,
+  ReleaseOutcome,
   ReleasePlan,
   ReleasePlugin,
 } from '@reelout/core'
@@ -647,9 +648,11 @@ test('runs finalize after reverse-onion rollbacks when a phase hook throws', asy
   expect(rollback2).toHaveBeenCalledTimes(1)
   expect(rollback2).toHaveBeenCalledWith(new Error('Something went wrong'))
   expect(executionOrder).toEqual(['rollback2', 'rollback1', 'finalize'])
-  expect(context.status).toBe('failure')
-  expect(context.error).toEqual(new Error('Something went wrong'))
-  expect(context.phase).toEqual({ hook: 'write', plugin: 'plugin' })
+  expect(context.outcome).toEqual({
+    status: 'failure',
+    error: new Error('Something went wrong'),
+    phase: { hook: 'write', plugin: 'plugin' },
+  })
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
       [
@@ -664,11 +667,7 @@ test('runs finalize after reverse-onion rollbacks when a phase hook throws', asy
 
 test('exposes the failure outcome to finalize handlers when a phase hook throws', async () => {
   const failureError = new Error('Publish failed')
-  const outcome: { status: unknown; error: unknown; phase: unknown } = {
-    status: undefined,
-    error: undefined,
-    phase: undefined,
-  }
+  let outcome: ReleaseOutcome | null = null
 
   const failingPlugin: ReleasePlugin = {
     name: 'notify',
@@ -677,9 +676,7 @@ test('exposes the failure outcome to finalize handlers when a phase hook throws'
       throw failureError
     },
     finalize: (ctx, next) => {
-      outcome.status = ctx.status
-      outcome.error = ctx.error
-      outcome.phase = ctx.phase
+      outcome = ctx.outcome
       return next(ctx)
     },
   }
@@ -688,23 +685,21 @@ test('exposes the failure outcome to finalize handlers when a phase hook throws'
     executeReleaseWorkflow(context, [failingPlugin])
   ).rejects.toThrow('Publish failed')
 
-  expect(outcome.status).toBe('failure')
-  expect(outcome.error).toBe(failureError)
-  expect(outcome.phase).toEqual({ hook: 'finalize', plugin: 'notify' })
+  expect(outcome).toEqual({
+    status: 'failure',
+    error: failureError,
+    phase: { hook: 'write', plugin: 'notify' },
+  })
 })
 
 test('exposes the success outcome to finalize handlers when the workflow completes', async () => {
-  const outcome: { status: unknown; error: unknown } = {
-    status: undefined,
-    error: undefined,
-  }
+  let outcome: ReleaseOutcome | null = null
 
   const notifyPlugin: ReleasePlugin = {
     name: 'notify',
     version: '1.0.0',
     finalize: (ctx, next) => {
-      outcome.status = ctx.status
-      outcome.error = ctx.error
+      outcome = ctx.outcome
       return next(ctx)
     },
   }
@@ -713,8 +708,7 @@ test('exposes the success outcome to finalize handlers when the workflow complet
     executeReleaseWorkflow(context, [notifyPlugin])
   ).resolves.toBeUndefined()
 
-  expect(outcome.status).toBe('success')
-  expect(outcome.error).toBeNull()
+  expect(outcome).toEqual({ status: 'success', error: null, phase: null })
 })
 
 test('runs remaining finalize handlers and warns when a finalize handler throws on a failed workflow', async () => {
@@ -777,17 +771,16 @@ test('fails the workflow without triggering publish rollbacks when a finalize ha
   )
 
   expect(rollback).not.toHaveBeenCalled()
-  expect(context.status).toBe('failure')
-  expect(context.error).toBe(finalizeError)
-  expect(context.phase).toEqual({ hook: 'finalize', plugin: 'notify' })
+  expect(context.outcome).toEqual({
+    status: 'failure',
+    error: finalizeError,
+    phase: { hook: 'finalize', plugin: 'notify' },
+  })
 })
 
 test('cancels the workflow between phase hooks when the abort signal fires', async () => {
   const controller = new AbortController()
-  const outcome: { status: unknown; error: unknown } = {
-    status: undefined,
-    error: undefined,
-  }
+  let outcome: ReleaseOutcome | null = null
 
   const cancellablePlugin: ReleasePlugin = {
     name: 'plugin',
@@ -798,8 +791,7 @@ test('cancels the workflow between phase hooks when the abort signal fires', asy
     },
     discover: vi.fn((ctx, next) => next(ctx)),
     finalize: (ctx, next) => {
-      outcome.status = ctx.status
-      outcome.error = ctx.error
+      outcome = ctx.outcome
       return next(ctx)
     },
   }
@@ -817,8 +809,11 @@ test('cancels the workflow between phase hooks when the abort signal fires', asy
   expect(error.message).toBe('Release cancelled.')
   expect(error.cause).toMatchObject({ name: 'AbortError' })
   expect(cancellablePlugin.discover).not.toHaveBeenCalled()
-  expect(outcome.status).toBe('failure')
-  expect(outcome.error).toBe(error)
+  expect(outcome).toEqual({
+    status: 'failure',
+    error,
+    phase: { hook: 'configure', plugin: 'plugin' },
+  })
 })
 
 test('runs finalize when the workflow fails in dry-run mode', async () => {
@@ -831,7 +826,7 @@ test('runs finalize when the workflow fails in dry-run mode', async () => {
       throw new Error('Something went wrong')
     },
     finalize: (ctx, next) => {
-      finalized.push(ctx.status ?? 'missing')
+      finalized.push(ctx.outcome?.status ?? 'missing')
       return next(ctx)
     },
   }
