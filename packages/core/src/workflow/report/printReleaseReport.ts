@@ -10,9 +10,10 @@ import { resolveOutcomeErrorMessage } from './resolveErrorMessage'
 /**
  * Print a formatted release report to the logger.
  *
- * Logs the terminal outcome status and details for planned package releases.
- * Displays package names, directories, and version changes on success, or
- * outputs the error message on failure.
+ * Logs the terminal outcome status, a warning section for every skipped
+ * step, and details for planned package releases. Displays package names,
+ * directories, and version changes on success, or outputs the error message
+ * on failure.
  *
  * @param logger Logger instance for outputting messages
  * @param report Release report containing outcome and package details
@@ -28,6 +29,19 @@ export function printReleaseReport(
     }[report.outcome.status]
 
     logger.info(`Status: ${statusLabel}`)
+  }
+
+  if (report.skipped.length > 0) {
+    const header = [
+      'Skipped:',
+      colors.bold(colors.yellow(`${report.skipped.length} skipped`)),
+    ].join(' ')
+
+    const list = report.skipped
+      .map((step) => `${colors.bgYellow(` ${step.plugin} `)} ${step.reason}`)
+      .join('\n')
+
+    logger.warn(`${header}\n${list}`)
   }
 
   if (report.outcome?.status === 'failure') {

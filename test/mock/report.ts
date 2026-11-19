@@ -16,6 +16,7 @@ export const createReport = (
   report: Partial<ReleaseReport>
 ): ReleaseReport => ({
   outcome: null,
+  skipped: [],
   packages: [],
   plans: [],
   ...report,
