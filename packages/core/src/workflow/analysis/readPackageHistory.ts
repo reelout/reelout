@@ -27,15 +27,16 @@ export async function* readPackageHistory(
   pkg: Package,
   options: ReadGitHistoryOptions = {}
 ): AsyncGenerator<GitCommit> {
+  options = { ...options }
+
   if (!options.filePath) {
-    options = {
-      ...options,
-      filePath: Array.isArray(pkg.files)
-        ? unique([
-            pkg.location,
-            ...pkg.files.filter((file) => LITERAL_PATH.test(file)),
-          ])
-        : pkg.location,
+    if (Array.isArray(pkg.files)) {
+      options.filePath = unique([
+        pkg.location,
+        ...pkg.files.filter((file) => LITERAL_PATH.test(file)),
+      ])
+    } else {
+      options.filePath = pkg.location
     }
   }
 
