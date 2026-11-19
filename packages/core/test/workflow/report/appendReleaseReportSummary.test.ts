@@ -130,6 +130,39 @@ test('appends the empty-state message when no packages are scheduled for release
   })
 })
 
+test('labels unnamed packages with their directory in the release table', async () => {
+  await temporaryDirectoryTask(async (directory) => {
+    const filePath = path.join(directory, 'summary.md')
+
+    context.plans = [
+      {
+        package: { location: 'packages/foo', name: '', version: '1.0.0' },
+        release: { type: 'minor', version: '1.1.0' },
+      },
+    ] as ReleasePlan[]
+
+    const report = generateReleaseReport(context)
+
+    appendReleaseReportSummary(
+      context.logger,
+      { GITHUB_ACTIONS: 'true', GITHUB_STEP_SUMMARY: filePath },
+      { ...report, status: 'success' }
+    )
+
+    expect(await fs.readFile(filePath, 'utf-8')).toMatchInlineSnapshot(`
+      "
+      ## ReelOut Release Report
+
+      **Status:** Success
+
+      | Package | Version | Type | Tag |
+      | --- | --- | --- | --- |
+      | \`packages/foo\` | \`1.1.0\` ← \`1.0.0\` | minor |  |
+      "
+    `)
+  })
+})
+
 test('does not create the summary file when the GitHub Actions flag is absent', async () => {
   await temporaryDirectoryTask(async (directory) => {
     const filePath = path.join(directory, 'summary.md')
