@@ -26,6 +26,8 @@ beforeAll(() => {
 beforeEach(() => {
   vi.resetAllMocks()
   vi.unstubAllEnvs()
+  vi.stubEnv('GITHUB_ACTIONS', undefined)
+  vi.stubEnv('GITHUB_STEP_SUMMARY', undefined)
   vi.stubEnv('GITHUB_TOKEN', 'mock-github-token')
   vi.stubEnv('NPM_TOKEN', 'mock-npm-token')
 })
