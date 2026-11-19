@@ -23,4 +23,7 @@ test('returns false when GITHUB_ACTIONS flag is disabled or absent', () => {
 
   vi.stubEnv('GITHUB_ACTIONS', '')
   expect(isGitHubActions(process.env)).toBe(false)
+
+  vi.stubEnv('GITHUB_ACTIONS', undefined)
+  expect(isGitHubActions(process.env)).toBe(false)
 })
