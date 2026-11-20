@@ -163,17 +163,15 @@ function throwIfCancelled(context: ReleaseContext): void {
  * send notifications and clean up: when a phase hook throws, plugin rollbacks
  * run while the error unwinds, then every `finalize` handler runs with the
  * failure recorded on `context.outcome`. When a `finalize` handler throws,
- * the remaining handlers still run: on a failed workflow each failure is
- * logged as a warning after the report, while on a successful workflow the
- * first failure fails the release. Failures in `finalize` never mask the
- * original workflow error.
+ * the remaining handlers still run and each failure is logged as a warning
+ * after the report. A failing `finalize` handler never changes the workflow
+ * outcome and never masks the original workflow error.
  *
  * @param context Release execution context containing runtime options and logger
  * @param plugins List of release plugins to execute
  * @returns Promise that resolves when all phases and `finalize` handlers
  * complete
- * @throws If a lifecycle hook fails, the workflow is cancelled, or a finalize
- * handler fails on an otherwise successful workflow
+ * @throws If a lifecycle hook fails or the workflow is cancelled
  */
 export async function executeReleaseWorkflow(
   context: ReleaseContext,
@@ -238,19 +236,6 @@ export async function executeReleaseWorkflow(
   }
 
   await manager.emit('finalize', context)
-
-  const [firstFinalizeFailure] = finalizeFailures
-
-  if (context.outcome.status === 'success' && firstFinalizeFailure) {
-    context.outcome = {
-      status: 'failure',
-      error: firstFinalizeFailure.error,
-      phase: {
-        hook: 'finalize',
-        plugin: firstFinalizeFailure.plugin,
-      },
-    }
-  }
 
   const report = generateReleaseReport(context)
 

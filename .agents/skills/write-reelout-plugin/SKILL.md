@@ -70,9 +70,9 @@ const handler = async (context, next) => {
 - `finalize` is terminal: it runs on every workflow outcome, including
   failures and cancellations. Read `context.outcome` (`status`, `error`,
   `phase`) to adapt behavior. A `finalize` handler that throws does not stop
-  the remaining `finalize` handlers: on a failed workflow its error is logged
-  as a warning after the report, and on a successful workflow it fails the
-  release once the other handlers have run.
+  the remaining `finalize` handlers: its error is logged as a warning after
+  the report, and a failing `finalize` handler never changes the workflow
+  outcome.
 
 ## Plugin contract and registration
 

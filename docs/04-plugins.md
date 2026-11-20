@@ -27,7 +27,10 @@ The `finalize` hook is terminal: it runs on every workflow outcome. When a
 phase hook throws, plugin rollbacks run while the error unwinds, then every
 `finalize` handler still runs with the failure recorded on `context.outcome`.
 The same applies when the workflow is cancelled between phases. Handlers can
-use this to notify on both success and failure.
+use this to notify on both success and failure. When a `finalize` handler
+itself throws, the remaining handlers still run and the error is reported as
+a warning after the release report; a failing `finalize` handler never
+changes the workflow outcome.
 
 ## Priorities
 
