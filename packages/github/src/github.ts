@@ -26,8 +26,8 @@ const readGitHubToken = (env: ReleaseContext['env']): string | undefined => {
  * @remarks
  * **Lifecycle Stages:**
  * - `configure`: Verifies the `GITHUB_TOKEN` environment variable is present and accepted by GitHub.
- *   In strict mode a missing token fails the run; otherwise the plugin's `publish` step is recorded
- *   as skipped and a warning is logged.
+ *   In strict mode a missing token fails the run; otherwise the plugin's `publish` step is skipped
+ *   and a warning is logged.
  * - `publish`: Creates GitHub releases in reverse alphabetical package order (ensuring the root
  *   package release is created last). Overwrites the name and notes of an existing release for a
  *   planned tag. Automatically rolls back — restoring overwritten releases and deleting created
@@ -47,12 +47,6 @@ const github = (): ReleasePlugin => ({
           'The GITHUB_TOKEN environment variable is required in strict mode.'
         )
       }
-
-      context.skippedSteps.push({
-        plugin: '@reelout/github',
-        hook: 'publish',
-        reason: 'GITHUB_TOKEN is not set.',
-      })
 
       context.logger.warn(
         'GitHub releases will not be created: GITHUB_TOKEN is not set.'

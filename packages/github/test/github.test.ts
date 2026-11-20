@@ -78,15 +78,6 @@ test('skips github release creation when GITHUB_TOKEN is missing', async () => {
   await executeReleaseWorkflow(context, [plugin()])
 
   expect(Octokit).not.toHaveBeenCalled()
-  expect(context.skippedSteps).toMatchInlineSnapshot(`
-    [
-      {
-        "hook": "publish",
-        "plugin": "@reelout/github",
-        "reason": "GITHUB_TOKEN is not set.",
-      },
-    ]
-  `)
   expect(context.outcome?.status).toBe('success')
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
@@ -95,10 +86,6 @@ test('skips github release creation when GITHUB_TOKEN is missing', async () => {
       ],
       [
         "Status: [32mSUCCESS[39m",
-      ],
-      [
-        "Skipped: [1m[33m1 skipped[39m[22m
-    [43m @reelout/github [49m GITHUB_TOKEN is not set.",
       ],
       [
         "Release complete: [1m[32m1 released[39m[22m [90m(0)[39m
@@ -120,7 +107,6 @@ test('treats a whitespace-only GITHUB_TOKEN as missing', async () => {
   await executeReleaseWorkflow(context, [plugin()])
 
   expect(Octokit).not.toHaveBeenCalled()
-  expect(context.skippedSteps).toHaveLength(1)
 })
 
 test('fails workflow execution when GITHUB_TOKEN is missing in strict mode', async () => {
@@ -242,7 +228,6 @@ test('previews the skipped github release during dry-run mode', async () => {
   await executeReleaseWorkflow(context, [plugin()])
 
   expect(Octokit).not.toHaveBeenCalled()
-  expect(context.skippedSteps).toHaveLength(1)
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
       [
@@ -250,10 +235,6 @@ test('previews the skipped github release during dry-run mode', async () => {
       ],
       [
         "Status: [32mSUCCESS[39m [33m(dry run)[39m",
-      ],
-      [
-        "Skipped: [1m[33m1 skipped[39m[22m
-    [43m @reelout/github [49m GITHUB_TOKEN is not set.",
       ],
       [
         "Release complete: [1m[32m1 released[39m[22m [90m(0)[39m
