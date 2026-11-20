@@ -71,6 +71,7 @@ export async function verifyAuth(
  * @param pkg Target package metadata object
  * @param packageManager Information about the active package manager
  * @param env Prepared authentication environment, if credentials were injected
+ * @returns A promise that resolves when the registry accepts the credentials
  * @throws If the `whoami` command fails, carrying the original error as the cause
  */
 async function assertRegistryAuth(

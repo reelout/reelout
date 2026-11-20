@@ -20,6 +20,8 @@ import { resolvePublishRegistry } from './resolvePublishRegistry'
  * @param plan Release plan describing the published package
  * @param packageManager Information about the active package manager
  * @param distTags The registry's current dist-tags for the package
+ * @returns A promise that resolves once the dist-tag references the released
+ * version
  */
 export async function syncDistTag(
   context: ReleaseContext,

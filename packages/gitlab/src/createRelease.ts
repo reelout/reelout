@@ -27,9 +27,9 @@ export interface OriginalRelease {
  * @param plan Release plan containing the tag to publish
  * @param token GitLab authentication token
  * @param repository Target repository
- * @returns Promise resolving to the original release content when an existing
- * release was overwritten, `{ original: null }` when the release was created,
- * or `null` when the write was skipped
+ * @returns Promise resolving to `{ original: OriginalRelease }` when an
+ * existing release was overwritten, `{ original: null }` when the release was
+ * created, or `null` when the write was skipped
  */
 export async function createRelease(
   context: ReleaseContext,
