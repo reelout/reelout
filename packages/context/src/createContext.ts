@@ -128,8 +128,6 @@ export async function createContext(
     dryRun: !!options.dryRun,
     packages: [],
     plans: [],
-    status: null,
-    phase: null,
-    error: null,
+    outcome: null,
   }
 }

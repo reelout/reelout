@@ -193,9 +193,7 @@ test('populates context with default configuration, plugins, and metadata upon s
       dryRun: false,
       packages: [],
       plans: [],
-      status: null,
-      phase: null,
-      error: null,
+      outcome: null,
     })
   })
 }, 15_000)

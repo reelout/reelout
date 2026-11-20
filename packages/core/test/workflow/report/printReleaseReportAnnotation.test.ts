@@ -3,7 +3,7 @@
 
 import { printReleaseReportAnnotation } from '@reelout/core'
 import { expect, test, vi } from 'vitest'
-import { createReport } from '../../../../../test/mock/report'
+import { createReport, createOutcome } from '../../../../../test/mock/report'
 
 test('writes an error annotation with the escaped failure reason when the release fails on GitHub Actions', () => {
   using write = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
@@ -12,8 +12,10 @@ test('writes an error annotation with the escaped failure reason when the releas
     { GITHUB_ACTIONS: 'true' },
     process.stdout,
     createReport({
-      status: 'failure',
-      error: 'Publish failed: 100% of files\nNPM_TOKEN is required',
+      outcome: createOutcome({
+        status: 'failure',
+        error: 'Publish failed: 100% of files\nNPM_TOKEN is required',
+      }),
     })
   )
 
@@ -24,13 +26,13 @@ test('writes an error annotation with the escaped failure reason when the releas
   ])
 })
 
-test('falls back to the default failure message when the report has no error', () => {
+test('falls back to the generic failure message when the report has no error', () => {
   using write = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
 
   printReleaseReportAnnotation(
     { GITHUB_ACTIONS: 'true' },
     process.stdout,
-    createReport({ status: 'failure' })
+    createReport({ outcome: createOutcome({ status: 'failure' }) })
   )
 
   expect(write.mock.calls).toEqual([
@@ -40,13 +42,13 @@ test('falls back to the default failure message when the report has no error', (
   ])
 })
 
-test('does not write an annotation when the release does not fail', () => {
+test('does not write an annotation when the release succeeds', () => {
   using write = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
 
   printReleaseReportAnnotation(
     { GITHUB_ACTIONS: 'true' },
     process.stdout,
-    createReport({ status: 'success' })
+    createReport({ outcome: createOutcome() })
   )
 
   expect(write.mock.calls).toEqual([])
@@ -58,7 +60,9 @@ test('does not write an annotation when not running on GitHub Actions', () => {
   printReleaseReportAnnotation(
     {},
     process.stdout,
-    createReport({ status: 'failure', error: 'Publish failed' })
+    createReport({
+      outcome: createOutcome({ status: 'failure', error: 'Publish failed' }),
+    })
   )
 
   expect(write.mock.calls).toEqual([])

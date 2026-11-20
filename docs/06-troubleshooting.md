@@ -63,6 +63,10 @@ On failure, the Git plugin removes local tags it created and remote tags it
 pushed. The GitHub and GitLab plugins also remove releases they created earlier
 in the run.
 
+Rollbacks run while the error unwinds. Afterwards, `finalize` handlers still
+run with the failure recorded on `context.outcome`, so notification plugins
+report the failed outcome too.
+
 ## Warnings
 
 These warnings are non-fatal but usually worth investigating:

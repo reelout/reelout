@@ -3,6 +3,7 @@
 
 import type { ReleaseReport } from '#types'
 import { isGitHubActions } from '#util'
+import { resolveOutcomeErrorMessage } from './resolveErrorMessage'
 
 /**
  * Print a GitHub Actions error annotation for a failed release.
@@ -15,17 +16,17 @@ import { isGitHubActions } from '#util'
  *
  * @param env Readonly process environment variables object
  * @param stdout Writable stream receiving the annotation command
- * @param report Release report containing status and failure details
+ * @param report Release report containing outcome and failure details
  */
 export function printReleaseReportAnnotation(
   env: Readonly<NodeJS.ProcessEnv>,
   stdout: NodeJS.WritableStream,
   report: ReleaseReport
 ): void {
-  if (!isGitHubActions(env) || report.status !== 'failure') return
+  if (!isGitHubActions(env) || report.outcome?.status !== 'failure') return
 
   const message = formatAnnotationMessage(
-    report.error || 'An unexpected error occurred during the release process.'
+    resolveOutcomeErrorMessage(report.outcome)
   )
 
   stdout.write(`::error title=Release failed::${message}\n`)

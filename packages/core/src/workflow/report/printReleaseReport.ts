@@ -5,38 +5,36 @@ import type { ReleaseReport } from '#types'
 import type { ConsolaInstance } from 'consola/core'
 import { colors } from 'consola/utils'
 import path from 'node:path'
+import { resolveOutcomeErrorMessage } from './resolveErrorMessage'
 
 /**
  * Print a formatted release report to the logger.
  *
- * Logs workflow `status` and details for planned package releases. Displays
- * package names, directories, and version changes on success, or outputs the
- * error message on failure.
+ * Logs the terminal outcome status and details for planned package releases.
+ * Displays package names, directories, and version changes on success, or
+ * outputs the error message on failure.
  *
  * @param logger Logger instance for outputting messages
- * @param report Release report containing status and package details
+ * @param report Release report containing outcome and package details
  */
 export function printReleaseReport(
   logger: ConsolaInstance,
   report: ReleaseReport
 ): void {
-  if (report.status) {
+  if (report.outcome) {
     const statusLabel = {
       success: colors.green('SUCCESS'),
       failure: colors.red('FAILURE'),
-    }[report.status]
+    }[report.outcome.status]
 
     logger.info(`Status: ${statusLabel}`)
   }
 
-  if (report.status === 'failure') {
+  if (report.outcome?.status === 'failure') {
     return logger.error(
       [
         'Release complete:',
-        colors.red(
-          report.error ||
-            'An unexpected error occurred during the release process.'
-        ),
+        colors.red(resolveOutcomeErrorMessage(report.outcome)),
       ].join(' ')
     )
   }
