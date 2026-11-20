@@ -90,7 +90,8 @@ await program.parseAsync(process.argv)
 ```
 
 `createProcessAbortSignal` returns an `AbortSignal` that fires on `SIGINT` or
-`SIGTERM`, allowing the workflow to clean up gracefully.
+`SIGTERM`. When the signal fires between phases, the workflow stops, still runs
+`finalize` handlers for cleanup, and rejects with a cancellation error.
 
 ## Standalone utilities
 

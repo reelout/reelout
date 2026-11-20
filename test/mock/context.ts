@@ -38,9 +38,7 @@ const createMockContext = (): ReleaseContext => ({
   dryRun: false,
   packages: [],
   plans: [],
-  status: null,
-  phase: null,
-  error: null,
+  outcome: null,
 })
 
 export const logger: Mock = vi.fn()
