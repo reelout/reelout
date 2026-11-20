@@ -18,6 +18,8 @@ import plugin, {
   writePackageJson,
 } from '@reelout/npm'
 import { vol } from 'memfs'
+import { writeFile } from 'node:fs/promises'
+import path from 'node:path'
 import { beforeEach, expect, test, vi } from 'vitest'
 import {
   context,
@@ -26,6 +28,9 @@ import {
   repository,
   workspace,
 } from '../../../test/mock/context'
+import { HOME_DIR } from '../../../test/mock/env'
+
+const execCommand = vi.hoisted(() => vi.fn())
 
 const prepareAuth = vi.hoisted(() =>
   vi.fn(async (...args: unknown[]): Promise<undefined> => {})
@@ -38,6 +43,10 @@ const publishPackage = vi.hoisted(() =>
 const isGitHubRepositoryPublic = vi.hoisted(() => vi.fn())
 
 const isGitLabRepositoryPublic = vi.hoisted(() => vi.fn())
+
+vi.mock(import('@reelout/core/util/execCommand'), () => ({
+  execCommand: (command, args, options) => execCommand(command, args, options),
+}))
 
 vi.mock(import('@reelout/npm/prepareAuth'), () => ({
   prepareAuth,
@@ -58,6 +67,12 @@ vi.mock(import('@reelout/github/isRepositoryPublic'), () => ({
 vi.mock(import('@reelout/gitlab/isRepositoryPublic'), () => ({
   isRepositoryPublic: isGitLabRepositoryPublic,
 }))
+
+const provideAmbientAuth = () =>
+  writeFile(
+    path.join(HOME_DIR, '.npmrc'),
+    '//registry.npmjs.org/:_authToken=mock-ambient-token\n'
+  )
 
 beforeEach(() => {
   vi.resetAllMocks()
@@ -184,6 +199,8 @@ test('preserves configured workspace members when workspace options are explicit
 })
 
 test('discovers valid packages and logs warnings when encountering invalid manifests', async () => {
+  await provideAmbientAuth()
+
   workspace.entry = '.'
   workspace.members = ['packages/*']
 
@@ -455,6 +472,8 @@ test('updates dependency versions in package manifests when release plans are pr
 })
 
 test('does not modify package manifests when dry-run mode is enabled', async () => {
+  await provideAmbientAuth()
+
   using _dryRun = vi.spyOn(context, 'dryRun', 'get').mockReturnValue(true)
 
   vol.fromJSON({
@@ -546,6 +565,8 @@ test('does not modify package manifests when owned by another provider', async (
 })
 
 test('does not publish packages when owned by another provider', async () => {
+  await provideAmbientAuth()
+
   vol.fromJSON({
     '/repo/a/package.json': JSON.stringify({ name: 'a', version: '0.0.0' }),
     '/repo/b/package.json': JSON.stringify({ name: 'b', version: '0.0.0' }),
@@ -607,6 +628,8 @@ test('does not publish packages when owned by another provider', async () => {
 })
 
 test('skips authentication and publishing when packages are private', async () => {
+  await provideAmbientAuth()
+
   prepareAuth.mockRejectedValue(new Error('Auth token is missing.'))
 
   vol.fromJSON({
@@ -652,6 +675,8 @@ test('skips authentication and publishing when packages are private', async () =
 })
 
 test('forwards dryRun flag to publisher when dry-run mode is enabled', async () => {
+  await provideAmbientAuth()
+
   using _dryRun = vi.spyOn(context, 'dryRun', 'get').mockReturnValue(true)
 
   vol.fromJSON({
@@ -742,6 +767,8 @@ test('forwards dryRun flag to publisher when dry-run mode is enabled', async () 
 })
 
 test('forwards access, provenance, and stage options to publisher when explicitly configured', async () => {
+  await provideAmbientAuth()
+
   using _ = vi.spyOn(context, 'releaseChannel', 'get').mockReturnValue('beta')
 
   vol.fromJSON({
@@ -827,6 +854,8 @@ test('forwards access, provenance, and stage options to publisher when explicitl
 })
 
 test('enables provenance automatically when publishing to a public GitHub repository', async () => {
+  await provideAmbientAuth()
+
   context.env = {
     'GITHUB_TOKEN': 'mock-github-token',
   }
@@ -887,6 +916,8 @@ test('enables provenance automatically when publishing to a public GitHub reposi
 })
 
 test('enables provenance automatically when publishing to a public GitLab repository', async () => {
+  await provideAmbientAuth()
+
   context.env = {
     'GITLAB_TOKEN': 'mock-gitlab-token',
   }
@@ -947,6 +978,8 @@ test('enables provenance automatically when publishing to a public GitLab reposi
 })
 
 test('leaves provenance undefined when repository visibility check fails', async () => {
+  await provideAmbientAuth()
+
   context.env = {
     'GITHUB_TOKEN': 'mock-github-token',
   }
@@ -1007,6 +1040,8 @@ test('leaves provenance undefined when repository visibility check fails', async
 })
 
 test('leaves provenance undefined when repository host is unsupported', async () => {
+  await provideAmbientAuth()
+
   context.env = {
     'GITHUB_TOKEN': 'mock-github-token',
     'GITLAB_TOKEN': 'mock-gitlab-token',
@@ -1064,6 +1099,8 @@ test('leaves provenance undefined when repository host is unsupported', async ()
 })
 
 test('leaves provenance undefined when repository host tokens are missing', async () => {
+  await provideAmbientAuth()
+
   context.env = {
     'GITHUB_TOKEN': undefined,
     'GITLAB_TOKEN': undefined,
@@ -1121,6 +1158,8 @@ test('leaves provenance undefined when repository host tokens are missing', asyn
 })
 
 test('leaves provenance undefined when the package manifest does not define a repository', async () => {
+  await provideAmbientAuth()
+
   context.env = {
     'GITHUB_TOKEN': 'mock-github-token',
   }
@@ -1172,6 +1211,8 @@ test('leaves provenance undefined when the package manifest does not define a re
 })
 
 test('leaves provenance undefined when the context repository no longer matches the manifest repository', async () => {
+  await provideAmbientAuth()
+
   context.env = {
     'GITHUB_TOKEN': 'mock-github-token',
   }
@@ -1238,6 +1279,8 @@ test('leaves provenance undefined when the context repository no longer matches 
 })
 
 test('rejects workflow execution when auth token setup fails', async () => {
+  await provideAmbientAuth()
+
   prepareAuth.mockRejectedValue(new Error('Auth token is missing.'))
 
   vol.fromJSON({
@@ -1277,4 +1320,265 @@ test('rejects workflow execution when auth token setup fails', async () => {
       ],
     ]
   `)
+})
+
+test('skips publishing and records a skipped step when registry authentication is unavailable', async () => {
+  vol.fromJSON({
+    '/repo/a/package.json': JSON.stringify({ name: 'a', version: '0.0.0' }),
+    '/repo/b/package.json': JSON.stringify({ name: 'b', version: '0.0.0' }),
+  })
+
+  context.plans = [
+    {
+      package: { provider: PLUGIN_NAME, location: 'a' },
+      history: [] as GitCommit[],
+      release: { version: '1.2.3' },
+    },
+    {
+      package: { provider: PLUGIN_NAME, location: 'b' },
+      history: [] as GitCommit[],
+      release: { version: '2.0.0' },
+    },
+  ] as ReleasePlan[]
+
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(publishPackage).toHaveBeenCalledTimes(0)
+  expect(execCommand).toHaveBeenCalledTimes(0)
+  expect(context.skippedSteps).toEqual([
+    {
+      plugin: PLUGIN_NAME,
+      hook: 'publish',
+      reason: 'NPM_TOKEN is required for NPM authentication.',
+    },
+  ])
+  expect(
+    logger.mock.calls.filter(
+      ([message]) =>
+        typeof message === 'string' &&
+        message.includes(
+          'Packages will not be published: NPM_TOKEN is required for NPM authentication.'
+        )
+    )
+  ).toHaveLength(1)
+  expect(context.outcome?.status).toBe('success')
+})
+
+test('fails fast before publishing when registry authentication is unavailable in strict mode', async () => {
+  context.strict = true
+
+  vol.fromJSON({
+    '/repo/a/package.json': JSON.stringify({ name: 'a', version: '0.0.0' }),
+  })
+
+  context.plans = [
+    {
+      package: { provider: PLUGIN_NAME, location: 'a' },
+      history: [] as GitCommit[],
+      release: { version: '1.2.3' },
+    },
+  ] as ReleasePlan[]
+
+  await expect(executeReleaseWorkflow(context, [plugin()])).rejects.toThrow(
+    'NPM_TOKEN is required for NPM authentication in strict mode.'
+  )
+
+  expect(vol.toJSON()).toEqual({
+    '/repo/a/package.json': JSON.stringify({ name: 'a', version: '0.0.0' }),
+  })
+  expect(publishPackage).toHaveBeenCalledTimes(0)
+  expect(execCommand).toHaveBeenCalledTimes(0)
+  expect(context.skippedSteps).toEqual([])
+})
+
+test('rejects workflow execution when registry authentication verification fails', async () => {
+  context.env = { NPM_TOKEN: 'mock-expired-token' }
+
+  execCommand.mockRejectedValueOnce(
+    new Error('401 Unauthorized: invalid auth token')
+  )
+
+  vol.fromJSON({
+    '/repo/a/package.json': JSON.stringify({ name: 'a', version: '0.0.0' }),
+  })
+
+  context.plans = [
+    {
+      package: { provider: PLUGIN_NAME, location: 'a' },
+      history: [] as GitCommit[],
+      release: { version: '1.2.3' },
+    },
+  ] as ReleasePlan[]
+
+  await expect(executeReleaseWorkflow(context, [plugin()])).rejects.toThrow(
+    '401 Unauthorized: invalid auth token'
+  )
+
+  expect(execCommand).toHaveBeenCalledTimes(1)
+  expect(publishPackage).toHaveBeenCalledTimes(0)
+})
+
+test('verifies NPM_TOKEN with a whoami pre-flight before publishing', async () => {
+  context.env = { NPM_TOKEN: 'mock-npm-token' }
+
+  vol.fromJSON({
+    '/repo/a/package.json': JSON.stringify({ name: 'a', version: '0.0.0' }),
+  })
+
+  context.plans = [
+    {
+      package: { provider: PLUGIN_NAME, location: 'a' },
+      history: [] as GitCommit[],
+      release: { version: '1.2.3' },
+    },
+  ] as ReleasePlan[]
+
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(execCommand.mock.calls).toEqual([
+    [
+      'npm',
+      ['whoami', '--registry', 'https://registry.npmjs.org/'],
+      { cwd: '/repo', env: { NPM_TOKEN: 'mock-npm-token' } },
+    ],
+  ])
+  expect(publishPackage).toHaveBeenCalledTimes(1)
+  expect(context.skippedSteps).toEqual([])
+})
+
+test('verifies ambient registry credentials with a whoami pre-flight before publishing', async () => {
+  await provideAmbientAuth()
+
+  vol.fromJSON({
+    '/repo/a/package.json': JSON.stringify({ name: 'a', version: '0.0.0' }),
+  })
+
+  context.plans = [
+    {
+      package: { provider: PLUGIN_NAME, location: 'a' },
+      history: [] as GitCommit[],
+      release: { version: '1.2.3' },
+    },
+  ] as ReleasePlan[]
+
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(execCommand.mock.calls).toEqual([
+    [
+      'npm',
+      ['whoami', '--registry', 'https://registry.npmjs.org/'],
+      { cwd: '/repo', env: {} },
+    ],
+  ])
+  expect(publishPackage).toHaveBeenCalledTimes(1)
+  expect(context.skippedSteps).toEqual([])
+})
+
+test('rejects workflow execution when ambient registry credentials fail verification', async () => {
+  await provideAmbientAuth()
+
+  execCommand.mockRejectedValueOnce(
+    new Error('401 Unauthorized: invalid auth token')
+  )
+
+  vol.fromJSON({
+    '/repo/a/package.json': JSON.stringify({ name: 'a', version: '0.0.0' }),
+  })
+
+  context.plans = [
+    {
+      package: { provider: PLUGIN_NAME, location: 'a' },
+      history: [] as GitCommit[],
+      release: { version: '1.2.3' },
+    },
+  ] as ReleasePlan[]
+
+  await expect(executeReleaseWorkflow(context, [plugin()])).rejects.toThrow(
+    '401 Unauthorized: invalid auth token'
+  )
+
+  expect(publishPackage).toHaveBeenCalledTimes(0)
+})
+
+test('publishes without a whoami pre-flight when NPM_ID_TOKEN is available', async () => {
+  context.env = { NPM_ID_TOKEN: 'mock-id-token' }
+
+  vol.fromJSON({
+    '/repo/a/package.json': JSON.stringify({ name: 'a', version: '0.0.0' }),
+  })
+
+  context.plans = [
+    {
+      package: { provider: PLUGIN_NAME, location: 'a' },
+      history: [] as GitCommit[],
+      release: { version: '1.2.3' },
+    },
+  ] as ReleasePlan[]
+
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(execCommand).toHaveBeenCalledTimes(0)
+  expect(publishPackage).toHaveBeenCalledTimes(1)
+  expect(context.skippedSteps).toEqual([])
+})
+
+test('previews the authentication skip identically in dry-run mode', async () => {
+  using _dryRun = vi.spyOn(context, 'dryRun', 'get').mockReturnValue(true)
+
+  vol.fromJSON({
+    '/repo/a/package.json': JSON.stringify({ name: 'a', version: '0.0.0' }),
+  })
+
+  context.plans = [
+    {
+      package: { provider: PLUGIN_NAME, location: 'a' },
+      history: [] as GitCommit[],
+      release: { version: '1.2.3' },
+    },
+  ] as ReleasePlan[]
+
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(publishPackage).toHaveBeenCalledTimes(0)
+  expect(execCommand).toHaveBeenCalledTimes(0)
+  expect(context.skippedSteps).toEqual([
+    {
+      plugin: PLUGIN_NAME,
+      hook: 'publish',
+      reason: 'NPM_TOKEN is required for NPM authentication.',
+    },
+  ])
+  expect(
+    logger.mock.calls.filter(
+      ([message]) =>
+        typeof message === 'string' &&
+        message.includes(
+          'Packages will not be published: NPM_TOKEN is required for NPM authentication.'
+        )
+    )
+  ).toHaveLength(1)
+})
+
+test('publishes without a whoami pre-flight when GitHub Actions OIDC tokens are available', async () => {
+  context.env = {
+    ACTIONS_ID_TOKEN_REQUEST_URL: 'https://mock.url',
+    ACTIONS_ID_TOKEN_REQUEST_TOKEN: 'mock-request-token',
+  }
+
+  vol.fromJSON({
+    '/repo/a/package.json': JSON.stringify({ name: 'a', version: '0.0.0' }),
+  })
+
+  context.plans = [
+    {
+      package: { provider: PLUGIN_NAME, location: 'a' },
+      history: [] as GitCommit[],
+      release: { version: '1.2.3' },
+    },
+  ] as ReleasePlan[]
+
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(execCommand).toHaveBeenCalledTimes(0)
+  expect(publishPackage).toHaveBeenCalledTimes(1)
 })
