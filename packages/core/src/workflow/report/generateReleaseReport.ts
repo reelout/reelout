@@ -8,7 +8,7 @@ import { compact } from '#util'
  * Generate a structured release report from the current workflow state.
  *
  * Extracts state information from `context` and organizes it into a report
- * containing the dry-run flag, the terminal release outcome, release plans,
+ * containing the `dryRun` flag, the terminal release outcome, release plans,
  * and package metadata. Omits unversioned release plans from the finalized
  * output.
  *

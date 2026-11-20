@@ -236,6 +236,30 @@ test('marks the status line as a dry run when the release ran in dry-run mode', 
   `)
 })
 
+test('marks the failure status line as a dry run when a dry run fails', () => {
+  context.dryRun = true
+
+  context.plans = [] as ReleasePlan[]
+
+  const report = generateReleaseReport(context)
+
+  printReleaseReport(context.logger, {
+    ...report,
+    outcome: createOutcome({ status: 'failure', error: 'Custom error reason' }),
+  })
+
+  expect(logger.mock.calls).toMatchInlineSnapshot(`
+    [
+      [
+        "Status: [31mFAILURE[39m [33m(dry run)[39m",
+      ],
+      [
+        "Release complete: [31mCustom error reason[39m",
+      ],
+    ]
+  `)
+})
+
 test('does not log the status banner when the report has no outcome', () => {
   context.plans = [
     {
