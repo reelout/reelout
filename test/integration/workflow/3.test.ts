@@ -19,7 +19,7 @@ import { buildPackage, writePackageJson } from '@reelout/npm'
 import { readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { temporaryDirectoryTask } from 'tempy'
-import { beforeEach, expect, test, vi } from 'vitest'
+import { expect, test, vi } from 'vitest'
 import { createMockLogger, workspace } from '../../mock/context'
 import {
   cloneGitRepository,
@@ -128,11 +128,6 @@ async function fetchReleaseBranch(cwd: string) {
   ])
 }
 
-beforeEach(() => {
-  workspace.entry = '.'
-  workspace.members = null
-})
-
 test('continues the dev release channel after merging a release branch into main', async () => {
   await temporaryDirectoryTask(async (remote) => {
     // User 1: Initialize the repository in the 1.2.0 development cycle
@@ -208,7 +203,8 @@ test('continues the dev release channel after merging a release branch into main
       `)
     })
 
-    // Final checks: tags, tag connectivity, and changelog contents
+    // Final checks: fast-forward merge topology, tags, tag connectivity, and
+    // changelog contents
     await temporaryDirectoryTask(async (cwd) => {
       await cloneGitRepository(cwd, remote)
       await restoreFullGitHistory(cwd)
@@ -220,6 +216,16 @@ test('continues the dev release channel after merging a release branch into main
         packageManager: 'npm',
       })
 
+      expect(await getGitCommitSubjects(cwd)).toMatchInlineSnapshot(`
+        [
+          "chore: start 1.2.0 development",
+          "fix: stabilize release candidate",
+          "chore: release 1.2.0",
+          "chore: start 1.3.0 development",
+          "feat: add next cycle feature",
+          "chore: release 1.3.0-dev.1",
+        ]
+      `)
       expect(await getGitTags(cwd)).toMatchInlineSnapshot(`
         [
           "v1.2.0 ## Bug Fixes
