@@ -3,7 +3,7 @@
 
 import { Gitlab } from '@gitbeaker/rest'
 import type { GitRepository, ReleasePlan } from '@reelout/core'
-import type { OriginalRelease } from './createRelease'
+import type { OriginalRelease } from './fetchRelease'
 
 /**
  * Restore an overwritten GitLab release to its original content.

@@ -39,7 +39,7 @@ beforeEach(() => {
   getReleaseByTag.mockRejectedValue(notFound())
 })
 
-test('returns a no-op rollback without a tag message', async () => {
+test('returns no rollback without a tag message', async () => {
   const first = await createRelease(
     context,
     { package: { location: '.' }, release: null } as ReleasePlan,
@@ -57,9 +57,8 @@ test('returns a no-op rollback without a tag message', async () => {
     repository
   )
 
-  await first()
-  await second()
-
+  expect(first).toBeUndefined()
+  expect(second).toBeUndefined()
   expect(Octokit).not.toHaveBeenCalled()
 })
 
@@ -80,6 +79,10 @@ test('creates a release and returns a rollback that deletes it', async () => {
     'mock-token',
     repository
   )
+
+  if (!rollback) {
+    throw new Error('Expected createRelease to return a rollback.')
+  }
 
   expect(Octokit).toHaveBeenCalledTimes(1)
   expect(Octokit).toHaveBeenCalledWith(
@@ -130,6 +133,10 @@ test('overwrites an existing release and returns a rollback that restores it', a
     repository
   )
 
+  if (!rollback) {
+    throw new Error('Expected createRelease to return a rollback.')
+  }
+
   expect(updateRelease).toHaveBeenCalledTimes(1)
   expect(updateRelease).toHaveBeenCalledWith({
     owner: 'mock-owner',
@@ -170,6 +177,10 @@ test('overwrites an existing release without notes and restores the missing note
     'mock-token',
     repository
   )
+
+  if (!rollback) {
+    throw new Error('Expected createRelease to return a rollback.')
+  }
 
   expect(updateRelease).toHaveBeenCalledTimes(1)
   expect(updateRelease).toHaveBeenCalledWith({

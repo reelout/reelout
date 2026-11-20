@@ -3,8 +3,9 @@
 
 import type { ReleaseContext, ReleasePlan, ReleasePlugin } from '@reelout/core'
 import { version } from '../package.json'
-import { createRelease, type OriginalRelease } from './createRelease'
+import { createRelease } from './createRelease'
 import { deleteRelease } from './deleteRelease'
+import type { OriginalRelease } from './fetchRelease'
 import { restoreRelease } from './restoreRelease'
 import { verifyToken } from './verifyToken'
 

@@ -3,17 +3,7 @@
 
 import { Gitlab } from '@gitbeaker/rest'
 import type { GitRepository, ReleaseContext, ReleasePlan } from '@reelout/core'
-import { isNotFoundError } from './isNotFoundError'
-
-/**
- * Original GitLab release content captured before an overwrite.
- */
-export interface OriginalRelease {
-  /** Release name as it existed before the overwrite. */
-  name: string | null
-  /** Release description as it existed before the overwrite. */
-  description: string | null
-}
+import { fetchRelease, type OriginalRelease } from './fetchRelease'
 
 /**
  * Create or overwrite a GitLab release for a package tag.
@@ -70,22 +60,4 @@ export async function createRelease(
   })
 
   return { original: null }
-}
-
-async function fetchRelease(
-  api: Gitlab,
-  projectId: string,
-  tagName: string
-): Promise<OriginalRelease | null> {
-  try {
-    const release = await api.ProjectReleases.show(projectId, tagName)
-
-    return { name: release.name, description: release.description }
-  } catch (err) {
-    if (isNotFoundError(err)) {
-      return null
-    }
-
-    throw err
-  }
 }

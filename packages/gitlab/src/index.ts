@@ -3,6 +3,7 @@
 
 export * from './createRelease'
 export * from './deleteRelease'
+export * from './fetchRelease'
 export * from './gitlab'
 export { default } from './gitlab'
 export * from './isRepositoryPublic'

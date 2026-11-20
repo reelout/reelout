@@ -89,7 +89,11 @@ const github = (): ReleasePlugin => ({
     // so that the root package release is created last,
     // as it is often the most important one.
     for (const plan of plans.toReversed()) {
-      rollbacks.push(await createRelease(context, plan, token, repository))
+      const rollback = await createRelease(context, plan, token, repository)
+
+      if (rollback) {
+        rollbacks.push(rollback)
+      }
     }
 
     try {

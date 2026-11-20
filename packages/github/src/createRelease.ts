@@ -4,25 +4,12 @@
 import { Octokit } from '@octokit/rest'
 import type { GitRepository, ReleaseContext, ReleasePlan } from '@reelout/core'
 import { deleteRelease } from './deleteRelease'
+import { fetchRelease } from './fetchRelease'
 
 /**
  * Rollback callback returned after a release was created or overwritten.
  */
 export type ReleaseRollback = () => Promise<void>
-
-/**
- * A GitHub release that already exists for a tag.
- */
-interface ExistingRelease {
-  /** Numeric id of the existing release. */
-  id: number
-  /** Release name as it existed before the overwrite. */
-  name: string | null
-  /** Release body as it existed before the overwrite. */
-  body: string | null
-}
-
-const noopRollback: ReleaseRollback = async () => {}
 
 /**
  * Create a GitHub release for a package tag, overwriting an existing one.
@@ -36,16 +23,17 @@ const noopRollback: ReleaseRollback = async () => {}
  * @param plan Release plan containing the tag to publish
  * @param token GitHub authentication token
  * @param repository Target repository
- * @returns Promise that resolves to a rollback callback for the release
+ * @returns Promise that resolves to a rollback callback for the release, or
+ * undefined when creation was skipped
  */
 export async function createRelease(
   context: ReleaseContext,
   plan: ReleasePlan,
   token: string,
   repository: GitRepository
-): Promise<ReleaseRollback> {
+): Promise<ReleaseRollback | void> {
   if (!plan.release?.tag?.message) {
-    return noopRollback
+    return
   }
 
   const { name: tagName, message } = plan.release.tag
@@ -95,26 +83,4 @@ export async function createRelease(
   })
 
   return () => deleteRelease(plan, token, repository)
-}
-
-async function fetchRelease(
-  octokit: Octokit,
-  repository: GitRepository,
-  tagName: string
-): Promise<ExistingRelease | null> {
-  try {
-    const { data: existing } = await octokit.rest.repos.getReleaseByTag({
-      owner: repository.owner,
-      repo: repository.repo,
-      tag: tagName,
-    })
-
-    return { id: existing.id, name: existing.name, body: existing.body ?? null }
-  } catch (err) {
-    if ((err as { status?: number } | undefined)?.status !== 404) {
-      throw err
-    }
-
-    return null
-  }
 }
