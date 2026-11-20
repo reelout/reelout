@@ -54,12 +54,6 @@ const gitlab = (): ReleasePlugin => ({
         )
       }
 
-      context.skippedSteps.push({
-        plugin: '@reelout/gitlab',
-        hook: 'publish',
-        reason: 'GITLAB_TOKEN is not set.',
-      })
-
       context.logger.warn(
         'GitLab releases were not created: GITLAB_TOKEN is required for GitLab authentication.'
       )
