@@ -27,6 +27,27 @@ import {
   initializeGitRepository,
 } from '../../mock/git'
 
+// Parallel release tracks for @scope/pkg1 (config rules map main to the
+// dev.{date} channel and release-* branches to the rc channel):
+//
+//   main          B0 -- F1 -- F2 -- A -- F3 -------------- F4
+//                              |         \
+//                              |          +-- F3 is cherry-picked onto
+//                              |              the release track (U7)
+//                              |
+//                              +-- release-1.6 (U4): F3' -- F5' -- 1.6.0
+//
+//   B0   U1 init (pkg1@1.6.0-0)        F1   U2 feat
+//   F2   U3 feat                       A    U5 advance mainline (1.7.0-0)
+//   F3   U6 fix                        F3'  U7 cherry-pick of F3
+//   F5'  U8 fix on the track           F4   U10 feat (after 2026-01-02)
+//
+//   CI outcomes:
+//     main         1.6.0-dev.20260101.0, 1.6.0-dev.20260101.1,
+//                  1.7.0-0 (advance), 1.7.0-dev.20260101.0,
+//                  1.7.0-dev.20260102.0
+//     release-1.6  1.6.0-rc.0, 1.6.0-rc.1, 1.6.0 (manual promotion)
+
 test('simulates parallel release workflows across milestone tracks', async () => {
   await temporaryDirectoryTask(async (remote) => {
     // User 1: Init repository & project structure
