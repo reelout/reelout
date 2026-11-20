@@ -806,9 +806,19 @@ test('stringifies the thrown value when a finalize handler throws a non-Error on
 })
 
 test('warns and keeps the release successful when a finalize handler throws on a successful workflow', async () => {
+  const rollback = vi.fn()
+
   const notifyPlugin: ReleasePlugin = {
     name: 'notify',
     version: '1.0.0',
+    publish: async (ctx, next) => {
+      try {
+        return await next(ctx)
+      } catch (err) {
+        rollback(err)
+        throw err
+      }
+    },
     finalize: () => {
       throw new Error('Webhook timed out')
     },
@@ -818,6 +828,7 @@ test('warns and keeps the release successful when a finalize handler throws on a
     executeReleaseWorkflow(context, [notifyPlugin])
   ).resolves.toBeUndefined()
 
+  expect(rollback).not.toHaveBeenCalled()
   expect(context.outcome).toEqual({
     status: 'success',
     error: null,
