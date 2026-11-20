@@ -303,7 +303,7 @@ test('does not write a summary when no summary file is configured', () => {
   appendReleaseReportSummary(
     context.logger,
     { GITHUB_ACTIONS: 'true' },
-    createReport({ outcome: { status: 'success', error: null, phase: null } })
+    createReport({ outcome: createOutcome() })
   )
 
   expect(logger.mock.calls).toEqual([])

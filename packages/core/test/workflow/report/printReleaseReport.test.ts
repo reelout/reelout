@@ -6,13 +6,11 @@ import {
   printReleaseReport,
   type ReleasePlan,
 } from '@reelout/core'
-import { expect, test, vi } from 'vitest'
+import { expect, test } from 'vitest'
 import { context, logger } from '../../../../../test/mock/context'
 import { createOutcome } from '../../../../../test/mock/report'
 
 test('outputs formatted release summary and changelogs when packages have scheduled releases', () => {
-  using dryRun = vi.spyOn(context, 'dryRun', 'get')
-
   context.plans = [
     {
       package: {
@@ -99,13 +97,6 @@ test('outputs formatted release summary and changelogs when packages have schedu
 
   const report = generateReleaseReport(context)
 
-  dryRun.mockReturnValue(true)
-  printReleaseReport(context.logger, {
-    ...report,
-    outcome: createOutcome(),
-  })
-
-  dryRun.mockReturnValue(false)
   printReleaseReport(context.logger, {
     ...report,
     outcome: createOutcome(),
@@ -113,53 +104,6 @@ test('outputs formatted release summary and changelogs when packages have schedu
 
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
-      [
-        "Status: [32mSUCCESS[39m",
-      ],
-      [
-        "Release complete: [1m[32m5 released[39m[22m [90m(0)[39m
-
-    [41m 4.0.0 ← 3.0.0 [49m[90m major [39m
-
-    [36m## 4.0.0[39m
-
-    [36m### Breaking Changes[39m
-
-    - Require Node.js 24+
-
-    [90m ./packages/bar [39m[42m 2.0.1 ← 2.0.0 [49m[90m patch [39m
-
-    [36m## 2.0.1[39m
-
-    [36m### Bug Fixes[39m
-
-    - Fix critical bug
-
-    [42m 1.1.0 ← 1.0.0 [49m[90m minor [39m
-
-    [36m## 1.1.0[39m
-
-    [36m### Features[39m
-
-    - Introduce new feature
-
-    [44m baz [49m[41m 3.0.0 ← 2.0.0 [49m[90m major [39m
-
-    [36m## 3.0.0[39m
-
-    [36m### Breaking Changes[39m
-
-    - Major update
-
-    [44m foo [49m[42m 1.1.0 ← 1.0.0 [49m[90m minor [39m
-
-    [36m## 1.1.0[39m
-
-    [36m### Features[39m
-
-    - Introduce new feature
-    ",
-      ],
       [
         "Status: [32mSUCCESS[39m",
       ],
@@ -212,8 +156,6 @@ test('outputs formatted release summary and changelogs when packages have schedu
 })
 
 test('displays empty state message when no packages are scheduled for release', () => {
-  using dryRun = vi.spyOn(context, 'dryRun', 'get')
-
   context.outcome = createOutcome()
 
   context.plans = [
@@ -223,10 +165,6 @@ test('displays empty state message when no packages are scheduled for release', 
 
   const report = generateReleaseReport(context)
 
-  dryRun.mockReturnValue(true)
-  printReleaseReport(context.logger, report)
-
-  dryRun.mockReturnValue(false)
   printReleaseReport(context.logger, report)
 
   expect(logger.mock.calls).toMatchInlineSnapshot(`
@@ -237,17 +175,11 @@ test('displays empty state message when no packages are scheduled for release', 
       [
         "Release complete: [33mNo packages are scheduled for release.[39m",
       ],
-      [
-        "Status: [32mSUCCESS[39m",
-      ],
-      [
-        "Release complete: [33mNo packages are scheduled for release.[39m",
-      ],
     ]
   `)
 })
 
-test('logs error details when report status is failure', () => {
+test('logs error details when the release failed', () => {
   context.plans = [] as ReleasePlan[]
 
   const report = generateReleaseReport(context)
@@ -280,7 +212,7 @@ test('logs error details when report status is failure', () => {
   `)
 })
 
-test('does not log status banner when status field is missing', () => {
+test('does not log the status banner when the report has no outcome', () => {
   context.plans = [
     {
       package: { location: 'packages/foo', name: 'foo', version: '1.0.0' },

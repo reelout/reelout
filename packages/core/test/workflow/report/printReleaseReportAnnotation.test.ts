@@ -26,7 +26,7 @@ test('writes an error annotation with the escaped failure reason when the releas
   ])
 })
 
-test('falls back to the default failure message when the report has no error', () => {
+test('falls back to the generic failure message when the report has no error', () => {
   using write = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
 
   printReleaseReportAnnotation(
@@ -42,7 +42,7 @@ test('falls back to the default failure message when the report has no error', (
   ])
 })
 
-test('does not write an annotation when the release does not fail', () => {
+test('does not write an annotation when the release succeeds', () => {
   using write = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
 
   printReleaseReportAnnotation(
