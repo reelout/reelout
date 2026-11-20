@@ -6,21 +6,6 @@ import path from 'node:path'
 import { isEqual } from 'lodash-es'
 import { Parser, type ReadEntry } from 'tar'
 
-/**
- * The result of comparing a published package tarball against a locally packed
- * tarball by logical content.
- *
- * - `identical`: both tarballs carry the same logical content.
- * - `different`: the tarballs carry different logical content; `summary` names
- *   the files with differing content and the files present on only one side.
- * - `undeterminable`: a tarball could not be extracted or parsed; `reason`
- *   explains the failure.
- */
-export type PackageTarballVerdict =
-  | { verdict: 'identical' }
-  | { verdict: 'different'; summary: string }
-  | { verdict: 'undeterminable'; reason: string }
-
 interface TarballEntry {
   type: string
   content: Buffer
@@ -32,8 +17,8 @@ const PACKAGE_JSON_PATH = 'package.json'
 const PUBLISH_MUTATED_PACKAGE_JSON_FIELDS = ['_id', 'gitHead'] as const
 
 /**
- * Compare a published package tarball with a locally packed tarball by logical
- * content.
+ * Determine whether a published and a locally packed package tarball carry
+ * the same logical content.
  *
  * Extracts both tarballs in memory and compares normalized file lists with
  * per-file SHA-256 content hashes, excluding tar-level metadata such as entry
@@ -43,85 +28,48 @@ const PUBLISH_MUTATED_PACKAGE_JSON_FIELDS = ['_id', 'gitHead'] as const
  * The `package.json` manifests are compared semantically: fields that publish
  * tooling may mutate (`_id`, `gitHead`) and JSON formatting differences are
  * ignored, while any other semantic difference counts as different content.
+ * Tarballs that cannot be extracted or parsed are never identical.
  *
- * @param published Tarball buffer fetched from the registry
- * @param local Tarball buffer packed from the local package
- * @returns A verdict describing whether the tarballs are logically identical, differ in content, or could not be compared
+ * @param left Tarball buffer fetched from the registry
+ * @param right Tarball buffer packed from the local package
+ * @returns True when both tarballs carry the same logical content
  */
-export function comparePackageTarballs(
-  published: Buffer,
-  local: Buffer
-): PackageTarballVerdict {
-  const publishedEntries = parseTarballEntries(published)
+export function isPackageTarballIdentical(
+  left: Buffer,
+  right: Buffer
+): boolean {
+  const leftEntries = parseTarballEntries(left)
 
-  if (publishedEntries instanceof Error) {
-    return {
-      verdict: 'undeterminable',
-      reason: `published tarball could not be parsed: ${publishedEntries.message}`,
+  if (leftEntries === null) {
+    return false
+  }
+
+  const rightEntries = parseTarballEntries(right)
+
+  if (rightEntries === null) {
+    return false
+  }
+
+  const normalizedLeftEntries = stripCommonRoot(leftEntries)
+  const normalizedRightEntries = stripCommonRoot(rightEntries)
+
+  if (normalizedLeftEntries.size !== normalizedRightEntries.size) {
+    return false
+  }
+
+  for (const [entryPath, leftEntry] of normalizedLeftEntries) {
+    const rightEntry = normalizedRightEntries.get(entryPath)
+
+    if (rightEntry === undefined) {
+      return false
+    }
+
+    if (!isSameEntry(entryPath, leftEntry, rightEntry)) {
+      return false
     }
   }
 
-  const localEntries = parseTarballEntries(local)
-
-  if (localEntries instanceof Error) {
-    return {
-      verdict: 'undeterminable',
-      reason: `local tarball could not be parsed: ${localEntries.message}`,
-    }
-  }
-
-  const normalizedPublishedEntries = stripCommonRoot(publishedEntries)
-  const normalizedLocalEntries = stripCommonRoot(localEntries)
-
-  const differingContent: string[] = []
-  const onlyInPublished: string[] = []
-  const onlyInLocal: string[] = []
-
-  for (const [entryPath, publishedEntry] of normalizedPublishedEntries) {
-    const localEntry = normalizedLocalEntries.get(entryPath)
-
-    if (localEntry === undefined) {
-      onlyInPublished.push(entryPath)
-    } else if (!isSameEntry(entryPath, publishedEntry, localEntry)) {
-      differingContent.push(entryPath)
-    }
-  }
-
-  for (const entryPath of normalizedLocalEntries.keys()) {
-    if (!normalizedPublishedEntries.has(entryPath)) {
-      onlyInLocal.push(entryPath)
-    }
-  }
-
-  if (
-    differingContent.length === 0 &&
-    onlyInPublished.length === 0 &&
-    onlyInLocal.length === 0
-  ) {
-    return { verdict: 'identical' }
-  }
-
-  differingContent.sort()
-  onlyInPublished.sort()
-  onlyInLocal.sort()
-
-  const summaryParts: string[] = []
-
-  if (differingContent.length > 0) {
-    summaryParts.push(`different content in: ${differingContent.join(', ')}`)
-  }
-
-  if (onlyInPublished.length > 0) {
-    summaryParts.push(
-      `only in published tarball: ${onlyInPublished.join(', ')}`
-    )
-  }
-
-  if (onlyInLocal.length > 0) {
-    summaryParts.push(`only in local tarball: ${onlyInLocal.join(', ')}`)
-  }
-
-  return { verdict: 'different', summary: summaryParts.join('; ') }
+  return true
 }
 
 /**
@@ -129,26 +77,28 @@ export function comparePackageTarballs(
  * normalized entry path.
  *
  * Treats tar metadata (pax headers) and directory entries as non-comparable,
- * and returns an error instead of a map when the buffer triggers any parse
+ * and returns null instead of a map when the buffer triggers any parse
  * warning or error, since corrupted input must never compare as content.
  *
  * @param tarball The tarball buffer to extract
- * @returns A map of entry paths to entry records, or an error describing the first parse problem
+ * @returns A map of entry paths to entry records, or null when the tarball
+ * cannot be parsed
  */
 function parseTarballEntries(
   tarball: Buffer
-): Map<string, TarballEntry> | Error {
+): Map<string, TarballEntry> | null {
   const entries = new Map<string, TarballEntry>()
-  const problems: string[] = []
+
+  let failed = false
 
   const parser = new Parser()
 
-  parser.on('warn', (code: string, message: string) => {
-    problems.push(`${code}: ${message}`)
+  parser.on('warn', () => {
+    failed = true
   })
 
-  parser.on('error', (error: NodeJS.ErrnoException) => {
-    problems.push(`${error.code}: ${error.message}`)
+  parser.on('error', () => {
+    failed = true
   })
 
   parser.on('entry', (entry: ReadEntry) => {
@@ -174,7 +124,7 @@ function parseTarballEntries(
 
   parser.end(tarball)
 
-  return problems.length > 0 ? new Error(problems[0]) : entries
+  return failed ? null : entries
 }
 
 /**
@@ -231,58 +181,55 @@ function stripCommonRoot(
  * content.
  *
  * @param entryPath The normalized path shared by both entries
- * @param publishedEntry The entry extracted from the published tarball
- * @param localEntry The entry extracted from the local tarball
+ * @param leftEntry The entry extracted from the published tarball
+ * @param rightEntry The entry extracted from the local tarball
  * @returns True if the entries are logically equal, otherwise false
  */
 function isSameEntry(
   entryPath: string,
-  publishedEntry: TarballEntry,
-  localEntry: TarballEntry
+  leftEntry: TarballEntry,
+  rightEntry: TarballEntry
 ): boolean {
-  if (publishedEntry.type !== localEntry.type) {
+  if (leftEntry.type !== rightEntry.type) {
     return false
   }
 
-  if (entryPath === PACKAGE_JSON_PATH && publishedEntry.type === 'File') {
-    return isSemanticallyEqualPackageJson(
-      publishedEntry.content,
-      localEntry.content
-    )
+  if (entryPath === PACKAGE_JSON_PATH && leftEntry.type === 'File') {
+    return isSemanticallyEqualPackageJson(leftEntry.content, rightEntry.content)
   }
 
-  if (publishedEntry.type === 'File') {
-    return sha256(publishedEntry.content) === sha256(localEntry.content)
+  if (leftEntry.type === 'File') {
+    return sha256(leftEntry.content) === sha256(rightEntry.content)
   }
 
-  return publishedEntry.linkpath === localEntry.linkpath
+  return leftEntry.linkpath === rightEntry.linkpath
 }
 
 /**
  * Compare two `package.json` manifests semantically, ignoring publish-mutated
  * fields and JSON formatting.
  *
- * @param publishedManifest The manifest content from the published tarball
- * @param localManifest The manifest content from the local tarball
+ * @param leftManifest The manifest content from the published tarball
+ * @param rightManifest The manifest content from the local tarball
  * @returns True if the manifests are semantically equal, otherwise false
  */
 function isSemanticallyEqualPackageJson(
-  publishedManifest: Buffer,
-  localManifest: Buffer
+  leftManifest: Buffer,
+  rightManifest: Buffer
 ): boolean {
-  const publishedJson = parseJsonObject(publishedManifest)
-  const localJson = parseJsonObject(localManifest)
+  const leftJson = parseJsonObject(leftManifest)
+  const rightJson = parseJsonObject(rightManifest)
 
-  if (publishedJson === null || localJson === null) {
+  if (leftJson === null || rightJson === null) {
     return false
   }
 
   for (const field of PUBLISH_MUTATED_PACKAGE_JSON_FIELDS) {
-    delete publishedJson[field]
-    delete localJson[field]
+    delete leftJson[field]
+    delete rightJson[field]
   }
 
-  return isEqual(publishedJson, localJson)
+  return isEqual(leftJson, rightJson)
 }
 
 /**

@@ -18,7 +18,8 @@ import { syncDistTag } from './syncDistTag'
  * @param packageManager Information about the active package manager
  * @param skipped Set collecting plans whose publish is skipped
  * @returns A promise that resolves when the plan's registry version is probed
- * @throws If the registry version holds different or unverifiable content
+ * @throws If the registry version holds content that cannot be verified as
+ * identical to the local package
  */
 export async function probePlan(
   context: ReleaseContext,
@@ -34,34 +35,26 @@ export async function probePlan(
     return
   }
 
-  const verdict = await proveSamePublication(
+  const identical = await proveSamePublication(
     context,
     plan,
     packageManager,
     probe.tarballUrl
   )
 
-  if (verdict.verdict === 'identical') {
-    context.logger.warn(
-      colors.yellow(
-        `Skipping publish of "${target}": already published with identical content.`
-      )
-    )
-
-    await syncDistTag(context, plan, packageManager, probe.distTags)
-
-    skipped.add(plan)
-
-    return
-  }
-
-  if (verdict.verdict === 'different') {
+  if (!identical) {
     throw new Error(
-      `Version "${target}" was not published: the registry already has this version with different content (${verdict.summary}).`
+      `Version "${target}" was not published: the registry already has this version and its content could not be verified as identical.`
     )
   }
 
-  throw new Error(
-    `Version "${target}" was not published: the published content could not be verified (${verdict.reason}).`
+  context.logger.warn(
+    colors.yellow(
+      `Skipping publish of "${target}": already published with identical content.`
+    )
   )
+
+  await syncDistTag(context, plan, packageManager, probe.distTags)
+
+  skipped.add(plan)
 }

@@ -3,12 +3,9 @@
 
 import type { ReleaseContext, ReleasePlan } from '@reelout/core'
 import { formatError } from '@reelout/core'
-import {
-  comparePackageTarballs,
-  type PackageTarballVerdict,
-} from './comparePackageTarballs'
-import { downloadPublishedTarball } from './downloadPublishedTarball'
 import type { PackageManagerInfo } from './inspectPackageManager'
+import { isPackageTarballIdentical } from './isPackageTarballIdentical'
+import { downloadPublishedTarball } from './downloadPublishedTarball'
 import { packLocalTarball } from './packLocalTarball'
 
 /**
@@ -17,26 +14,28 @@ import { packLocalTarball } from './packLocalTarball'
  *
  * Downloads the published tarball, packs the local package with the active
  * package manager, and compares both tarballs by logical content. Failures to
- * obtain either tarball are reported as an `undeterminable` verdict with the
- * reason, so a broken download or pack never passes as identical content.
+ * obtain either tarball are logged and reported as `false`, so a broken
+ * download or pack never passes as identical content.
  *
  * @param context Release context containing environment and working directory
  * @param plan Release plan describing the package to verify
  * @param packageManager Information about the active package manager
  * @param tarballUrl URL of the published tarball, when the manifest has one
- * @returns The comparison verdict for the published and local tarballs
+ * @returns True when the published tarball carries the same logical content
+ * as the locally packed tarball
  */
 export async function proveSamePublication(
   context: ReleaseContext,
   plan: ReleasePlan,
   packageManager: PackageManagerInfo,
   tarballUrl: string | undefined
-): Promise<PackageTarballVerdict> {
+): Promise<boolean> {
   if (!tarballUrl) {
-    return {
-      verdict: 'undeterminable',
-      reason: 'the published manifest does not include a tarball URL',
-    }
+    context.logger.debug(
+      'The published manifest does not include a tarball URL, so the publication cannot be verified.'
+    )
+
+    return false
   }
 
   let publishedTarball: Buffer
@@ -49,10 +48,11 @@ export async function proveSamePublication(
       tarballUrl
     )
   } catch (error) {
-    return {
-      verdict: 'undeterminable',
-      reason: `the published tarball could not be downloaded: ${formatError(error)}`,
-    }
+    context.logger.debug(
+      `The published tarball could not be downloaded, so the publication cannot be verified: ${formatError(error)}`
+    )
+
+    return false
   }
 
   let localTarball: Buffer
@@ -60,11 +60,12 @@ export async function proveSamePublication(
   try {
     localTarball = await packLocalTarball(context, plan, packageManager)
   } catch (error) {
-    return {
-      verdict: 'undeterminable',
-      reason: `the local tarball could not be packed: ${formatError(error)}`,
-    }
+    context.logger.debug(
+      `The local tarball could not be packed, so the publication cannot be verified: ${formatError(error)}`
+    )
+
+    return false
   }
 
-  return comparePackageTarballs(publishedTarball, localTarball)
+  return isPackageTarballIdentical(publishedTarball, localTarball)
 }

@@ -17,8 +17,8 @@ import plugin, {
   PLUGIN_NAME,
   writePackageJson,
 } from '@reelout/npm'
-import type { comparePackageTarballs } from '@reelout/npm/comparePackageTarballs'
 import type { downloadPublishedTarball } from '@reelout/npm/downloadPublishedTarball'
+import type { isPackageTarballIdentical } from '@reelout/npm/isPackageTarballIdentical'
 import type { prepareAuth as prepareAuthImpl } from '@reelout/npm/prepareAuth'
 import { vol } from 'memfs'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
@@ -49,7 +49,7 @@ const isGitHubRepositoryPublic = vi.hoisted(() => vi.fn())
 
 const isGitLabRepositoryPublic = vi.hoisted(() => vi.fn())
 
-const compareTarballs = vi.hoisted(() => vi.fn())
+const isIdentical = vi.hoisted(() => vi.fn())
 
 const downloadTarball = vi.hoisted(() => vi.fn())
 
@@ -62,21 +62,6 @@ vi.mock(import('@reelout/core/util/execCommand'), () => ({
 }))
 
 vi.mock(
-  import('@reelout/npm/comparePackageTarballs'),
-  async (importOriginal) => {
-    const actual = await importOriginal<{
-      comparePackageTarballs: typeof comparePackageTarballs
-    }>()
-
-    return {
-      comparePackageTarballs: (published: Buffer, local: Buffer) =>
-        compareTarballs(published, local) ??
-        actual.comparePackageTarballs(published, local),
-    }
-  }
-)
-
-vi.mock(
   import('@reelout/npm/downloadPublishedTarball'),
   async (importOriginal) => {
     const actual = await importOriginal<{
@@ -87,6 +72,21 @@ vi.mock(
       downloadPublishedTarball: (
         ...args: Parameters<typeof actual.downloadPublishedTarball>
       ) => downloadTarball(...args) ?? actual.downloadPublishedTarball(...args),
+    }
+  }
+)
+
+vi.mock(
+  import('@reelout/npm/isPackageTarballIdentical'),
+  async (importOriginal) => {
+    const actual = await importOriginal<{
+      isPackageTarballIdentical: typeof isPackageTarballIdentical
+    }>()
+
+    return {
+      isPackageTarballIdentical: (published: Buffer, local: Buffer) =>
+        isIdentical(published, local) ??
+        actual.isPackageTarballIdentical(published, local),
     }
   }
 )
@@ -227,7 +227,7 @@ npm error code EPUBLISHCONFLICT
 npm error 409 Conflict - You cannot publish over the previously published versions: 1.2.3.`
   )
 
-const provideOidcAuth = () => {
+const provideOIDCAuth = () => {
   context.env = { NPM_ID_TOKEN: 'mock-id-token' }
 }
 
@@ -1814,7 +1814,7 @@ test('publishes without a whoami pre-flight when GitHub Actions OIDC tokens are 
 })
 
 test('probes each publishable plan before publishing when the version is absent', async () => {
-  provideOidcAuth()
+  provideOIDCAuth()
 
   mountPackageFixture()
 
@@ -1850,7 +1850,7 @@ test('probes each publishable plan before publishing when the version is absent'
 })
 
 test('skips the publish and syncs the dist-tag when the registry already has an identical version', async () => {
-  provideOidcAuth()
+  provideOIDCAuth()
 
   context.releaseChannel = 'next'
 
@@ -1862,7 +1862,7 @@ test('skips the publish and syncs the dist-tag when the registry already has an 
 
   downloadTarball.mockResolvedValue(Buffer.from('published-tarball'))
 
-  compareTarballs.mockReturnValue({ verdict: 'identical' })
+  isIdentical.mockReturnValue(true)
 
   await executeReleaseWorkflow(context, [plugin()])
 
@@ -1906,7 +1906,7 @@ test('skips the publish and syncs the dist-tag when the registry already has an 
 })
 
 test('does not run a dist-tag command when the channel tag already points at the released version', async () => {
-  provideOidcAuth()
+  provideOIDCAuth()
 
   context.releaseChannel = 'next'
 
@@ -1920,7 +1920,7 @@ test('does not run a dist-tag command when the channel tag already points at the
 
   downloadTarball.mockResolvedValue(Buffer.from('published-tarball'))
 
-  compareTarballs.mockReturnValue({ verdict: 'identical' })
+  isIdentical.mockReturnValue(true)
 
   await executeReleaseWorkflow(context, [plugin()])
 
@@ -1940,7 +1940,7 @@ test('does not run a dist-tag command when the channel tag already points at the
 })
 
 test('syncs the default latest dist-tag when no release channel is set', async () => {
-  provideOidcAuth()
+  provideOIDCAuth()
 
   mountPackageFixture()
 
@@ -1950,7 +1950,7 @@ test('syncs the default latest dist-tag when no release channel is set', async (
 
   downloadTarball.mockResolvedValue(Buffer.from('published-tarball'))
 
-  compareTarballs.mockReturnValue({ verdict: 'identical' })
+  isIdentical.mockReturnValue(true)
 
   await executeReleaseWorkflow(context, [plugin()])
 
@@ -1962,7 +1962,7 @@ test('syncs the default latest dist-tag when no release channel is set', async (
 })
 
 test('skips the publish of an identical version reported as a one-element array', async () => {
-  provideOidcAuth()
+  provideOIDCAuth()
 
   mountPackageFixture()
 
@@ -1974,7 +1974,7 @@ test('skips the publish of an identical version reported as a one-element array'
 
   downloadTarball.mockResolvedValue(Buffer.from('published-tarball'))
 
-  compareTarballs.mockReturnValue({ verdict: 'identical' })
+  isIdentical.mockReturnValue(true)
 
   await executeReleaseWorkflow(context, [plugin()])
 
@@ -1986,8 +1986,8 @@ test('skips the publish of an identical version reported as a one-element array'
   ).toHaveLength(1)
 })
 
-test('rejects before any publish when the registry version has different content', async () => {
-  provideOidcAuth()
+test('rejects before any publish when the registry version content cannot be verified as identical', async () => {
+  provideOIDCAuth()
 
   mountPackageFixture()
 
@@ -2000,44 +2000,18 @@ test('rejects before any publish when the registry version has different content
 
   downloadTarball.mockResolvedValue(Buffer.from('published-tarball'))
 
-  compareTarballs.mockReturnValueOnce({
-    verdict: 'different',
-    summary: 'different content in: lib/index.js',
-  })
+  isIdentical.mockReturnValueOnce(false)
 
   await expect(executeReleaseWorkflow(context, [plugin()])).rejects.toThrow(
-    'Version "a@1.2.3" was not published: the registry already has this version with different content (different content in: lib/index.js).'
+    'Version "a@1.2.3" was not published: the registry already has this version and its content could not be verified as identical.'
   )
 
   expect(execCommand).toHaveBeenCalledTimes(2)
   expect(publishPackage).toHaveBeenCalledTimes(0)
 })
 
-test('rejects before any publish when the published content cannot be verified', async () => {
-  provideOidcAuth()
-
-  mountPackageFixture()
-
-  context.plans = [createPublishablePlan()]
-
-  execCommand.mockImplementationOnce(async () => publishedManifest())
-
-  downloadTarball.mockResolvedValue(Buffer.from('published-tarball'))
-
-  compareTarballs.mockReturnValueOnce({
-    verdict: 'undeterminable',
-    reason: 'the published tarball could not be parsed: truncated gzip stream',
-  })
-
-  await expect(executeReleaseWorkflow(context, [plugin()])).rejects.toThrow(
-    'Version "a@1.2.3" was not published: the published content could not be verified (the published tarball could not be parsed: truncated gzip stream).'
-  )
-
-  expect(publishPackage).toHaveBeenCalledTimes(0)
-})
-
 test('rejects before any publish when the published manifest lacks a tarball URL', async () => {
-  provideOidcAuth()
+  provideOIDCAuth()
 
   mountPackageFixture()
 
@@ -2052,7 +2026,7 @@ test('rejects before any publish when the published manifest lacks a tarball URL
   )
 
   await expect(executeReleaseWorkflow(context, [plugin()])).rejects.toThrow(
-    'Version "a@1.2.3" was not published: the published content could not be verified (the published manifest does not include a tarball URL).'
+    'Version "a@1.2.3" was not published: the registry already has this version and its content could not be verified as identical.'
   )
 
   expect(downloadTarball).toHaveBeenCalledTimes(0)
@@ -2060,7 +2034,7 @@ test('rejects before any publish when the published manifest lacks a tarball URL
 })
 
 test('rejects before any publish when the published tarball cannot be downloaded', async () => {
-  provideOidcAuth()
+  provideOIDCAuth()
 
   mountPackageFixture()
 
@@ -2071,14 +2045,14 @@ test('rejects before any publish when the published tarball cannot be downloaded
   downloadTarball.mockRejectedValueOnce(new Error('network unreachable'))
 
   await expect(executeReleaseWorkflow(context, [plugin()])).rejects.toThrow(
-    'Version "a@1.2.3" was not published: the published content could not be verified (the published tarball could not be downloaded: network unreachable).'
+    'Version "a@1.2.3" was not published: the registry already has this version and its content could not be verified as identical.'
   )
 
   expect(publishPackage).toHaveBeenCalledTimes(0)
 })
 
 test('rejects before any publish when the local tarball cannot be packed', async () => {
-  provideOidcAuth()
+  provideOIDCAuth()
 
   mountPackageFixture()
 
@@ -2093,14 +2067,14 @@ test('rejects before any publish when the local tarball cannot be packed', async
   downloadTarball.mockResolvedValue(Buffer.from('published-tarball'))
 
   await expect(executeReleaseWorkflow(context, [plugin()])).rejects.toThrow(
-    'Version "a@1.2.3" was not published: the published content could not be verified (the local tarball could not be packed: Command \'npm pack\' failed (exit code 1)).'
+    'Version "a@1.2.3" was not published: the registry already has this version and its content could not be verified as identical.'
   )
 
   expect(publishPackage).toHaveBeenCalledTimes(0)
 })
 
 test('rejects when the probe fails with an authentication error', async () => {
-  provideOidcAuth()
+  provideOIDCAuth()
 
   mountPackageFixture()
 
@@ -2120,7 +2094,7 @@ test('rejects when the probe fails with an authentication error', async () => {
 })
 
 test('rejects when the probe output cannot be parsed', async () => {
-  provideOidcAuth()
+  provideOIDCAuth()
 
   mountPackageFixture()
 
@@ -2136,7 +2110,7 @@ test('rejects when the probe output cannot be parsed', async () => {
 })
 
 test('rejects when the probe output is not a manifest object', async () => {
-  provideOidcAuth()
+  provideOIDCAuth()
 
   mountPackageFixture()
 
@@ -2152,7 +2126,7 @@ test('rejects when the probe output is not a manifest object', async () => {
 })
 
 test('rejects before any publish when the published dist entry omits a tarball URL', async () => {
-  provideOidcAuth()
+  provideOIDCAuth()
 
   mountPackageFixture()
 
@@ -2163,7 +2137,7 @@ test('rejects before any publish when the published dist entry omits a tarball U
   )
 
   await expect(executeReleaseWorkflow(context, [plugin()])).rejects.toThrow(
-    'Version "a@1.2.3" was not published: the published content could not be verified (the published manifest does not include a tarball URL).'
+    'Version "a@1.2.3" was not published: the registry already has this version and its content could not be verified as identical.'
   )
 
   expect(downloadTarball).toHaveBeenCalledTimes(0)
@@ -2171,7 +2145,7 @@ test('rejects before any publish when the published dist entry omits a tarball U
 })
 
 test('previews identical-version skips in dry-run without publishing or syncing dist-tags', async () => {
-  provideOidcAuth()
+  provideOIDCAuth()
 
   context.dryRun = true
   context.releaseChannel = 'next'
@@ -2184,7 +2158,7 @@ test('previews identical-version skips in dry-run without publishing or syncing 
 
   downloadTarball.mockResolvedValue(Buffer.from('published-tarball'))
 
-  compareTarballs.mockReturnValue({ verdict: 'identical' })
+  isIdentical.mockReturnValue(true)
 
   await executeReleaseWorkflow(context, [plugin()])
 
@@ -2210,7 +2184,7 @@ test('previews identical-version skips in dry-run without publishing or syncing 
 })
 
 test('treats a mid-publish publish-over rejection with identical content as published', async () => {
-  provideOidcAuth()
+  provideOIDCAuth()
 
   context.releaseChannel = 'next'
 
@@ -2226,7 +2200,7 @@ test('treats a mid-publish publish-over rejection with identical content as publ
 
   downloadTarball.mockResolvedValue(Buffer.from('published-tarball'))
 
-  compareTarballs.mockReturnValue({ verdict: 'identical' })
+  isIdentical.mockReturnValue(true)
 
   publishPackage.mockRejectedValueOnce(publishOverError())
 
@@ -2264,7 +2238,7 @@ test('treats a mid-publish publish-over rejection with identical content as publ
 })
 
 test('rethrows the original publish error when the mid-publish race published different content', async () => {
-  provideOidcAuth()
+  provideOIDCAuth()
 
   mountPackageFixture()
 
@@ -2278,37 +2252,7 @@ test('rethrows the original publish error when the mid-publish race published di
 
   downloadTarball.mockResolvedValue(Buffer.from('published-tarball'))
 
-  compareTarballs.mockReturnValueOnce({
-    verdict: 'different',
-    summary: 'different content in: lib/index.js',
-  })
-
-  publishPackage.mockRejectedValueOnce(publishOverError())
-
-  await expect(executeReleaseWorkflow(context, [plugin()])).rejects.toThrow(
-    'You cannot publish over the previously published versions: 1.2.3.'
-  )
-})
-
-test('rethrows the original publish error when the mid-publish race cannot be verified', async () => {
-  provideOidcAuth()
-
-  mountPackageFixture()
-
-  context.plans = [createPublishablePlan()]
-
-  execCommand
-    .mockImplementationOnce(async () => {
-      throw notFoundError()
-    })
-    .mockImplementationOnce(async () => publishedManifest())
-
-  downloadTarball.mockResolvedValue(Buffer.from('published-tarball'))
-
-  compareTarballs.mockReturnValueOnce({
-    verdict: 'undeterminable',
-    reason: 'the published tarball could not be parsed: truncated gzip stream',
-  })
+  isIdentical.mockReturnValueOnce(false)
 
   publishPackage.mockRejectedValueOnce(publishOverError())
 
@@ -2318,7 +2262,7 @@ test('rethrows the original publish error when the mid-publish race cannot be ve
 })
 
 test('rethrows the original publish error when the version is still absent after the race', async () => {
-  provideOidcAuth()
+  provideOIDCAuth()
 
   mountPackageFixture()
 
@@ -2336,7 +2280,7 @@ test('rethrows the original publish error when the version is still absent after
 })
 
 test('rethrows the original publish error when the version cannot be re-probed after the race', async () => {
-  provideOidcAuth()
+  provideOIDCAuth()
 
   mountPackageFixture()
 
@@ -2364,7 +2308,7 @@ npm error 500 Internal server error`
 })
 
 test('rethrows non-race publish failures without re-probing', async () => {
-  provideOidcAuth()
+  provideOIDCAuth()
 
   mountPackageFixture()
 
@@ -2382,7 +2326,7 @@ test('rethrows non-race publish failures without re-probing', async () => {
 })
 
 test('does not probe private, unnamed, unversioned, or foreign-provider plans', async () => {
-  provideOidcAuth()
+  provideOIDCAuth()
 
   mountPackageFixture()
 
@@ -2415,7 +2359,7 @@ test('does not probe private, unnamed, unversioned, or foreign-provider plans', 
 })
 
 test('probes with pnpm view and syncs the dist-tag when the workspace uses pnpm', async () => {
-  provideOidcAuth()
+  provideOIDCAuth()
 
   context.releaseChannel = 'next'
 
@@ -2429,7 +2373,7 @@ test('probes with pnpm view and syncs the dist-tag when the workspace uses pnpm'
 
   downloadTarball.mockResolvedValue(Buffer.from('published-tarball'))
 
-  compareTarballs.mockReturnValue({ verdict: 'identical' })
+  isIdentical.mockReturnValue(true)
 
   await executeReleaseWorkflow(context, [plugin()])
 
@@ -2453,7 +2397,7 @@ test('probes with pnpm view and syncs the dist-tag when the workspace uses pnpm'
 })
 
 test('publishes when pnpm reports the version as missing', async () => {
-  provideOidcAuth()
+  provideOIDCAuth()
 
   resolvePackageManager.mockResolvedValue('pnpm')
 
@@ -2479,7 +2423,7 @@ test('publishes when pnpm reports the version as missing', async () => {
 })
 
 test('probes with yarn npm info and syncs with yarn npm tag when the workspace uses yarn berry', async () => {
-  provideOidcAuth()
+  provideOIDCAuth()
 
   context.releaseChannel = 'next'
 
@@ -2494,7 +2438,7 @@ test('probes with yarn npm info and syncs with yarn npm tag when the workspace u
 
   downloadTarball.mockResolvedValue(Buffer.from('published-tarball'))
 
-  compareTarballs.mockReturnValue({ verdict: 'identical' })
+  isIdentical.mockReturnValue(true)
 
   await executeReleaseWorkflow(context, [plugin()])
 
@@ -2506,7 +2450,7 @@ test('probes with yarn npm info and syncs with yarn npm tag when the workspace u
 })
 
 test('treats yarn berry fallback metadata for a missing version as absent', async () => {
-  provideOidcAuth()
+  provideOIDCAuth()
 
   resolvePackageManager.mockResolvedValue('yarn')
   getPackageManagerVersion.mockResolvedValue(4)
@@ -2532,7 +2476,7 @@ test('treats yarn berry fallback metadata for a missing version as absent', asyn
 })
 
 test('probes with npm view and packs with yarn pack when the workspace uses yarn classic', async () => {
-  provideOidcAuth()
+  provideOIDCAuth()
 
   context.releaseChannel = 'next'
 
@@ -2547,7 +2491,7 @@ test('probes with npm view and packs with yarn pack when the workspace uses yarn
 
   downloadTarball.mockResolvedValue(Buffer.from('published-tarball'))
 
-  compareTarballs.mockReturnValue({ verdict: 'identical' })
+  isIdentical.mockReturnValue(true)
 
   await executeReleaseWorkflow(context, [plugin()])
 
@@ -2605,7 +2549,7 @@ test('probes with injected NPM_TOKEN credentials and publishes when the version 
 })
 
 test('skips the publish after comparing real fixture tarballs end to end', async () => {
-  provideOidcAuth()
+  provideOIDCAuth()
 
   context.releaseChannel = 'next'
 
@@ -2644,8 +2588,8 @@ test('skips the publish after comparing real fixture tarballs end to end', async
   expect(context.outcome?.status).toBe('success')
 })
 
-test('rejects with the real difference summary when local fixture content differs', async () => {
-  provideOidcAuth()
+test('rejects before any publish when real fixture tarball content differs', async () => {
+  provideOIDCAuth()
 
   mountPackageFixture()
 
@@ -2675,7 +2619,7 @@ test('rejects with the real difference summary when local fixture content differ
   )
 
   await expect(executeReleaseWorkflow(context, [plugin()])).rejects.toThrow(
-    'only in local tarball: extra.js'
+    'Version "a@1.2.3" was not published: the registry already has this version and its content could not be verified as identical.'
   )
 
   expect(publishPackage).toHaveBeenCalledTimes(0)

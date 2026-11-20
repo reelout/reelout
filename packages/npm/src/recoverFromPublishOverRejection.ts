@@ -50,14 +50,14 @@ export async function recoverFromPublishOverRejection(
     throw originalError
   }
 
-  const verdict = await proveSamePublication(
+  const identical = await proveSamePublication(
     context,
     plan,
     packageManager,
     probe.tarballUrl
   )
 
-  if (verdict.verdict !== 'identical') {
+  if (!identical) {
     throw originalError
   }
 

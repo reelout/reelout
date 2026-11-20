@@ -3,7 +3,7 @@
 
 import { mkdir, readFile, symlink, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import { comparePackageTarballs } from '@reelout/npm'
+import { isPackageTarballIdentical } from '@reelout/npm'
 import { c as tarCreate } from 'tar'
 import { temporaryDirectoryTask } from 'tempy'
 import { expect, test } from 'vitest'
@@ -99,9 +99,7 @@ test('treats tarballs with identical logical content but different tar-level met
     })
 
     expect(published.equals(local)).toBe(false)
-    expect(comparePackageTarballs(published, local)).toEqual({
-      verdict: 'identical',
-    })
+    expect(isPackageTarballIdentical(published, local)).toBe(true)
   })
 })
 
@@ -116,9 +114,7 @@ test('ignores directory entries and differing root folder prefixes', async () =>
       order: ['src/index.js', 'README.md', 'package.json'],
     })
 
-    expect(comparePackageTarballs(published, local)).toEqual({
-      verdict: 'identical',
-    })
+    expect(isPackageTarballIdentical(published, local)).toBe(true)
   })
 })
 
@@ -133,11 +129,7 @@ test('keeps multi-root paths intact instead of stripping the first folder', asyn
       { path: 'lib/data.txt', content: 'lib data\n' },
     ])
 
-    expect(comparePackageTarballs(published, local)).toEqual({
-      verdict: 'different',
-      summary:
-        'only in published tarball: app/shared.txt; only in local tarball: application/shared.txt',
-    })
+    expect(isPackageTarballIdentical(published, local)).toBe(false)
   })
 })
 
@@ -146,13 +138,11 @@ test('treats a plain tarball and a gzipped tarball with the same content as iden
     const published = await packFixture(cwd, defaultFiles, { gzip: false })
     const local = await packFixture(cwd, defaultFiles, { gzip: true })
 
-    expect(comparePackageTarballs(published, local)).toEqual({
-      verdict: 'identical',
-    })
+    expect(isPackageTarballIdentical(published, local)).toBe(true)
   })
 })
 
-test('reports differing file content as different with the file named in the summary', async () => {
+test('reports differing file content as not identical', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     const published = await packFixture(cwd, defaultFiles)
     const local = await packFixture(
@@ -164,14 +154,11 @@ test('reports differing file content as different with the file named in the sum
       )
     )
 
-    expect(comparePackageTarballs(published, local)).toEqual({
-      verdict: 'different',
-      summary: 'different content in: src/index.js',
-    })
+    expect(isPackageTarballIdentical(published, local)).toBe(false)
   })
 })
 
-test('reports files present only in the published tarball as different', async () => {
+test('reports files present only in the published tarball as not identical', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     const published = await packFixture(cwd, defaultFiles)
     const local = await packFixture(
@@ -179,14 +166,11 @@ test('reports files present only in the published tarball as different', async (
       defaultFiles.filter((file) => file.path !== 'README.md')
     )
 
-    expect(comparePackageTarballs(published, local)).toEqual({
-      verdict: 'different',
-      summary: 'only in published tarball: README.md',
-    })
+    expect(isPackageTarballIdentical(published, local)).toBe(false)
   })
 })
 
-test('reports files present only in the local tarball as different', async () => {
+test('reports files present only in the local tarball as not identical', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     const published = await packFixture(
       cwd,
@@ -194,38 +178,7 @@ test('reports files present only in the local tarball as different', async () =>
     )
     const local = await packFixture(cwd, defaultFiles)
 
-    expect(comparePackageTarballs(published, local)).toEqual({
-      verdict: 'different',
-      summary: 'only in local tarball: README.md',
-    })
-  })
-})
-
-test('sorts files and names every difference group in the summary', async () => {
-  await temporaryDirectoryTask(async (cwd) => {
-    const published = await packFixture(cwd, [
-      {
-        path: 'package.json',
-        content: '{"name":"demo-lib","version":"1.0.0"}',
-      },
-      { path: 'B-extra.md', content: 'published b\n' },
-      { path: 'A-extra.md', content: 'published a\n' },
-      { path: 'src/index.js', content: 'export const value = 42\n' },
-    ])
-    const local = await packFixture(cwd, [
-      {
-        path: 'package.json',
-        content: '{"name":"demo-lib","version":"1.0.0"}',
-      },
-      { path: 'src/index.js', content: 'export const value = 43\n' },
-      { path: 'local-only.md', content: 'local only\n' },
-    ])
-
-    expect(comparePackageTarballs(published, local)).toEqual({
-      verdict: 'different',
-      summary:
-        'different content in: src/index.js; only in published tarball: A-extra.md, B-extra.md; only in local tarball: local-only.md',
-    })
+    expect(isPackageTarballIdentical(published, local)).toBe(false)
   })
 })
 
@@ -256,13 +209,11 @@ test('treats package.json differing only by publish-mutated fields as identical'
     const published = await packFixture(cwd, filesFor(publishedManifest))
     const local = await packFixture(cwd, filesFor(localManifest))
 
-    expect(comparePackageTarballs(published, local)).toEqual({
-      verdict: 'identical',
-    })
+    expect(isPackageTarballIdentical(published, local)).toBe(true)
   })
 })
 
-test('reports semantically different package.json content as different', async () => {
+test('reports semantically different package.json content as not identical', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     const filesFor = (version: string): FixtureFile[] => [
       {
@@ -275,14 +226,11 @@ test('reports semantically different package.json content as different', async (
     const published = await packFixture(cwd, filesFor('1.0.0'))
     const local = await packFixture(cwd, filesFor('1.0.1'))
 
-    expect(comparePackageTarballs(published, local)).toEqual({
-      verdict: 'different',
-      summary: 'different content in: package.json',
-    })
+    expect(isPackageTarballIdentical(published, local)).toBe(false)
   })
 })
 
-test('reports unparseable package.json content as different', async () => {
+test('reports unparseable package.json content as not identical', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     const filesFor = (manifest: string): FixtureFile[] => [
       { path: 'package.json', content: manifest },
@@ -295,14 +243,11 @@ test('reports unparseable package.json content as different', async () => {
       filesFor('{"name":"demo-lib","version":"1.0.0"}')
     )
 
-    expect(comparePackageTarballs(published, local)).toEqual({
-      verdict: 'different',
-      summary: 'different content in: package.json',
-    })
+    expect(isPackageTarballIdentical(published, local)).toBe(false)
   })
 })
 
-test('reports package.json that is valid JSON but not an object as different', async () => {
+test('reports package.json that is valid JSON but not an object as not identical', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     const filesFor = (manifest: string): FixtureFile[] => [
       { path: 'package.json', content: manifest },
@@ -315,10 +260,7 @@ test('reports package.json that is valid JSON but not an object as different', a
       filesFor('{"name":"demo-lib","version":"1.0.0"}')
     )
 
-    expect(comparePackageTarballs(published, local)).toEqual({
-      verdict: 'different',
-      summary: 'different content in: package.json',
-    })
+    expect(isPackageTarballIdentical(published, local)).toBe(false)
   })
 })
 
@@ -336,13 +278,11 @@ test('treats matching symlink entries as identical', async () => {
     const published = await packFixture(cwd, files, { symlinks })
     const local = await packFixture(cwd, files, { symlinks })
 
-    expect(comparePackageTarballs(published, local)).toEqual({
-      verdict: 'identical',
-    })
+    expect(isPackageTarballIdentical(published, local)).toBe(true)
   })
 })
 
-test('reports symlink entries with different targets as different', async () => {
+test('reports symlink entries with different targets as not identical', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     const files: FixtureFile[] = [
       {
@@ -359,14 +299,11 @@ test('reports symlink entries with different targets as different', async () => 
       symlinks: [{ path: 'link.js', target: 'other.js' }],
     })
 
-    expect(comparePackageTarballs(published, local)).toEqual({
-      verdict: 'different',
-      summary: 'different content in: link.js',
-    })
+    expect(isPackageTarballIdentical(published, local)).toBe(false)
   })
 })
 
-test('reports a symlink replaced by a regular file as different', async () => {
+test('reports a symlink replaced by a regular file as not identical', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     const files: FixtureFile[] = [
       {
@@ -384,67 +321,42 @@ test('reports a symlink replaced by a regular file as different', async () => {
       { path: 'link.js', content: 'export const value = 42\n' },
     ])
 
-    expect(comparePackageTarballs(published, local)).toEqual({
-      verdict: 'different',
-      summary: 'different content in: link.js',
-    })
+    expect(isPackageTarballIdentical(published, local)).toBe(false)
   })
 })
 
-test('returns undeterminable for a corrupt published tarball', async () => {
+test('reports a corrupt published tarball as not identical', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     const local = await packFixture(cwd, defaultFiles)
 
-    const result = comparePackageTarballs(
-      Buffer.from('this is not a tarball at all'),
-      local
-    )
-
-    expect(result.verdict).toBe('undeterminable')
-    expect(result).toMatchObject({
-      reason: expect.stringContaining('published tarball'),
-    })
+    expect(
+      isPackageTarballIdentical(
+        Buffer.from('this is not a tarball at all'),
+        local
+      )
+    ).toBe(false)
   })
 })
 
-test('returns undeterminable for a corrupt local tarball', async () => {
+test('reports a corrupt local tarball as not identical', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     const published = await packFixture(cwd, defaultFiles)
 
-    const result = comparePackageTarballs(
-      published,
-      Buffer.from('this is not a tarball at all')
+    expect(
+      isPackageTarballIdentical(
+        published,
+        Buffer.from('this is not a tarball at all')
+      )
+    ).toBe(false)
+  })
+})
+
+test('reports a truncated gzip tarball as not identical', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    const tarball = await packFixture(cwd, defaultFiles)
+
+    expect(isPackageTarballIdentical(tarball.subarray(0, 30), tarball)).toBe(
+      false
     )
-
-    expect(result.verdict).toBe('undeterminable')
-    expect(result).toMatchObject({
-      reason: expect.stringContaining('local tarball'),
-    })
-  })
-})
-
-test('returns undeterminable for a truncated gzip tarball', async () => {
-  await temporaryDirectoryTask(async (cwd) => {
-    const tarball = await packFixture(cwd, defaultFiles)
-
-    const result = comparePackageTarballs(tarball.subarray(0, 30), tarball)
-
-    expect(result.verdict).toBe('undeterminable')
-    expect(result).toMatchObject({
-      reason: expect.stringContaining('published tarball'),
-    })
-  })
-})
-
-test('returns undeterminable for an empty tarball buffer', async () => {
-  await temporaryDirectoryTask(async (cwd) => {
-    const tarball = await packFixture(cwd, defaultFiles)
-
-    const result = comparePackageTarballs(tarball, Buffer.alloc(0))
-
-    expect(result.verdict).toBe('undeterminable')
-    expect(result).toMatchObject({
-      reason: expect.stringContaining('local tarball'),
-    })
   })
 })

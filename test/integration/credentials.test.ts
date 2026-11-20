@@ -331,9 +331,7 @@ test('completes an already published npm plan with a synced dist-tag and no publ
         distTags: {},
       })
 
-      vi.mocked(proveSamePublication).mockResolvedValue({
-        verdict: 'identical',
-      })
+      vi.mocked(proveSamePublication).mockResolvedValue(true)
 
       const logger = vi.fn()
 
