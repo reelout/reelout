@@ -28,9 +28,9 @@ export function printReleaseReport(
       failure: colors.red('FAILURE'),
     }[report.outcome.status]
 
-    const dryRunLabel = report.dryRun && colors.yellow('(dry run)')
-
-    logger.info(['Status:', statusLabel, dryRunLabel].filter(Boolean).join(' '))
+    logger.info(
+      `Status: ${[statusLabel, report.dryRun && colors.yellow('(dry run)')].filter(Boolean).join(' ')}`
+    )
   }
 
   if (report.outcome?.status === 'failure') {
