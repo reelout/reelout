@@ -8,6 +8,14 @@ import type { PackageManagerInfo } from './inspectPackageManager'
 import { prepareAuth } from './prepareAuth'
 import { resolvePublishRegistry } from './resolvePublishRegistry'
 
+/**
+ * The result of probing the publish registry for a plan's target package
+ * version.
+ *
+ * - `absent`: the registry does not hold the target version.
+ * - `published`: the registry holds the target version, along with its
+ *   tarball URL and dist-tags.
+ */
 export type PublishedVersionStatus =
   | { status: 'absent' }
   | {

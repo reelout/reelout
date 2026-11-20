@@ -11,6 +11,13 @@ import {
 import { prepareAuth, type Env } from './prepareAuth'
 import { resolvePublishRegistry } from './resolvePublishRegistry'
 
+/**
+ * The kind of registry authentication detected for a release.
+ *
+ * - `none`: no registry credentials are configured.
+ * - `oidc`: OIDC environment tokens are present.
+ * - `token`: `NPM_TOKEN` or ambient registry credentials are present.
+ */
 export type NpmAuthKind = 'none' | 'oidc' | 'token'
 
 /**
