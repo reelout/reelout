@@ -130,7 +130,6 @@ export async function createContext(
     strict: !!options.strict,
     packages: [],
     plans: [],
-    skippedSteps: [],
     outcome: null,
   }
 }

@@ -159,18 +159,6 @@ test('skips npm publishing and GitHub releases while completing the release when
       await executeReleaseWorkflow(context, plugins)
 
       expect(context.outcome?.status).toBe('success')
-      expect(context.skippedSteps).toEqual([
-        {
-          plugin: '@reelout/npm',
-          hook: 'publish',
-          reason: 'NPM_TOKEN is required for NPM authentication.',
-        },
-        {
-          plugin: '@reelout/github',
-          hook: 'publish',
-          reason: 'GITHUB_TOKEN is not set.',
-        },
-      ])
       expect(npmCommandCalls()).toEqual([])
       expect(vi.mocked(publishPackage)).not.toHaveBeenCalled()
       expect(vi.mocked(createRelease)).not.toHaveBeenCalled()
@@ -193,11 +181,6 @@ test('skips npm publishing and GitHub releases while completing the release when
             "Status: [32mSUCCESS[39m",
           ],
           [
-            "Skipped: [1m[33m2 skipped[39m[22m
-        [43m @reelout/npm [49m NPM_TOKEN is required for NPM authentication.
-        [43m @reelout/github [49m GITHUB_TOKEN is not set.",
-          ],
-          [
             "Release complete: [1m[32m1 released[39m[22m [90m(1)[39m
 
         [42m 0.1.0 ← 0.0.0 [49m[90m minor [39m
@@ -217,13 +200,6 @@ test('skips npm publishing and GitHub releases while completing the release when
         ## ReelOut Release Report
 
         **Status:** Success
-
-        ### Skipped
-
-        | Plugin | Reason |
-        | --- | --- |
-        | \`@reelout/npm\` | NPM_TOKEN is required for NPM authentication. |
-        | \`@reelout/github\` | GITHUB_TOKEN is not set. |
 
         | Package | Version | Type | Tag |
         | --- | --- | --- | --- |
@@ -275,7 +251,6 @@ test('rejects with the npm configure error before any write-phase mutation when 
           "status": "failure",
         }
       `)
-      expect(context.skippedSteps).toEqual([])
       expect(await getGitTags(cwd)).toEqual([])
       expect(await getGitCommitSubjects(cwd)).toEqual([
         'chore: add package.json',
@@ -288,7 +263,7 @@ test('rejects with the npm configure error before any write-phase mutation when 
   })
 }, 15_000)
 
-test('previews skipped steps without side effects when credentials are missing in dry-run', async () => {
+test('previews missing credentials without side effects in dry-run', async () => {
   await temporaryDirectoryTask(async (remote) => {
     await temporaryDirectoryTask(async (cwd) => {
       await initializeReleaseRepository(remote, cwd, { version: '0.0.0' })
@@ -305,18 +280,6 @@ test('previews skipped steps without side effects when credentials are missing i
       await executeReleaseWorkflow(context, plugins)
 
       expect(context.outcome?.status).toBe('success')
-      expect(context.skippedSteps).toEqual([
-        {
-          plugin: '@reelout/npm',
-          hook: 'publish',
-          reason: 'NPM_TOKEN is required for NPM authentication.',
-        },
-        {
-          plugin: '@reelout/github',
-          hook: 'publish',
-          reason: 'GITHUB_TOKEN is not set.',
-        },
-      ])
       expect(await getGitTags(cwd)).toEqual([])
       expect(await getGitCommitSubjects(cwd)).toEqual([
         'chore: add package.json',
@@ -335,11 +298,6 @@ test('previews skipped steps without side effects when credentials are missing i
           ],
           [
             "Status: [32mSUCCESS[39m [33m(dry run)[39m",
-          ],
-          [
-            "Skipped: [1m[33m2 skipped[39m[22m
-        [43m @reelout/npm [49m NPM_TOKEN is required for NPM authentication.
-        [43m @reelout/github [49m GITHUB_TOKEN is not set.",
           ],
           [
             "Release complete: [1m[32m1 released[39m[22m [90m(1)[39m
@@ -384,14 +342,6 @@ test('completes an already published npm plan with a synced dist-tag and no publ
       await executeReleaseWorkflow(context, plugins)
 
       expect(context.outcome?.status).toBe('success')
-      expect(context.skippedSteps).toEqual([
-        {
-          plugin: '@reelout/npm',
-          hook: 'publish',
-          reason:
-            'Version "pkg@0.1.0" is already published with identical content.',
-        },
-      ])
       expect(vi.mocked(publishPackage)).not.toHaveBeenCalled()
       expect(npmCommandCalls()).toEqual([
         [
@@ -422,10 +372,6 @@ test('completes an already published npm plan with a synced dist-tag and no publ
           ],
           [
             "Status: [32mSUCCESS[39m",
-          ],
-          [
-            "Skipped: [1m[33m1 skipped[39m[22m
-        [43m @reelout/npm [49m Version "pkg@0.1.0" is already published with identical content.",
           ],
           [
             "Release complete: [1m[32m1 released[39m[22m [90m(1)[39m

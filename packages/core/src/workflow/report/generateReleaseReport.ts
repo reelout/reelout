@@ -19,7 +19,6 @@ export function generateReleaseReport(context: ReleaseContext): ReleaseReport {
   return {
     dryRun: context.dryRun,
     outcome: context.outcome,
-    skipped: [...context.skippedSteps],
     packages: context.packages.map((pkg) => ({
       location: pkg.location,
       name: pkg.name,

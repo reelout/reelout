@@ -158,25 +158,6 @@ export interface ReleaseOutcome {
   phase: ReleasePhase | null
 }
 
-/**
- * A release step skipped at runtime, most commonly for a missing credential.
- *
- * Records are collected on the context while the workflow runs and copied
- * into the release report; they never change the release outcome, so a run
- * whose only anomalies are skips still ends successfully.
- */
-export interface SkippedStep {
-  /** Name of the plugin that skipped the step. */
-  plugin: string
-  /** Hook whose step was skipped, such as `publish`. */
-  hook: ReleaseHookName
-  /**
-   * Human-readable skip reason; names the missing environment variable when
-   * one applies.
-   */
-  reason: string
-}
-
 export interface ReleaseContext<P extends Package = Package> {
   cwd: string
   env: Readonly<NodeJS.ProcessEnv>
@@ -200,7 +181,6 @@ export interface ReleaseContext<P extends Package = Package> {
   strict: boolean
   packages: P[]
   plans: ReleasePlan<P>[]
-  skippedSteps: SkippedStep[]
   outcome: ReleaseOutcome | null
 }
 
@@ -267,7 +247,6 @@ export type ReleaseHookName = Exclude<keyof ReleasePlugin, 'name' | 'version'>
 export interface ReleaseReport {
   dryRun: boolean
   outcome: ReleaseOutcome | null
-  skipped: SkippedStep[]
   packages: {
     location: string
     name: string | undefined

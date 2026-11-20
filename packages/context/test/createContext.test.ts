@@ -194,7 +194,6 @@ test('populates context with default configuration, plugins, and metadata upon s
       strict: false,
       packages: [],
       plans: [],
-      skippedSteps: [],
       outcome: null,
     })
   })
@@ -260,7 +259,7 @@ test('sets dryRun to true when dryRun option is enabled', async () => {
   })
 })
 
-test('defaults strict to false and skippedSteps to an empty collection', async () => {
+test('defaults strict to false', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     options.cwd = cwd
 
@@ -271,7 +270,6 @@ test('defaults strict to false and skippedSteps to an empty collection', async (
     const context = await createContext(options)
 
     expect(context.strict).toBe(false)
-    expect(context.skippedSteps).toEqual([])
   })
 })
 

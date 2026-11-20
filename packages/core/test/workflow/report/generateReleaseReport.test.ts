@@ -222,7 +222,6 @@ test('constructs structured package and release objects when release plans are p
           },
         },
       ],
-      "skipped": [],
     }
   `)
 })
@@ -239,7 +238,6 @@ test('omits versionQualifier and releaseChannel from the report when set in the 
       "outcome": null,
       "packages": [],
       "plans": [],
-      "skipped": [],
     }
   `)
 })
@@ -266,7 +264,6 @@ test('omits release plan from report when release version is null or missing', (
       "outcome": null,
       "packages": [],
       "plans": [],
-      "skipped": [],
     }
   `)
 })
@@ -298,7 +295,6 @@ test('carries the raw release outcome in the report when the workflow failed', (
       },
       "packages": [],
       "plans": [],
-      "skipped": [],
     }
   `)
 
@@ -320,41 +316,6 @@ test('carries the raw release outcome in the report when the workflow failed', (
       },
       "packages": [],
       "plans": [],
-      "skipped": [],
     }
   `)
-})
-
-test('copies skipped step records from the context into the report', () => {
-  context.skippedSteps = [
-    {
-      plugin: 'github',
-      hook: 'publish',
-      reason: 'GITHUB_TOKEN is not set; skipped GitHub release creation.',
-    },
-    {
-      plugin: 'gitlab',
-      hook: 'publish',
-      reason: 'GITLAB_TOKEN is not set; skipped GitLab release creation.',
-    },
-  ]
-
-  const report = generateReleaseReport(context)
-
-  expect(report.skipped).toMatchInlineSnapshot(`
-    [
-      {
-        "hook": "publish",
-        "plugin": "github",
-        "reason": "GITHUB_TOKEN is not set; skipped GitHub release creation.",
-      },
-      {
-        "hook": "publish",
-        "plugin": "gitlab",
-        "reason": "GITLAB_TOKEN is not set; skipped GitLab release creation.",
-      },
-    ]
-  `)
-
-  expect(report.skipped).not.toBe(context.skippedSteps)
 })

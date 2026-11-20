@@ -39,7 +39,6 @@ const createMockContext = (): ReleaseContext => ({
   strict: false,
   packages: [],
   plans: [],
-  skippedSteps: [],
   outcome: null,
 })
 

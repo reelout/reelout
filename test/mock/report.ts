@@ -17,7 +17,6 @@ export const createReport = (
 ): ReleaseReport => ({
   dryRun: false,
   outcome: null,
-  skipped: [],
   packages: [],
   plans: [],
   ...report,
