@@ -3,6 +3,7 @@
 
 import { Gitlab } from '@gitbeaker/rest'
 import type { GitRepository, ReleasePlan } from '@reelout/core'
+import { isNotFoundError } from './isNotFoundError'
 
 /**
  * Delete a GitLab release associated with a package tag.
@@ -33,10 +34,7 @@ export async function deleteRelease(
 
     await api.ProjectReleases.remove(projectId, plan.release.tag.name)
   } catch (err) {
-    const status = (err as { cause?: { response?: { status?: number } } })
-      ?.cause?.response?.status
-
-    if (status === 404) {
+    if (isNotFoundError(err)) {
       return
     }
 

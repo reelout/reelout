@@ -12,7 +12,11 @@ vi.mock(import('@reelout/npm/publishPackage'), async () => ({
 }))
 
 vi.mock(import('@reelout/github/createRelease'), async () => ({
-  createRelease: vi.fn(),
+  createRelease: vi.fn(async () => async () => {}),
+}))
+
+vi.mock(import('@reelout/github/verifyToken'), async () => ({
+  verifyToken: vi.fn(async () => {}),
 }))
 
 vi.mock(import('@reelout/github/isRepositoryPublic'), async () => ({
