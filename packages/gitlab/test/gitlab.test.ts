@@ -16,12 +16,18 @@ const createRelease = vi.hoisted(() => vi.fn())
 
 const deleteRelease = vi.hoisted(() => vi.fn())
 
+const verifyToken = vi.hoisted(() => vi.fn())
+
 vi.mock(import('@reelout/gitlab/createRelease'), () => ({
   createRelease,
 }))
 
 vi.mock(import('@reelout/gitlab/deleteRelease'), () => ({
   deleteRelease,
+}))
+
+vi.mock(import('@reelout/gitlab/verifyToken'), () => ({
+  verifyToken,
 }))
 
 const plans = [
@@ -43,8 +49,51 @@ beforeEach(() => {
   vi.resetAllMocks()
 })
 
-test('fails workflow execution when GITLAB_TOKEN environment variable is missing', async () => {
+test('skips gitlab release creation when GITLAB_TOKEN environment variable is missing', async () => {
   vi.stubEnv('GITLAB_TOKEN', undefined)
+
+  context.repository = createMockRepository('gitlab')
+
+  context.plans = plans
+
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(context.outcome?.status).toBe('success')
+  expect(verifyToken).not.toHaveBeenCalled()
+  expect(createRelease).not.toHaveBeenCalled()
+  expect(deleteRelease).not.toHaveBeenCalled()
+  expect(context.skippedSteps).toMatchInlineSnapshot(`
+    [
+      {
+        "hook": "publish",
+        "plugin": "@reelout/gitlab",
+        "reason": "GitLab releases were not created: GITLAB_TOKEN is required for GitLab authentication.",
+      },
+    ]
+  `)
+  expect(logger.mock.calls).toMatchInlineSnapshot(`
+    [
+      [
+        "GitLab releases were not created: GITLAB_TOKEN is required for GitLab authentication.",
+      ],
+      [
+        "Status: [32mSUCCESS[39m",
+      ],
+      [
+        "Skipped: [1m[33m1 skipped[39m[22m
+    [43m @reelout/gitlab [49m GitLab releases were not created: GITLAB_TOKEN is required for GitLab authentication.",
+      ],
+      [
+        "Release complete: [33mNo packages are scheduled for release.[39m",
+      ],
+    ]
+  `)
+})
+
+test('fails workflow execution when GITLAB_TOKEN environment variable is missing in strict mode', async () => {
+  vi.stubEnv('GITLAB_TOKEN', undefined)
+
+  context.strict = true
 
   context.repository = createMockRepository('gitlab')
 
@@ -56,6 +105,14 @@ test('fails workflow execution when GITLAB_TOKEN environment variable is missing
     `[Error: The GITLAB_TOKEN environment variable is required.]`
   )
 
+  expect(context.outcome?.phase).toMatchInlineSnapshot(`
+    {
+      "hook": "configure",
+      "plugin": "@reelout/gitlab",
+    }
+  `)
+  expect(context.skippedSteps).toEqual([])
+  expect(verifyToken).not.toHaveBeenCalled()
   expect(createRelease).not.toHaveBeenCalled()
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
@@ -64,6 +121,43 @@ test('fails workflow execution when GITLAB_TOKEN environment variable is missing
       ],
       [
         "Release complete: [31mThe GITLAB_TOKEN environment variable is required.[39m",
+      ],
+    ]
+  `)
+})
+
+test('fails workflow execution when GITLAB_TOKEN fails verification', async () => {
+  context.env = { GITLAB_TOKEN: 'token' }
+
+  context.repository = createMockRepository('gitlab')
+
+  context.plans = plans
+
+  verifyToken.mockRejectedValueOnce(
+    new Error('The GITLAB_TOKEN environment variable could not be verified.')
+  )
+
+  await expect(
+    executeReleaseWorkflow(context, [plugin()])
+  ).rejects.toMatchInlineSnapshot(
+    `[Error: The GITLAB_TOKEN environment variable could not be verified.]`
+  )
+
+  expect(context.outcome?.phase).toMatchInlineSnapshot(`
+    {
+      "hook": "configure",
+      "plugin": "@reelout/gitlab",
+    }
+  `)
+  expect(createRelease).not.toHaveBeenCalled()
+  expect(deleteRelease).not.toHaveBeenCalled()
+  expect(logger.mock.calls).toMatchInlineSnapshot(`
+    [
+      [
+        "Status: [31mFAILURE[39m",
+      ],
+      [
+        "Release complete: [31mThe GITLAB_TOKEN environment variable could not be verified.[39m",
       ],
     ]
   `)
@@ -106,11 +200,56 @@ test('skips creating gitlab releases during dry-run mode', async () => {
 
   await executeReleaseWorkflow(context, [plugin()])
 
+  expect(verifyToken).toHaveBeenCalledTimes(1)
+  expect(verifyToken).toHaveBeenCalledWith('token')
   expect(createRelease).toHaveBeenCalledTimes(0)
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
       [
         "Status: [32mSUCCESS[39m",
+      ],
+      [
+        "Release complete: [33mNo packages are scheduled for release.[39m",
+      ],
+    ]
+  `)
+})
+
+test('previews the gitlab release skip during dry-run mode when GITLAB_TOKEN environment variable is missing', async () => {
+  vi.stubEnv('GITLAB_TOKEN', undefined)
+
+  context.dryRun = true
+
+  context.repository = createMockRepository('gitlab')
+
+  context.plans = plans
+
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(context.outcome?.status).toBe('success')
+  expect(verifyToken).not.toHaveBeenCalled()
+  expect(createRelease).not.toHaveBeenCalled()
+  expect(deleteRelease).not.toHaveBeenCalled()
+  expect(context.skippedSteps).toMatchInlineSnapshot(`
+    [
+      {
+        "hook": "publish",
+        "plugin": "@reelout/gitlab",
+        "reason": "GitLab releases were not created: GITLAB_TOKEN is required for GitLab authentication.",
+      },
+    ]
+  `)
+  expect(logger.mock.calls).toMatchInlineSnapshot(`
+    [
+      [
+        "GitLab releases were not created: GITLAB_TOKEN is required for GitLab authentication.",
+      ],
+      [
+        "Status: [32mSUCCESS[39m",
+      ],
+      [
+        "Skipped: [1m[33m1 skipped[39m[22m
+    [43m @reelout/gitlab [49m GitLab releases were not created: GITLAB_TOKEN is required for GitLab authentication.",
       ],
       [
         "Release complete: [33mNo packages are scheduled for release.[39m",
