@@ -389,7 +389,7 @@ test('completes an already published npm plan with a synced dist-tag and no publ
           plugin: '@reelout/npm',
           hook: 'publish',
           reason:
-            'Version pkg@0.1.0 is already published with identical content.',
+            'Version "pkg@0.1.0" is already published with identical content.',
         },
       ])
       expect(vi.mocked(publishPackage)).not.toHaveBeenCalled()
@@ -418,14 +418,14 @@ test('completes an already published npm plan with a synced dist-tag and no publ
       expect(logger.mock.calls).toMatchInlineSnapshot(`
         [
           [
-            "[33mSkipping publish of pkg@0.1.0: already published with identical content.[39m",
+            "[33mSkipping publish of "pkg@0.1.0": already published with identical content.[39m",
           ],
           [
             "Status: [32mSUCCESS[39m",
           ],
           [
             "Skipped: [1m[33m1 skipped[39m[22m
-        [43m @reelout/npm [49m Version pkg@0.1.0 is already published with identical content.",
+        [43m @reelout/npm [49m Version "pkg@0.1.0" is already published with identical content.",
           ],
           [
             "Release complete: [1m[32m1 released[39m[22m [90m(1)[39m

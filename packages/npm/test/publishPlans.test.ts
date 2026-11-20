@@ -305,12 +305,12 @@ test('skips the publish and syncs the dist-tag when the registry already has an 
     {
       plugin: PLUGIN_NAME,
       hook: 'publish',
-      reason: 'Version a@1.2.3 is already published with identical content.',
+      reason: 'Version "a@1.2.3" is already published with identical content.',
     },
   ])
   expect(
     warnCalls().filter((message) =>
-      message.includes('Skipping publish of a@1.2.3')
+      message.includes('Skipping publish of "a@1.2.3"')
     )
   ).toHaveLength(1)
   expect(context.outcome?.status).toBe('success')
@@ -352,7 +352,7 @@ test('does not run a dist-tag command when the channel tag already points at the
     {
       plugin: PLUGIN_NAME,
       hook: 'publish',
-      reason: 'Version a@1.2.3 is already published with identical content.',
+      reason: 'Version "a@1.2.3" is already published with identical content.',
     },
   ])
 })
@@ -524,12 +524,12 @@ test('previews identical-version skips in dry-run without publishing or syncing 
     {
       plugin: PLUGIN_NAME,
       hook: 'publish',
-      reason: 'Version a@1.2.3 is already published with identical content.',
+      reason: 'Version "a@1.2.3" is already published with identical content.',
     },
   ])
   expect(
     warnCalls().filter((message) =>
-      message.includes('Skipping publish of a@1.2.3')
+      message.includes('Skipping publish of "a@1.2.3"')
     )
   ).toHaveLength(1)
   expect(context.outcome?.status).toBe('success')
@@ -586,12 +586,12 @@ test('treats a mid-publish publish-over rejection with identical content as publ
       plugin: PLUGIN_NAME,
       hook: 'publish',
       reason:
-        'Version a@1.2.3 was published concurrently with identical content.',
+        'Version "a@1.2.3" was published concurrently with identical content.',
     },
   ])
   expect(
     warnCalls().filter((message) =>
-      message.includes('Treating publish of a@1.2.3')
+      message.includes('Treating publish of "a@1.2.3"')
     )
   ).toHaveLength(1)
   expect(context.outcome?.status).toBe('success')
@@ -999,7 +999,7 @@ test('skips the publish after comparing real fixture tarballs end to end', async
     {
       plugin: PLUGIN_NAME,
       hook: 'publish',
-      reason: 'Version a@1.2.3 is already published with identical content.',
+      reason: 'Version "a@1.2.3" is already published with identical content.',
     },
   ])
   expect(execCommand.mock.calls[2]).toEqual([

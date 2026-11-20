@@ -49,6 +49,8 @@ export type PublishablePlan = ReleasePlan & {
  *
  * @param context Release context containing environment, plans, and logger
  * @param options Publishing flags including access, provenance, and staging
+ * @returns A promise that resolves when every publishable plan is published
+ * or skipped
  * @throws If a probed version holds different or unverifiable content, or a
  * publish fails for a reason other than a verified concurrent publication
  */
@@ -111,6 +113,7 @@ export async function publishPlans(
  * @param plan The publishable plan to probe
  * @param packageManager Information about the active package manager
  * @param skipped Set collecting plans whose publish is skipped
+ * @returns A promise that resolves when the plan's registry version is probed
  * @throws If the registry version holds different or unverifiable content
  */
 async function probePlan(
@@ -138,12 +141,12 @@ async function probePlan(
     context.skippedSteps.push({
       plugin: PLUGIN_NAME,
       hook: 'publish',
-      reason: `Version ${target} is already published with identical content.`,
+      reason: `Version "${target}" is already published with identical content.`,
     })
 
     context.logger.warn(
       colors.yellow(
-        `Skipping publish of ${target}: already published with identical content.`
+        `Skipping publish of "${target}": already published with identical content.`
       )
     )
 
@@ -178,6 +181,7 @@ async function probePlan(
  * @param plan The publishable plan whose publish hit the conflict
  * @param packageManager Information about the active package manager
  * @param originalError The publish error reporting the conflict
+ * @returns A promise that resolves when the concurrent publication is recorded
  * @throws The original publish error when the concurrent publication cannot
  * be verified as identical content
  */
@@ -219,12 +223,12 @@ async function recoverFromPublishOverRejection(
   context.skippedSteps.push({
     plugin: PLUGIN_NAME,
     hook: 'publish',
-    reason: `Version ${target} was published concurrently with identical content.`,
+    reason: `Version "${target}" was published concurrently with identical content.`,
   })
 
   context.logger.warn(
     colors.yellow(
-      `Treating publish of ${target} as complete: an identical version was published concurrently.`
+      `Treating publish of "${target}" as complete: an identical version was published concurrently.`
     )
   )
 
