@@ -7,8 +7,8 @@ import {
   normalizeWorkspace,
   sortPackages,
   type Package,
+  type ReleasePlan,
   type ReleasePlugin,
-  type SkippedStep,
   type Workspace,
 } from '@reelout/core'
 import * as github from '@reelout/github'
@@ -16,10 +16,15 @@ import * as gitlab from '@reelout/gitlab'
 import { colors } from 'consola/utils'
 import { version } from '../package.json'
 import { bumpPackageDependencies } from './bumpPackageDependencies'
+import { inspectPackageManager } from './inspectPackageManager'
+import { isPublishablePlan } from './isPublishablePlan'
+import { isPublishOverRejection } from './isPublishOverRejection'
 import { isSameRepository } from './isSameRepository'
 import { loadPackages } from './loadPackages'
 import { PLUGIN_NAME } from './pluginName'
-import { isPublishablePlan, publishPlans } from './publishPlans'
+import { probePlan } from './probePlan'
+import { publishPackage } from './publishPackage'
+import { recoverFromPublishOverRejection } from './recoverFromPublishOverRejection'
 import { resolveGitRepositoryFromPackage } from './resolveGitRepositoryFromPackage'
 import { resolveWorkspaceMembers } from './resolveWorkspaceMembers'
 import type { PublishAccess } from './types'
@@ -40,7 +45,7 @@ export interface PluginOptions {
  * @remarks
  * **Lifecycle Stages:**
  * - `configure`: Resolves and attaches Git repository metadata from root package configuration, then verifies
- *   registry authentication, failing in strict mode or recording a skipped publish step when no credentials exist.
+ *   registry authentication, failing in strict mode or skipping the publish phase when no credentials exist.
  * - `discover`: Discovers workspace member packages, filters them against the `filter` patterns, and loads package metadata into context.
  * - `write`: Bumps internal workspace dependency versions in `package.json` files (skipped in dry-run).
  * - `publish`: Authenticates and probes each publishable package version before
@@ -48,14 +53,13 @@ export interface PluginOptions {
  *   (syncing their dist-tags) and failing on different or unverifiable content.
  *   Publishes non-private packages to NPM, enabling provenance when the manifest
  *   repository is valid, matches the context repository, and is public. Skips
- *   entirely when configure-stage verification found no registry authentication,
- *   extending the recorded skip reason with the publishable package names.
+ *   entirely when configure-stage verification found no registry authentication.
  *
  * @param options Configuration options for NPM workspace discovery and publishing behavior.
  * @returns A release plugin configured for NPM workspace management and package publication.
  */
 const npm = (options: PluginOptions = {}): ReleasePlugin => {
-  let skippedStep: SkippedStep | undefined
+  let publishSkipped = false
 
   return {
     name: PLUGIN_NAME,
@@ -73,13 +77,7 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
           )
         }
 
-        skippedStep = {
-          plugin: PLUGIN_NAME,
-          hook: 'publish',
-          reason: 'NPM_TOKEN is required for NPM authentication.',
-        }
-
-        context.skippedSteps.push(skippedStep)
+        publishSkipped = true
 
         context.logger.warn(
           colors.yellow(
@@ -131,15 +129,7 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
       return next(context)
     },
     publish: async (context, next) => {
-      if (skippedStep) {
-        const names = context.plans
-          .filter(isPublishablePlan)
-          .map((plan) => plan.package.name)
-
-        if (names.length > 0) {
-          skippedStep.reason += ` Skipping publish for: ${names.join(', ')}.`
-        }
-
+      if (publishSkipped) {
         context.logger.debug(
           'NPM publishing was skipped: no registry authentication was found.'
         )
@@ -175,11 +165,51 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
         }
       } catch {}
 
-      await publishPlans(context, {
-        access: options.access,
-        provenance,
-        stage: options.stage,
-      })
+      const publishable = context.plans.filter(isPublishablePlan)
+
+      const packageManager =
+        publishable.length > 0
+          ? await inspectPackageManager(context.cwd, { env: context.env })
+          : undefined
+
+      const skipped = new Set<ReleasePlan>()
+
+      if (packageManager) {
+        for (const plan of publishable) {
+          await probePlan(context, plan, packageManager, skipped)
+        }
+      }
+
+      for (const plan of context.plans) {
+        if (plan.package.provider !== PLUGIN_NAME || skipped.has(plan)) {
+          continue
+        }
+
+        try {
+          await publishPackage(context, plan, {
+            dryRun: context.dryRun,
+            tag: context.releaseChannel,
+            access: options.access,
+            provenance,
+            stage: options.stage,
+          })
+        } catch (error) {
+          if (
+            packageManager === undefined ||
+            !isPublishablePlan(plan) ||
+            !isPublishOverRejection(error)
+          ) {
+            throw error
+          }
+
+          await recoverFromPublishOverRejection(
+            context,
+            plan,
+            packageManager,
+            error
+          )
+        }
+      }
 
       return next(context)
     },
