@@ -175,3 +175,24 @@ test('rethrows non-404 fetch errors', async () => {
 
   expect(createReleaseMock).not.toHaveBeenCalled()
 })
+
+test('rethrows 404 update errors instead of falling through to creation', async () => {
+  getReleaseByTag.mockResolvedValueOnce({
+    data: { id: 42, name: 'Original name', body: 'Original body' },
+  })
+  updateRelease.mockRejectedValueOnce(notFound())
+
+  await expect(
+    createRelease(
+      context,
+      {
+        package: { location: '.' },
+        release: { tag: { name: 'v1.2.3', message: 'Notes' } },
+      } as ReleasePlan,
+      'token',
+      repository
+    )
+  ).rejects.toThrow('Not Found')
+
+  expect(createReleaseMock).not.toHaveBeenCalled()
+})

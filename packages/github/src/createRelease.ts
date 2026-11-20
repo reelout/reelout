@@ -10,6 +10,18 @@ import { deleteRelease } from './deleteRelease'
  */
 export type ReleaseRollback = () => Promise<void>
 
+/**
+ * A GitHub release that already exists for a tag.
+ */
+interface ExistingRelease {
+  /** Numeric id of the existing release. */
+  id: number
+  /** Release name as it existed before the overwrite. */
+  name: string | null
+  /** Release body as it existed before the overwrite. */
+  body: string | null
+}
+
 const noopRollback: ReleaseRollback = async () => {}
 
 /**
@@ -44,13 +56,9 @@ export async function createRelease(
     log: { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} },
   })
 
-  try {
-    const { data: existing } = await octokit.rest.repos.getReleaseByTag({
-      owner: repository.owner,
-      repo: repository.repo,
-      tag: tagName,
-    })
+  const existing = await fetchRelease(octokit, repository, tagName)
 
+  if (existing) {
     await octokit.rest.repos.updateRelease({
       owner: repository.owner,
       repo: repository.repo,
@@ -63,25 +71,15 @@ export async function createRelease(
       `GitHub release for tag "${tagName}" already exists: its name and notes were overwritten with the freshly generated content.`
     )
 
-    const original = {
-      id: existing.id,
-      name: existing.name,
-      body: existing.body ?? null,
-    }
-
     return async () => {
       await octokit.rest.repos.updateRelease({
         owner: repository.owner,
         repo: repository.repo,
-        release_id: original.id,
+        release_id: existing.id,
         // The API accepts null to clear a field, but Octokit's types forbid it.
-        name: original.name as string,
-        body: original.body as string,
+        name: existing.name as string,
+        body: existing.body as string,
       })
-    }
-  } catch (err) {
-    if ((err as { status?: number } | undefined)?.status !== 404) {
-      throw err
     }
   }
 
@@ -97,4 +95,26 @@ export async function createRelease(
   })
 
   return () => deleteRelease(plan, token, repository)
+}
+
+async function fetchRelease(
+  octokit: Octokit,
+  repository: GitRepository,
+  tagName: string
+): Promise<ExistingRelease | null> {
+  try {
+    const { data: existing } = await octokit.rest.repos.getReleaseByTag({
+      owner: repository.owner,
+      repo: repository.repo,
+      tag: tagName,
+    })
+
+    return { id: existing.id, name: existing.name, body: existing.body ?? null }
+  } catch (err) {
+    if ((err as { status?: number } | undefined)?.status !== 404) {
+      throw err
+    }
+
+    return null
+  }
 }
