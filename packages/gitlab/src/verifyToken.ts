@@ -11,6 +11,7 @@ import { Gitlab } from '@gitbeaker/rest'
  * created. The check runs identically under dry-run.
  *
  * @param token GitLab authentication token
+ * @returns A promise that resolves when GitLab accepts the token
  * @throws If the current-user request fails, carrying the original error as the cause
  */
 export async function verifyToken(token: string): Promise<void> {

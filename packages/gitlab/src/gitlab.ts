@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
-import type { ReleasePlan, ReleasePlugin } from '@reelout/core'
+import type { ReleaseContext, ReleasePlan, ReleasePlugin } from '@reelout/core'
 import { version } from '../package.json'
 import { createRelease, type ReleaseWriteResult } from './createRelease'
 import { deleteRelease } from './deleteRelease'
@@ -13,8 +13,19 @@ interface WrittenRelease {
   result: ReleaseWriteResult
 }
 
-const MISSING_TOKEN_REASON =
-  'GitLab releases were not created: GITLAB_TOKEN is required for GitLab authentication.'
+/**
+ * Read the GitLab token from the release environment.
+ *
+ * Treats unset and whitespace-only values as missing.
+ *
+ * @param env Release environment variables
+ * @returns The trimmed token, or undefined when it is not set
+ */
+const readGitlabToken = (env: ReleaseContext['env']): string | undefined => {
+  const token = env.GITLAB_TOKEN?.trim()
+
+  return token ? token : undefined
+}
 
 /**
  * Built-in plugin that creates GitLab releases for finalized release plans.
@@ -34,20 +45,24 @@ const gitlab = (): ReleasePlugin => ({
   name: '@reelout/gitlab',
   version,
   configure: async (context, next) => {
-    const token = context.env.GITLAB_TOKEN?.trim()
+    const token = readGitlabToken(context.env)
 
     if (!token) {
       if (context.strict) {
-        throw new Error('The GITLAB_TOKEN environment variable is required.')
+        throw new Error(
+          'The GITLAB_TOKEN environment variable is required in strict mode.'
+        )
       }
 
       context.skippedSteps.push({
         plugin: '@reelout/gitlab',
         hook: 'publish',
-        reason: MISSING_TOKEN_REASON,
+        reason: 'GITLAB_TOKEN is not set.',
       })
 
-      context.logger.warn(MISSING_TOKEN_REASON)
+      context.logger.warn(
+        'GitLab releases were not created: GITLAB_TOKEN is required for GitLab authentication.'
+      )
 
       return next(context)
     }
@@ -63,7 +78,7 @@ const gitlab = (): ReleasePlugin => ({
       )
     }
 
-    const token = context.env.GITLAB_TOKEN?.trim()
+    const token = readGitlabToken(context.env)
 
     if (!token) {
       return next(context)

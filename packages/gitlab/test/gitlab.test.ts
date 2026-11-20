@@ -73,7 +73,7 @@ test('skips gitlab release creation when GITLAB_TOKEN environment variable is mi
       {
         "hook": "publish",
         "plugin": "@reelout/gitlab",
-        "reason": "GitLab releases were not created: GITLAB_TOKEN is required for GitLab authentication.",
+        "reason": "GITLAB_TOKEN is not set.",
       },
     ]
   `)
@@ -87,7 +87,7 @@ test('skips gitlab release creation when GITLAB_TOKEN environment variable is mi
       ],
       [
         "Skipped: [1m[33m1 skipped[39m[22m
-    [43m @reelout/gitlab [49m GitLab releases were not created: GITLAB_TOKEN is required for GitLab authentication.",
+    [43m @reelout/gitlab [49m GITLAB_TOKEN is not set.",
       ],
       [
         "Release complete: [33mNo packages are scheduled for release.[39m",
@@ -108,7 +108,7 @@ test('fails workflow execution when GITLAB_TOKEN environment variable is missing
   await expect(
     executeReleaseWorkflow(context, [plugin()])
   ).rejects.toMatchInlineSnapshot(
-    `[Error: The GITLAB_TOKEN environment variable is required.]`
+    `[Error: The GITLAB_TOKEN environment variable is required in strict mode.]`
   )
 
   expect(context.outcome?.phase).toMatchInlineSnapshot(`
@@ -126,7 +126,7 @@ test('fails workflow execution when GITLAB_TOKEN environment variable is missing
         "Status: [31mFAILURE[39m",
       ],
       [
-        "Release complete: [31mThe GITLAB_TOKEN environment variable is required.[39m",
+        "Release complete: [31mThe GITLAB_TOKEN environment variable is required in strict mode.[39m",
       ],
     ]
   `)
@@ -241,7 +241,7 @@ test('previews the gitlab release skip during dry-run mode when GITLAB_TOKEN env
       {
         "hook": "publish",
         "plugin": "@reelout/gitlab",
-        "reason": "GitLab releases were not created: GITLAB_TOKEN is required for GitLab authentication.",
+        "reason": "GITLAB_TOKEN is not set.",
       },
     ]
   `)
@@ -255,7 +255,7 @@ test('previews the gitlab release skip during dry-run mode when GITLAB_TOKEN env
       ],
       [
         "Skipped: [1m[33m1 skipped[39m[22m
-    [43m @reelout/gitlab [49m GitLab releases were not created: GITLAB_TOKEN is required for GitLab authentication.",
+    [43m @reelout/gitlab [49m GITLAB_TOKEN is not set.",
       ],
       [
         "Release complete: [33mNo packages are scheduled for release.[39m",
