@@ -52,7 +52,7 @@ Key exports include:
 - **Workspaces** — `resolveWorkspaceMembers`, `loadWorkspacePackages`, `loadPackages`, `loadRootPackage`.
 - **Package managers** — `resolvePackageManager`, `inspectPackageManager`, and `getPackageManagerVersion`.
 - **Registry** — `normalizeRegistry`, `getAuthTokenKey`, `resolveGitRepositoryFromPackage`.
-- **Registry auth** — `hasAuth` (registry authentication detection).
+- **Registry auth** — `hasAuth` (registry authentication detection) and `verifyAuth` (credential verification).
 
 ## Documentation
 
