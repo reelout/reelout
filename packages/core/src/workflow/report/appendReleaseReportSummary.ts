@@ -19,9 +19,11 @@ type ReportPlan = ReleaseReport['plans'][number]
  *
  * Detects a GitHub Actions runner through the `GITHUB_ACTIONS` environment
  * variable and appends the rendered `report` to the file referenced by
- * `GITHUB_STEP_SUMMARY`, so GitHub displays it on the run summary page. Does
- * nothing outside GitHub Actions or when no summary file is configured, and
- * logs a warning instead of throwing when the summary file cannot be written.
+ * `GITHUB_STEP_SUMMARY`, so GitHub displays it on the run summary page. Dry
+ * runs append a `(dry run)` marker to the status line; real releases render
+ * the status unmarked. Does nothing outside GitHub Actions or when no summary
+ * file is configured, and logs a warning instead of throwing when the summary
+ * file cannot be written.
  *
  * @param logger Logger instance for reporting summary write failures
  * @param env Readonly process environment variables object
@@ -57,7 +59,10 @@ const formatReleaseReportSummary = (report: ReleaseReport): string => {
   const lines: string[] = ['## ReelOut Release Report', '']
 
   if (report.outcome) {
-    lines.push(`**Status:** ${STATUS_LABELS[report.outcome.status]}`, '')
+    const status = STATUS_LABELS[report.outcome.status]
+    const label = report.dryRun ? `${status} (dry run)` : status
+
+    lines.push(`**Status:** ${label}`, '')
   }
 
   if (report.outcome?.status === 'failure') {
