@@ -30,7 +30,7 @@ export async function hasAuth(
   pkg: Package,
   packageManager: Partial<PackageManagerInfo>
 ): Promise<boolean> {
-  if (hasOidcAuth(context.env)) {
+  if (hasOIDCAuth(context.env)) {
     return true
   }
 
@@ -92,7 +92,7 @@ export async function hasAuth(
  * @param env Environment variables to inspect
  * @returns True if OIDC environment tokens exist, otherwise false
  */
-export function hasOidcAuth(env: Readonly<NodeJS.ProcessEnv>): boolean {
+export function hasOIDCAuth(env: Readonly<NodeJS.ProcessEnv>): boolean {
   if (env.NPM_ID_TOKEN) {
     return true
   }

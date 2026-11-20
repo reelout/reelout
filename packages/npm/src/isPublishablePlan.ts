@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Fai
 
 import type { Package, Release, ReleasePlan } from '@reelout/core'
-import { PLUGIN_NAME } from './pluginName'
+import { PLUGIN_NAME } from './PLUGIN_NAME'
 
 /**
  * A release plan that is publishable by the npm plugin.

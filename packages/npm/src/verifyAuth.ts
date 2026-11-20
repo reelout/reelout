@@ -3,7 +3,7 @@
 
 import type { Package, ReleaseContext } from '@reelout/core'
 import { execCommand } from '@reelout/core'
-import { hasAuth, hasOidcAuth } from './hasAuth'
+import { hasAuth, hasOIDCAuth } from './hasAuth'
 import {
   inspectPackageManager,
   type PackageManagerInfo,
@@ -50,7 +50,7 @@ export async function verifyAuth(
     return 'token'
   }
 
-  if (hasOidcAuth(context.env)) {
+  if (hasOIDCAuth(context.env)) {
     return 'oidc'
   }
 
