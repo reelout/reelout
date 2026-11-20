@@ -143,20 +143,12 @@ function parseTarballEntries(
 
   const parser = new Parser()
 
-  parser.on('warn', (code: string, message: string | Error) => {
-    problems.push(
-      message instanceof Error
-        ? `${code}: ${message.message}`
-        : `${code}: ${message}`
-    )
+  parser.on('warn', (code: string, message: string) => {
+    problems.push(`${code}: ${message}`)
   })
 
-  parser.on('error', (error: Error) => {
-    const code = (error as NodeJS.ErrnoException).code
-
-    problems.push(
-      code === undefined ? error.message : `${code}: ${error.message}`
-    )
+  parser.on('error', (error: NodeJS.ErrnoException) => {
+    problems.push(`${error.code}: ${error.message}`)
   })
 
   parser.on('entry', (entry: ReadEntry) => {
