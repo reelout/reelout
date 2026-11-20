@@ -27,7 +27,10 @@ export interface PublishPlansOptions {
   stage?: boolean | undefined
 }
 
-type PublishablePlan = ReleasePlan & {
+/**
+ * A release plan that is publishable by the npm plugin.
+ */
+export type PublishablePlan = ReleasePlan & {
   package: Package & { name: string }
   release: Release & { version: string }
 }
@@ -234,7 +237,7 @@ async function recoverFromPublishOverRejection(
  * @param plan The release plan to inspect
  * @returns True when the plan is npm-provided, public, named, and versioned
  */
-function isPublishablePlan(plan: ReleasePlan): plan is PublishablePlan {
+export function isPublishablePlan(plan: ReleasePlan): plan is PublishablePlan {
   return (
     plan.package.provider === PLUGIN_NAME &&
     !plan.package.private &&

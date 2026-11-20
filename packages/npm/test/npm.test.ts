@@ -1364,6 +1364,55 @@ test('skips publishing and records a skipped step when registry authentication i
   expect(context.outcome?.status).toBe('success')
 })
 
+test('appends publishable package names to the authentication skip reason', async () => {
+  vol.fromJSON({
+    '/repo/a/package.json': JSON.stringify({ name: 'a', version: '0.0.0' }),
+    '/repo/b/package.json': JSON.stringify({ name: 'b', version: '0.0.0' }),
+    '/repo/c/package.json': JSON.stringify({
+      name: 'c',
+      version: '0.0.0',
+      private: true,
+    }),
+  })
+
+  context.plans = [
+    {
+      package: { provider: PLUGIN_NAME, location: 'a', name: 'a' },
+      history: [] as GitCommit[],
+      release: { version: '1.2.3' },
+    },
+    {
+      package: { provider: PLUGIN_NAME, location: 'b', name: 'b' },
+      history: [] as GitCommit[],
+      release: { version: '2.0.0' },
+    },
+    {
+      package: {
+        provider: PLUGIN_NAME,
+        location: 'c',
+        name: 'c',
+        private: true,
+      },
+      history: [] as GitCommit[],
+      release: { version: '3.0.0' },
+    },
+  ] as ReleasePlan[]
+
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(publishPackage).toHaveBeenCalledTimes(0)
+  expect(execCommand).toHaveBeenCalledTimes(0)
+  expect(context.skippedSteps).toEqual([
+    {
+      plugin: PLUGIN_NAME,
+      hook: 'publish',
+      reason:
+        'NPM_TOKEN is required for NPM authentication. Skipping publish for: a, b.',
+    },
+  ])
+  expect(context.outcome?.status).toBe('success')
+})
+
 test('fails fast before publishing when registry authentication is unavailable in strict mode', async () => {
   context.strict = true
 

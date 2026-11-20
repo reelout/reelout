@@ -8,6 +8,7 @@ import {
   sortPackages,
   type Package,
   type ReleasePlugin,
+  type SkippedStep,
   type Workspace,
 } from '@reelout/core'
 import * as github from '@reelout/github'
@@ -18,7 +19,7 @@ import { bumpPackageDependencies } from './bumpPackageDependencies'
 import { isSameRepository } from './isSameRepository'
 import { loadPackages } from './loadPackages'
 import { PLUGIN_NAME } from './pluginName'
-import { publishPlans } from './publishPlans'
+import { isPublishablePlan, publishPlans } from './publishPlans'
 import { resolveGitRepositoryFromPackage } from './resolveGitRepositoryFromPackage'
 import { resolveWorkspaceMembers } from './resolveWorkspaceMembers'
 import type { PublishAccess } from './types'
@@ -47,13 +48,14 @@ export interface PluginOptions {
  *   (syncing their dist-tags) and failing on different or unverifiable content.
  *   Publishes non-private packages to NPM, enabling provenance when the manifest
  *   repository is valid, matches the context repository, and is public. Skips
- *   entirely when configure-stage verification found no registry authentication.
+ *   entirely when configure-stage verification found no registry authentication,
+ *   extending the recorded skip reason with the publishable package names.
  *
  * @param options Configuration options for NPM workspace discovery and publishing behavior.
  * @returns A release plugin configured for NPM workspace management and package publication.
  */
 const npm = (options: PluginOptions = {}): ReleasePlugin => {
-  let skippedForMissingAuth = false
+  let skippedStep: SkippedStep | undefined
 
   return {
     name: PLUGIN_NAME,
@@ -71,19 +73,19 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
           )
         }
 
-        context.skippedSteps.push({
+        skippedStep = {
           plugin: PLUGIN_NAME,
           hook: 'publish',
           reason: 'NPM_TOKEN is required for NPM authentication.',
-        })
+        }
+
+        context.skippedSteps.push(skippedStep)
 
         context.logger.warn(
           colors.yellow(
             'Packages will not be published: NPM_TOKEN is required for NPM authentication.'
           )
         )
-
-        skippedForMissingAuth = true
       }
 
       return next(context)
@@ -129,7 +131,15 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
       return next(context)
     },
     publish: async (context, next) => {
-      if (skippedForMissingAuth) {
+      if (skippedStep) {
+        const names = context.plans
+          .filter(isPublishablePlan)
+          .map((plan) => plan.package.name)
+
+        if (names.length > 0) {
+          skippedStep.reason += ` Skipping publish for: ${names.join(', ')}.`
+        }
+
         context.logger.debug(
           'NPM publishing was skipped: no registry authentication was found.'
         )
