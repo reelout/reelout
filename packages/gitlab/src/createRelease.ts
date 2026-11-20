@@ -3,37 +3,99 @@
 
 import { Gitlab } from '@gitbeaker/rest'
 import type { GitRepository, ReleaseContext, ReleasePlan } from '@reelout/core'
+import { isNotFoundError } from './isNotFoundError'
 
 /**
- * Create a GitLab release for a package tag.
+ * Original GitLab release content captured before an overwrite.
+ */
+export interface OriginalRelease {
+  /** Release name as it existed before the overwrite. */
+  name: string | null
+  /** Release description as it existed before the overwrite. */
+  description: string | null
+}
+
+/**
+ * Outcome of writing a GitLab release for a plan.
+ */
+export interface ReleaseWriteResult {
+  /**
+   * Content of the release that existed before the write: `null` when the
+   * release was created by this run, the captured content when an existing
+   * release was overwritten.
+   */
+  original: OriginalRelease | null
+}
+
+/**
+ * Create or overwrite a GitLab release for a package tag.
  *
- * Skips creation when the tag has no message. Uses the GitBeaker REST API
- * with the provided token to create the release.
+ * Skips the write when the tag has no message. Fetches the release for the
+ * tag first: an existing release is overwritten with the generated content
+ * via the update endpoint — capturing its original name and description for
+ * rollback — and a missing release is created.
  *
  * @param context Release context containing commit and prerelease information
  * @param plan Release plan containing the tag to publish
  * @param token GitLab authentication token
  * @param repository Target repository
- * @returns Promise that resolves when the release is created
+ * @returns Promise resolving to the write outcome, or `null` when the write was skipped
  */
 export async function createRelease(
   context: ReleaseContext,
   plan: ReleasePlan,
   token: string,
   repository: GitRepository
-): Promise<void> {
+): Promise<ReleaseWriteResult | null> {
   if (!plan.release?.tag?.message) {
-    return
+    return null
   }
 
   const api = new Gitlab({ token })
 
   const projectId = encodeURIComponent(`${repository.owner}/${repository.repo}`)
 
+  const tagName = plan.release.tag.name
+
+  const existing = await fetchRelease(api, projectId, tagName)
+
+  if (existing) {
+    await api.ProjectReleases.edit(projectId, tagName, {
+      name: tagName,
+      description: plan.release.tag.message,
+    })
+
+    context.logger.warn(
+      `An existing GitLab release for "${tagName}" was overwritten.`
+    )
+
+    return { original: existing }
+  }
+
   await api.ProjectReleases.create(projectId, {
-    name: plan.release.tag.name,
-    tag_name: plan.release.tag.name,
+    name: tagName,
+    tag_name: tagName,
     description: plan.release.tag.message,
     ref: context.commit.hash,
   })
+
+  return { original: null }
+}
+
+async function fetchRelease(
+  api: Gitlab,
+  projectId: string,
+  tagName: string
+): Promise<OriginalRelease | null> {
+  try {
+    const release = await api.ProjectReleases.show(projectId, tagName)
+
+    return { name: release.name, description: release.description }
+  } catch (err) {
+    if (isNotFoundError(err)) {
+      return null
+    }
+
+    throw err
+  }
 }

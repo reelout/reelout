@@ -16,6 +16,8 @@ const createRelease = vi.hoisted(() => vi.fn())
 
 const deleteRelease = vi.hoisted(() => vi.fn())
 
+const restoreRelease = vi.hoisted(() => vi.fn())
+
 const verifyToken = vi.hoisted(() => vi.fn())
 
 vi.mock(import('@reelout/gitlab/createRelease'), () => ({
@@ -24,6 +26,10 @@ vi.mock(import('@reelout/gitlab/createRelease'), () => ({
 
 vi.mock(import('@reelout/gitlab/deleteRelease'), () => ({
   deleteRelease,
+}))
+
+vi.mock(import('@reelout/gitlab/restoreRelease'), () => ({
+  restoreRelease,
 }))
 
 vi.mock(import('@reelout/gitlab/verifyToken'), () => ({
@@ -319,6 +325,8 @@ test('rolls back published gitlab releases when a subsequent plugin fails', asyn
 
   context.plans = plans
 
+  createRelease.mockResolvedValue({ original: null })
+
   const plugins = [
     plugin(),
     {
@@ -334,6 +342,7 @@ test('rolls back published gitlab releases when a subsequent plugin fails', asyn
     'Something went wrong'
   )
 
+  expect(restoreRelease).not.toHaveBeenCalled()
   expect(deleteRelease.mock.calls).toMatchInlineSnapshot(`
     [
       [
@@ -396,4 +405,129 @@ test('rolls back published gitlab releases when a subsequent plugin fails', asyn
       ],
     ]
   `)
+})
+
+test('restores overwritten gitlab releases instead of deleting them during rollback', async () => {
+  context.env = { GITLAB_TOKEN: 'token' }
+
+  context.repository = createMockRepository('gitlab')
+
+  context.plans = plans
+
+  const original = {
+    name: 'Old release name',
+    description: 'Old release description',
+  }
+
+  createRelease.mockImplementation(async (_context, plan) =>
+    plan.package.name === 'b' ? { original } : { original: null }
+  )
+
+  const plugins = [
+    plugin(),
+    {
+      name: 'test',
+      version: '1.0.0',
+      publish: () => {
+        throw new Error('Something went wrong')
+      },
+    },
+  ]
+
+  await expect(executeReleaseWorkflow(context, plugins)).rejects.toThrow(
+    'Something went wrong'
+  )
+
+  expect(restoreRelease).toHaveBeenCalledTimes(1)
+  expect(restoreRelease).toHaveBeenCalledWith(
+    expect.objectContaining({
+      package: expect.objectContaining({ entry: false, name: 'b' }),
+    }),
+    original,
+    'token',
+    {
+      host: 'gitlab',
+      owner: 'mock-owner',
+      repo: 'mock-repo',
+      url: 'https://gitlab.com/mock-owner/mock-repo',
+    }
+  )
+
+  expect(deleteRelease.mock.calls).toMatchInlineSnapshot(`
+    [
+      [
+        {
+          "package": {
+            "dependencies": [
+              "a",
+              "b",
+            ],
+            "entry": true,
+            "location": ".",
+          },
+          "release": null,
+        },
+        "token",
+        {
+          "host": "gitlab",
+          "owner": "mock-owner",
+          "repo": "mock-repo",
+          "url": "https://gitlab.com/mock-owner/mock-repo",
+        },
+      ],
+      [
+        {
+          "package": {
+            "dependencies": [
+              "b",
+            ],
+            "entry": false,
+            "location": "a",
+            "name": "a",
+          },
+          "release": null,
+        },
+        "token",
+        {
+          "host": "gitlab",
+          "owner": "mock-owner",
+          "repo": "mock-repo",
+          "url": "https://gitlab.com/mock-owner/mock-repo",
+        },
+      ],
+    ]
+  `)
+})
+
+test('does not roll back gitlab releases that were not written during the run', async () => {
+  context.env = { GITLAB_TOKEN: 'token' }
+
+  context.repository = createMockRepository('gitlab')
+
+  context.plans = plans
+
+  createRelease.mockImplementation(async (_context, plan) =>
+    plan.package.entry ? null : { original: null }
+  )
+
+  const plugins = [
+    plugin(),
+    {
+      name: 'test',
+      version: '1.0.0',
+      publish: () => {
+        throw new Error('Something went wrong')
+      },
+    },
+  ]
+
+  await expect(executeReleaseWorkflow(context, plugins)).rejects.toThrow(
+    'Something went wrong'
+  )
+
+  expect(restoreRelease).not.toHaveBeenCalled()
+  expect(deleteRelease).toHaveBeenCalledTimes(2)
+  expect(
+    deleteRelease.mock.calls.map((call) => call[0].package.location)
+  ).toEqual(['a', 'b'])
 })
