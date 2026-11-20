@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.10.0](https://github.com/reelout/reelout/compare/%40reelout%2Fcore%400.9.1...%40reelout%2Fcore%400.10.0) (2026-11-20)
+
+### Features
+
+- **core:** mark dry runs in release reports ([#24](https://github.com/reelout/reelout/issues/24)) ([1bb4d31](https://github.com/reelout/reelout/commit/1bb4d318a6c4382e9f06ea1075f06fc51864548e))
+
 ## [0.9.1](https://github.com/reelout/reelout/compare/%40reelout%2Fcore%400.9.0...%40reelout%2Fcore%400.9.1) (2026-11-20)
 
 ### Bug Fixes

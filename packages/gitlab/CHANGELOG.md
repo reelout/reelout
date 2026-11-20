@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.5.0](https://github.com/reelout/reelout/compare/%40reelout%2Fgitlab%400.4.9...%40reelout%2Fgitlab%400.5.0) (2026-11-20)
+
+### Features
+
+- **core:** mark dry runs in release reports ([#24](https://github.com/reelout/reelout/issues/24)) ([1bb4d31](https://github.com/reelout/reelout/commit/1bb4d318a6c4382e9f06ea1075f06fc51864548e))
+
 ## [0.4.9](https://github.com/reelout/reelout/compare/%40reelout%2Fgitlab%400.4.8...%40reelout%2Fgitlab%400.4.9) (2026-11-20)
 
 ### Bug Fixes

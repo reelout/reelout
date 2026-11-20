@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.6.4](https://github.com/reelout/reelout/compare/%40reelout%2Fgit%400.6.3...%40reelout%2Fgit%400.6.4) (2026-11-20)
+
+### Features
+
+- **core:** mark dry runs in release reports ([#24](https://github.com/reelout/reelout/issues/24)) ([1bb4d31](https://github.com/reelout/reelout/commit/1bb4d318a6c4382e9f06ea1075f06fc51864548e))
+
 ## [0.6.3](https://github.com/reelout/reelout/compare/%40reelout%2Fgit%400.6.2...%40reelout%2Fgit%400.6.3) (2026-11-20)
 
 ### Bug Fixes

@@ -1,6 +1,6 @@
 {
   "name": "@reelout/gitlab",
-  "version": "0.4.9",
+  "version": "0.5.0",
   "description": "GitLab plugin for publishing releases from ReelOut release plans.",
   "repository": {
     "type": "git",
