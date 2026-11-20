@@ -3,79 +3,204 @@
 
 import '../../../test/mock/env'
 
-import { executeReleaseWorkflow, type ReleasePlan } from '@reelout/core'
+import {
+  executeReleaseWorkflow,
+  type ReleasePlan,
+  type Tag,
+} from '@reelout/core'
 import plugin from '@reelout/github'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { context, logger, repository } from '../../../test/mock/context'
 
+const getAuthenticated = vi.hoisted(() => vi.fn())
+
+const getReleaseByTag = vi.hoisted(() => vi.fn())
+
 const createRelease = vi.hoisted(() => vi.fn())
+
+const updateRelease = vi.hoisted(() => vi.fn())
 
 const deleteRelease = vi.hoisted(() => vi.fn())
 
-vi.mock(import('@reelout/github/createRelease'), () => ({
-  createRelease,
-}))
+const Octokit = vi.hoisted(() =>
+  vi.fn(function () {
+    return {
+      rest: {
+        users: { getAuthenticated },
+        repos: {
+          getReleaseByTag,
+          createRelease,
+          updateRelease,
+          deleteRelease,
+        },
+      },
+    }
+  })
+)
 
-vi.mock(import('@reelout/github/deleteRelease'), () => ({
-  deleteRelease,
-}))
+vi.mock('@octokit/rest', () => ({ Octokit }))
 
-const plans = [
-  {
-    package: { entry: false, location: 'b', name: 'b', dependencies: [] },
-    release: null,
+const notFound = () => Object.assign(new Error('Not Found'), { status: 404 })
+
+const createPlan = (
+  location: string,
+  name: string | undefined,
+  tag?: Tag
+): ReleasePlan => ({
+  package: {
+    name,
+    version: '1.0.0',
+    root: location === '.',
+    entry: location === '.',
+    dependencies: [],
+    location,
   },
-  {
-    package: { entry: true, location: '.', dependencies: ['a', 'b'] },
-    release: null,
-  },
-  {
-    package: { entry: false, location: 'a', name: 'a', dependencies: ['b'] },
-    release: null,
-  },
-] as ReleasePlan[]
+  history: [],
+  release: tag ? { type: 'patch', version: '1.0.0', tag } : null,
+})
+
+const plan = createPlan('a', 'a', {
+  name: 'a@1.0.0',
+  message: 'Notes for a',
+})
 
 beforeEach(() => {
   vi.resetAllMocks()
+  getAuthenticated.mockResolvedValue({ data: { login: 'mock-user' } })
+  getReleaseByTag.mockRejectedValue(notFound())
 })
 
-test('fails workflow execution when GITHUB_TOKEN environment variable is missing', async () => {
-  vi.stubEnv('GITHUB_TOKEN', undefined)
+test('skips github release creation when GITHUB_TOKEN is missing', async () => {
+  context.repository = repository
+
+  context.plans = [plan]
+
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(Octokit).not.toHaveBeenCalled()
+  expect(context.skippedSteps).toMatchInlineSnapshot(`
+    [
+      {
+        "hook": "publish",
+        "plugin": "@reelout/github",
+        "reason": "GITHUB_TOKEN is not set.",
+      },
+    ]
+  `)
+  expect(context.outcome?.status).toBe('success')
+  expect(logger.mock.calls).toMatchInlineSnapshot(`
+    [
+      [
+        "GitHub releases will not be created: GITHUB_TOKEN is not set.",
+      ],
+      [
+        "Status: [32mSUCCESS[39m",
+      ],
+      [
+        "Skipped: [1m[33m1 skipped[39m[22m
+    [43m @reelout/github [49m GITHUB_TOKEN is not set.",
+      ],
+      [
+        "Release complete: [1m[32m1 released[39m[22m [90m(0)[39m
+
+    [44m a [49m[42m 1.0.0 ← 1.0.0 [49m[90m patch [39m
+    ",
+      ],
+    ]
+  `)
+})
+
+test('treats a whitespace-only GITHUB_TOKEN as missing', async () => {
+  context.env = { GITHUB_TOKEN: '   ' }
 
   context.repository = repository
 
-  context.plans = plans
+  context.plans = [plan]
+
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(Octokit).not.toHaveBeenCalled()
+  expect(context.skippedSteps).toHaveLength(1)
+})
+
+test('fails workflow execution when GITHUB_TOKEN is missing in strict mode', async () => {
+  context.strict = true
+
+  context.repository = repository
+
+  context.plans = [plan]
 
   await expect(
     executeReleaseWorkflow(context, [plugin()])
   ).rejects.toMatchInlineSnapshot(
-    `[Error: The GITHUB_TOKEN environment variable is required.]`
+    '[Error: The GITHUB_TOKEN environment variable is required in strict mode.]'
   )
 
-  expect(createRelease).not.toHaveBeenCalled()
+  expect(Octokit).not.toHaveBeenCalled()
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
       [
         "Status: [31mFAILURE[39m",
       ],
       [
-        "Release complete: [31mThe GITHUB_TOKEN environment variable is required.[39m",
+        "Release complete: [31mThe GITHUB_TOKEN environment variable is required in strict mode.[39m",
       ],
     ]
   `)
 })
 
-test('fails workflow execution when repository context is unavailable', async () => {
-  vi.stubEnv('GITHUB_TOKEN', 'token')
+test('fails workflow execution when the GitHub token is invalid', async () => {
+  context.env = { GITHUB_TOKEN: 'token' }
 
-  context.repository = null
+  context.repository = repository
 
-  context.plans = plans
+  context.plans = [plan]
+
+  getAuthenticated.mockRejectedValueOnce(
+    Object.assign(new Error('Bad credentials'), { status: 401 })
+  )
 
   await expect(
     executeReleaseWorkflow(context, [plugin()])
   ).rejects.toMatchInlineSnapshot(
-    `[Error: A Git repository is required to create a GitHub release.]`
+    '[Error: The GITHUB_TOKEN environment variable is invalid or expired.]'
+  )
+
+  expect(getReleaseByTag).not.toHaveBeenCalled()
+  expect(createRelease).not.toHaveBeenCalled()
+})
+
+test('fails workflow execution when the GitHub token is invalid during dry-run', async () => {
+  context.env = { GITHUB_TOKEN: 'token' }
+
+  context.dryRun = true
+
+  context.repository = repository
+
+  context.plans = [plan]
+
+  getAuthenticated.mockRejectedValueOnce(
+    Object.assign(new Error('Bad credentials'), { status: 401 })
+  )
+
+  await expect(
+    executeReleaseWorkflow(context, [plugin()])
+  ).rejects.toMatchInlineSnapshot(
+    '[Error: The GITHUB_TOKEN environment variable is invalid or expired.]'
+  )
+
+  expect(createRelease).not.toHaveBeenCalled()
+})
+
+test('fails workflow execution when repository context is unavailable', async () => {
+  context.env = { GITHUB_TOKEN: 'token' }
+
+  context.plans = [plan]
+
+  await expect(
+    executeReleaseWorkflow(context, [plugin()])
+  ).rejects.toMatchInlineSnapshot(
+    '[Error: A Git repository is required to create a GitHub release.]'
   )
 
   expect(createRelease).not.toHaveBeenCalled()
@@ -98,18 +223,43 @@ test('skips creating github releases during dry-run mode', async () => {
 
   context.repository = repository
 
-  context.plans = plans
+  context.plans = [plan]
 
   await executeReleaseWorkflow(context, [plugin()])
 
-  expect(createRelease).toHaveBeenCalledTimes(0)
+  expect(getAuthenticated).toHaveBeenCalledTimes(1)
+  expect(getReleaseByTag).not.toHaveBeenCalled()
+  expect(createRelease).not.toHaveBeenCalled()
+})
+
+test('previews the skipped github release during dry-run mode', async () => {
+  context.dryRun = true
+
+  context.repository = repository
+
+  context.plans = [plan]
+
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(Octokit).not.toHaveBeenCalled()
+  expect(context.skippedSteps).toHaveLength(1)
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
+      [
+        "GitHub releases will not be created: GITHUB_TOKEN is not set.",
+      ],
       [
         "Status: [32mSUCCESS[39m",
       ],
       [
-        "Release complete: [33mNo packages are scheduled for release.[39m",
+        "Skipped: [1m[33m1 skipped[39m[22m
+    [43m @reelout/github [49m GITHUB_TOKEN is not set.",
+      ],
+      [
+        "Release complete: [1m[32m1 released[39m[22m [90m(0)[39m
+
+    [44m a [49m[42m 1.0.0 ← 1.0.0 [49m[90m patch [39m
+    ",
       ],
     ]
   `)
@@ -120,46 +270,85 @@ test('creates github releases for packages in reverse alphabetical order', async
 
   context.repository = repository
 
-  context.plans = plans
+  context.plans = [
+    createPlan('b', 'b', { name: 'b@1.0.0', message: 'Notes for b' }),
+    createPlan('.', undefined, { name: 'v1.0.0', message: 'Notes for root' }),
+    createPlan('a', 'a', { name: 'a@1.0.0', message: 'Notes for a' }),
+  ]
 
   await executeReleaseWorkflow(context, [plugin()])
 
+  expect(getReleaseByTag).toHaveBeenCalledTimes(3)
   expect(createRelease).toHaveBeenCalledTimes(3)
-  expect(createRelease).toHaveBeenNthCalledWith(
-    1,
-    expect.objectContaining({ cwd: '/repo' }),
-    expect.objectContaining({
-      package: expect.objectContaining({ entry: false, name: 'b' }),
-    }),
-    'token',
-    repository
-  )
-  expect(createRelease).toHaveBeenNthCalledWith(
-    2,
-    expect.objectContaining({ cwd: '/repo' }),
-    expect.objectContaining({
-      package: expect.objectContaining({ entry: false, name: 'a' }),
-    }),
-    'token',
-    repository
-  )
-  expect(createRelease).toHaveBeenNthCalledWith(
-    3,
-    expect.objectContaining({ cwd: '/repo' }),
-    expect.objectContaining({
-      package: expect.objectContaining({ entry: true }),
-    }),
-    'token',
-    repository
-  )
+  expect(createRelease).toHaveBeenNthCalledWith(1, {
+    owner: 'mock-owner',
+    repo: 'mock-repo',
+    tag_name: 'b@1.0.0',
+    target_commitish: 'abc123',
+    name: 'b@1.0.0',
+    body: 'Notes for b',
+    draft: false,
+    prerelease: false,
+  })
+  expect(createRelease).toHaveBeenNthCalledWith(2, {
+    owner: 'mock-owner',
+    repo: 'mock-repo',
+    tag_name: 'a@1.0.0',
+    target_commitish: 'abc123',
+    name: 'a@1.0.0',
+    body: 'Notes for a',
+    draft: false,
+    prerelease: false,
+  })
+  expect(createRelease).toHaveBeenNthCalledWith(3, {
+    owner: 'mock-owner',
+    repo: 'mock-repo',
+    tag_name: 'v1.0.0',
+    target_commitish: 'abc123',
+    name: 'v1.0.0',
+    body: 'Notes for root',
+    draft: false,
+    prerelease: false,
+  })
 })
 
-test('rolls back published github releases when a subsequent plugin fails', async () => {
+test('overwrites an existing github release for a planned tag', async () => {
   context.env = { GITHUB_TOKEN: 'token' }
 
   context.repository = repository
 
-  context.plans = plans
+  context.plans = [plan]
+
+  getReleaseByTag.mockResolvedValueOnce({
+    data: { id: 42, name: 'Original name', body: 'Original body' },
+  })
+
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(updateRelease).toHaveBeenCalledTimes(1)
+  expect(updateRelease).toHaveBeenCalledWith({
+    owner: 'mock-owner',
+    repo: 'mock-repo',
+    release_id: 42,
+    name: 'a@1.0.0',
+    body: 'Notes for a',
+  })
+  expect(createRelease).not.toHaveBeenCalled()
+  expect(logger.mock.calls).toContainEqual([
+    'GitHub release for tag "a@1.0.0" already exists: its name and notes were overwritten with the freshly generated content.',
+  ])
+})
+
+test('restores an overwritten github release when a subsequent plugin fails', async () => {
+  context.env = { GITHUB_TOKEN: 'token' }
+
+  context.repository = repository
+
+  context.plans = [plan]
+
+  getReleaseByTag.mockResolvedValueOnce({
+    data: { id: 42, name: 'Original name', body: 'Original body' },
+  })
 
   const plugins = [
     plugin(),
@@ -176,66 +365,62 @@ test('rolls back published github releases when a subsequent plugin fails', asyn
     'Something went wrong'
   )
 
-  expect(deleteRelease.mock.calls).toMatchInlineSnapshot(`
+  expect(updateRelease.mock.calls).toMatchInlineSnapshot(`
     [
       [
         {
-          "package": {
-            "dependencies": [
-              "a",
-              "b",
-            ],
-            "entry": true,
-            "location": ".",
-          },
-          "release": null,
-        },
-        "token",
-        {
-          "host": "github",
+          "body": "Notes for a",
+          "name": "a@1.0.0",
           "owner": "mock-owner",
+          "release_id": 42,
           "repo": "mock-repo",
-          "url": "https://github.com/mock-owner/mock-repo",
         },
       ],
       [
         {
-          "package": {
-            "dependencies": [
-              "b",
-            ],
-            "entry": false,
-            "location": "a",
-            "name": "a",
-          },
-          "release": null,
-        },
-        "token",
-        {
-          "host": "github",
+          "body": "Original body",
+          "name": "Original name",
           "owner": "mock-owner",
+          "release_id": 42,
           "repo": "mock-repo",
-          "url": "https://github.com/mock-owner/mock-repo",
-        },
-      ],
-      [
-        {
-          "package": {
-            "dependencies": [],
-            "entry": false,
-            "location": "b",
-            "name": "b",
-          },
-          "release": null,
-        },
-        "token",
-        {
-          "host": "github",
-          "owner": "mock-owner",
-          "repo": "mock-repo",
-          "url": "https://github.com/mock-owner/mock-repo",
         },
       ],
     ]
   `)
+  expect(deleteRelease).not.toHaveBeenCalled()
+})
+
+test('deletes created github releases when a subsequent plugin fails', async () => {
+  context.env = { GITHUB_TOKEN: 'token' }
+
+  context.repository = repository
+
+  context.plans = [plan]
+
+  getReleaseByTag
+    .mockRejectedValueOnce(notFound())
+    .mockResolvedValueOnce({ data: { id: 42 } })
+
+  const plugins = [
+    plugin(),
+    {
+      name: 'test',
+      version: '1.0.0',
+      publish: () => {
+        throw new Error('Something went wrong')
+      },
+    },
+  ]
+
+  await expect(executeReleaseWorkflow(context, plugins)).rejects.toThrow(
+    'Something went wrong'
+  )
+
+  expect(deleteRelease).toHaveBeenCalledTimes(1)
+  expect(deleteRelease).toHaveBeenCalledWith({
+    owner: 'mock-owner',
+    repo: 'mock-repo',
+    release_id: 42,
+  })
+  expect(updateRelease).not.toHaveBeenCalled()
 })

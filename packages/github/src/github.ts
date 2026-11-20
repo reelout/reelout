@@ -1,25 +1,70 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
-import type { ReleasePlugin } from '@reelout/core'
+import type { ReleaseContext, ReleasePlugin } from '@reelout/core'
 import { version } from '../package.json'
-import { createRelease } from './createRelease'
-import { deleteRelease } from './deleteRelease'
+import { createRelease, type ReleaseRollback } from './createRelease'
+import { verifyToken } from './verifyToken'
+
+/**
+ * Read the GitHub token from the release environment.
+ *
+ * Treats unset and whitespace-only values as missing.
+ *
+ * @param env Release environment variables
+ * @returns The trimmed token, or undefined when it is not set
+ */
+const readGitHubToken = (env: ReleaseContext['env']): string | undefined => {
+  const token = env.GITHUB_TOKEN?.trim()
+
+  return token ? token : undefined
+}
 
 /**
  * Built-in plugin that creates GitHub releases for finalized release plans.
  *
  * @remarks
  * **Lifecycle Stages:**
- * - `publish`: Creates GitHub releases in reverse alphabetical package order (ensuring the root package release
- *   is created last). Automatically rolls back and deletes created releases if subsequent publishing stages fail.
+ * - `configure`: Verifies the `GITHUB_TOKEN` environment variable is present and accepted by GitHub.
+ *   In strict mode a missing token fails the run; otherwise the plugin's `publish` step is recorded
+ *   as skipped and a warning is logged.
+ * - `publish`: Creates GitHub releases in reverse alphabetical package order (ensuring the root
+ *   package release is created last). Overwrites the name and notes of an existing release for a
+ *   planned tag. Automatically rolls back — restoring overwritten releases and deleting created
+ *   ones — if subsequent publishing stages fail.
  *
- * @throws {Error} If `context.repository` is not configured or `GITHUB_TOKEN` environment variable is missing.
  * @returns A release plugin configured for GitHub release creation.
  */
 const github = (): ReleasePlugin => ({
   name: '@reelout/github',
   version,
+  configure: async (context, next) => {
+    const token = readGitHubToken(context.env)
+
+    if (!token) {
+      if (context.strict) {
+        throw new Error(
+          'The GITHUB_TOKEN environment variable is required in strict mode.'
+        )
+      }
+
+      context.skippedSteps.push({
+        plugin: '@reelout/github',
+        hook: 'publish',
+        reason: 'GITHUB_TOKEN is not set.',
+      })
+
+      context.logger.warn(
+        'GitHub releases will not be created: GITHUB_TOKEN is not set.'
+      )
+
+      return next(context)
+    }
+
+    await verifyToken(token)
+
+    return next(context)
+  },
   publish: async (context, next) => {
     if (!context.repository) {
       throw new Error(
@@ -27,8 +72,10 @@ const github = (): ReleasePlugin => ({
       )
     }
 
-    if (!context.env.GITHUB_TOKEN) {
-      throw new Error('The GITHUB_TOKEN environment variable is required.')
+    const token = readGitHubToken(context.env)
+
+    if (!token) {
+      return next(context)
     }
 
     if (context.dryRun) {
@@ -40,23 +87,21 @@ const github = (): ReleasePlugin => ({
       (a.package.name || '').localeCompare(b.package.name || '')
     )
 
-    const token = context.env.GITHUB_TOKEN
-
     const repository = context.repository
+
+    const rollbacks: ReleaseRollback[] = []
 
     // Create releases in reverse order
     // so that the root package release is created last,
     // as it is often the most important one.
     for (const plan of plans.toReversed()) {
-      await createRelease(context, plan, token, repository)
+      rollbacks.push(await createRelease(context, plan, token, repository))
     }
 
     try {
       return await next(context)
     } catch (err) {
-      await Promise.allSettled(
-        plans.map((plan) => deleteRelease(plan, token, repository))
-      )
+      await Promise.allSettled(rollbacks.map((rollback) => rollback()))
 
       throw err
     }
