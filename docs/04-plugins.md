@@ -134,10 +134,10 @@ dry-run and rollback safety, registration, and testing. Install it into your
 project with the [`skills`](https://skills.sh) CLI:
 
 ```sh
-npx skills add reelout/reelout --skill write-reelout-plugin
+npx skills add reelout/reelout --skill create-reelout-plugin
 ```
 
-The skill source lives at [`.agents/skills/write-reelout-plugin/SKILL.md`](https://github.com/reelout/reelout/blob/main/.agents/skills/write-reelout-plugin/SKILL.md).
+The skill source lives at [`.agents/skills/create-reelout-plugin/SKILL.md`](https://github.com/reelout/reelout/blob/main/.agents/skills/create-reelout-plugin/SKILL.md).
 
 ## Built-in plugins
 
