@@ -16,18 +16,6 @@ export interface OriginalRelease {
 }
 
 /**
- * Outcome of writing a GitLab release for a plan.
- */
-export interface ReleaseWriteResult {
-  /**
-   * Content of the release that existed before the write: `null` when the
-   * release was created by this run, the captured content when an existing
-   * release was overwritten.
-   */
-  original: OriginalRelease | null
-}
-
-/**
  * Create or overwrite a GitLab release for a package tag.
  *
  * Skips the write when the tag has no message. Fetches the release for the
@@ -39,14 +27,16 @@ export interface ReleaseWriteResult {
  * @param plan Release plan containing the tag to publish
  * @param token GitLab authentication token
  * @param repository Target repository
- * @returns Promise resolving to the write outcome, or `null` when the write was skipped
+ * @returns Promise resolving to the original release content when an existing
+ * release was overwritten, `{ original: null }` when the release was created,
+ * or `null` when the write was skipped
  */
 export async function createRelease(
   context: ReleaseContext,
   plan: ReleasePlan,
   token: string,
   repository: GitRepository
-): Promise<ReleaseWriteResult | null> {
+): Promise<{ original: OriginalRelease | null } | null> {
   if (!plan.release?.tag?.message) {
     return null
   }

@@ -3,14 +3,14 @@
 
 import type { ReleaseContext, ReleasePlan, ReleasePlugin } from '@reelout/core'
 import { version } from '../package.json'
-import { createRelease, type ReleaseWriteResult } from './createRelease'
+import { createRelease, type OriginalRelease } from './createRelease'
 import { deleteRelease } from './deleteRelease'
 import { restoreRelease } from './restoreRelease'
 import { verifyToken } from './verifyToken'
 
 interface WrittenRelease {
   plan: ReleasePlan
-  result: ReleaseWriteResult
+  original: OriginalRelease | null
 }
 
 /**
@@ -104,7 +104,7 @@ const gitlab = (): ReleasePlugin => ({
       const result = await createRelease(context, plan, token, repository)
 
       if (result) {
-        written.push({ plan, result })
+        written.push({ plan, original: result.original })
       }
     }
 
@@ -116,9 +116,9 @@ const gitlab = (): ReleasePlugin => ({
       await Promise.allSettled(
         written
           .toReversed()
-          .map(({ plan, result }) =>
-            result.original
-              ? restoreRelease(plan, result.original, token, repository)
+          .map(({ plan, original }) =>
+            original
+              ? restoreRelease(plan, original, token, repository)
               : deleteRelease(plan, token, repository)
           )
       )
