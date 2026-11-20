@@ -11,10 +11,9 @@ import { resolveOutcomeErrorMessage } from './resolveErrorMessage'
  * Print a formatted release report to the logger.
  *
  * Logs the terminal outcome status and details for planned package releases.
- * Displays package names,
- * directories, and version changes on success, or outputs the error message
- * on failure. Dry runs append a `(dry run)` marker to the status line; real
- * releases print the status unmarked.
+ * Displays package names, directories, and version changes on success, or
+ * outputs the error message on failure. Dry runs append a `(dry run)` marker
+ * to the status line; real releases print the status unmarked.
  *
  * @param logger Logger instance for outputting messages
  * @param report Release report containing outcome and package details
