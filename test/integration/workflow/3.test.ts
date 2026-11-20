@@ -298,7 +298,7 @@ test('continues the dev release channel on main while the release branch stays u
     // which is never merged back into main
     await stabilizeReleaseOnBranch(remote)
 
-    // User 3: Start the 1.3.0 development cycle on main at fork time
+    // User 3: Start the 1.3.0 development cycle on main from the branch point
     await startNextDevCycleOnMain(remote)
 
     // User 4: Add a feature on main for the next development cycle
