@@ -805,36 +805,27 @@ test('stringifies the thrown value when a finalize handler throws a non-Error on
   ])
 })
 
-test('fails the workflow without triggering publish rollbacks when a finalize handler throws', async () => {
-  const rollback = vi.fn()
-  const finalizeError = new Error('Webhook timed out')
-
+test('warns and keeps the release successful when a finalize handler throws on a successful workflow', async () => {
   const notifyPlugin: ReleasePlugin = {
     name: 'notify',
     version: '1.0.0',
-    publish: async (ctx, next) => {
-      try {
-        return await next(ctx)
-      } catch (err) {
-        rollback(err)
-        throw err
-      }
-    },
     finalize: () => {
-      throw finalizeError
+      throw new Error('Webhook timed out')
     },
   }
 
-  await expect(executeReleaseWorkflow(context, [notifyPlugin])).rejects.toThrow(
-    'Webhook timed out'
-  )
+  await expect(
+    executeReleaseWorkflow(context, [notifyPlugin])
+  ).resolves.toBeUndefined()
 
-  expect(rollback).not.toHaveBeenCalled()
   expect(context.outcome).toEqual({
-    status: 'failure',
-    error: finalizeError,
-    phase: { hook: 'finalize', plugin: 'notify' },
+    status: 'success',
+    error: null,
+    phase: null,
   })
+  expect(logger.mock.calls.at(-1)).toEqual([
+    'Plugin "notify" could not finalize: Webhook timed out',
+  ])
 })
 
 test('cancels the workflow between phase hooks when the abort signal fires', async () => {
