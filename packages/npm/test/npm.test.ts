@@ -1961,6 +1961,31 @@ test('syncs the default latest dist-tag when no release channel is set', async (
   ])
 })
 
+test('skips the publish of an identical version reported as a one-element array', async () => {
+  provideOidcAuth()
+
+  mountPackageFixture()
+
+  context.plans = [createPublishablePlan()]
+
+  execCommand.mockImplementationOnce(async () =>
+    JSON.stringify([JSON.parse(publishedManifest())])
+  )
+
+  downloadTarball.mockResolvedValue(Buffer.from('published-tarball'))
+
+  compareTarballs.mockReturnValue({ verdict: 'identical' })
+
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(publishPackage).toHaveBeenCalledTimes(0)
+  expect(
+    warnCalls().filter((message) =>
+      message.includes('Skipping publish of "a@1.2.3"')
+    )
+  ).toHaveLength(1)
+})
+
 test('rejects before any publish when the registry version has different content', async () => {
   provideOidcAuth()
 
@@ -2034,6 +2059,46 @@ test('rejects before any publish when the published manifest lacks a tarball URL
   expect(publishPackage).toHaveBeenCalledTimes(0)
 })
 
+test('rejects before any publish when the published tarball cannot be downloaded', async () => {
+  provideOidcAuth()
+
+  mountPackageFixture()
+
+  context.plans = [createPublishablePlan()]
+
+  execCommand.mockImplementationOnce(async () => publishedManifest())
+
+  downloadTarball.mockRejectedValueOnce(new Error('network unreachable'))
+
+  await expect(executeReleaseWorkflow(context, [plugin()])).rejects.toThrow(
+    'Version "a@1.2.3" was not published: the published content could not be verified (the published tarball could not be downloaded: network unreachable).'
+  )
+
+  expect(publishPackage).toHaveBeenCalledTimes(0)
+})
+
+test('rejects before any publish when the local tarball cannot be packed', async () => {
+  provideOidcAuth()
+
+  mountPackageFixture()
+
+  context.plans = [createPublishablePlan()]
+
+  execCommand
+    .mockImplementationOnce(async () => publishedManifest())
+    .mockImplementationOnce(async () => {
+      throw new Error("Command 'npm pack' failed (exit code 1)")
+    })
+
+  downloadTarball.mockResolvedValue(Buffer.from('published-tarball'))
+
+  await expect(executeReleaseWorkflow(context, [plugin()])).rejects.toThrow(
+    'Version "a@1.2.3" was not published: the published content could not be verified (the local tarball could not be packed: Command \'npm pack\' failed (exit code 1)).'
+  )
+
+  expect(publishPackage).toHaveBeenCalledTimes(0)
+})
+
 test('rejects when the probe fails with an authentication error', async () => {
   provideOidcAuth()
 
@@ -2067,6 +2132,41 @@ test('rejects when the probe output cannot be parsed', async () => {
     'Registry metadata for "a@1.2.3" could not be parsed'
   )
 
+  expect(publishPackage).toHaveBeenCalledTimes(0)
+})
+
+test('rejects when the probe output is not a manifest object', async () => {
+  provideOidcAuth()
+
+  mountPackageFixture()
+
+  context.plans = [createPublishablePlan()]
+
+  execCommand.mockImplementationOnce(async () => 'null')
+
+  await expect(executeReleaseWorkflow(context, [plugin()])).rejects.toThrow(
+    'Registry metadata for "a@1.2.3" could not be parsed: unexpected metadata format'
+  )
+
+  expect(publishPackage).toHaveBeenCalledTimes(0)
+})
+
+test('rejects before any publish when the published dist entry omits a tarball URL', async () => {
+  provideOidcAuth()
+
+  mountPackageFixture()
+
+  context.plans = [createPublishablePlan()]
+
+  execCommand.mockImplementationOnce(async () =>
+    JSON.stringify({ name: 'a', version: '1.2.3', dist: {} })
+  )
+
+  await expect(executeReleaseWorkflow(context, [plugin()])).rejects.toThrow(
+    'Version "a@1.2.3" was not published: the published content could not be verified (the published manifest does not include a tarball URL).'
+  )
+
+  expect(downloadTarball).toHaveBeenCalledTimes(0)
   expect(publishPackage).toHaveBeenCalledTimes(0)
 })
 
@@ -2217,7 +2317,7 @@ test('rethrows the original publish error when the mid-publish race cannot be ve
   )
 })
 
-test('rethrows the original publish error when the version cannot be probed after the race', async () => {
+test('rethrows the original publish error when the version is still absent after the race', async () => {
   provideOidcAuth()
 
   mountPackageFixture()
@@ -2233,6 +2333,34 @@ test('rethrows the original publish error when the version cannot be probed afte
   await expect(executeReleaseWorkflow(context, [plugin()])).rejects.toThrow(
     'You cannot publish over the previously published versions: 1.2.3.'
   )
+})
+
+test('rethrows the original publish error when the version cannot be re-probed after the race', async () => {
+  provideOidcAuth()
+
+  mountPackageFixture()
+
+  context.plans = [createPublishablePlan()]
+
+  execCommand
+    .mockImplementationOnce(async () => {
+      throw notFoundError()
+    })
+    .mockImplementationOnce(async () => {
+      throw new Error(
+        `Command 'npm view a@1.2.3 --json --registry ${NPMJS}' failed (exit code 1)
+npm error code E500
+npm error 500 Internal server error`
+      )
+    })
+
+  publishPackage.mockRejectedValueOnce(publishOverError())
+
+  await expect(executeReleaseWorkflow(context, [plugin()])).rejects.toThrow(
+    'You cannot publish over the previously published versions: 1.2.3.'
+  )
+
+  expect(execCommand).toHaveBeenCalledTimes(2)
 })
 
 test('rethrows non-race publish failures without re-probing', async () => {

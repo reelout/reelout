@@ -122,6 +122,25 @@ test('ignores directory entries and differing root folder prefixes', async () =>
   })
 })
 
+test('keeps multi-root paths intact instead of stripping the first folder', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    const published = await packFixture(cwd, [
+      { path: 'app/shared.txt', content: 'shared content\n' },
+      { path: 'lib/data.txt', content: 'lib data\n' },
+    ])
+    const local = await packFixture(cwd, [
+      { path: 'application/shared.txt', content: 'shared content\n' },
+      { path: 'lib/data.txt', content: 'lib data\n' },
+    ])
+
+    expect(comparePackageTarballs(published, local)).toEqual({
+      verdict: 'different',
+      summary:
+        'only in published tarball: app/shared.txt; only in local tarball: application/shared.txt',
+    })
+  })
+})
+
 test('treats a plain tarball and a gzipped tarball with the same content as identical', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     const published = await packFixture(cwd, defaultFiles, { gzip: false })
@@ -283,6 +302,26 @@ test('reports unparseable package.json content as different', async () => {
   })
 })
 
+test('reports package.json that is valid JSON but not an object as different', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    const filesFor = (manifest: string): FixtureFile[] => [
+      { path: 'package.json', content: manifest },
+      { path: 'src/index.js', content: 'export const value = 42\n' },
+    ]
+
+    const published = await packFixture(cwd, filesFor('null'))
+    const local = await packFixture(
+      cwd,
+      filesFor('{"name":"demo-lib","version":"1.0.0"}')
+    )
+
+    expect(comparePackageTarballs(published, local)).toEqual({
+      verdict: 'different',
+      summary: 'different content in: package.json',
+    })
+  })
+})
+
 test('treats matching symlink entries as identical', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     const files: FixtureFile[] = [
@@ -319,6 +358,31 @@ test('reports symlink entries with different targets as different', async () => 
     const local = await packFixture(cwd, files, {
       symlinks: [{ path: 'link.js', target: 'other.js' }],
     })
+
+    expect(comparePackageTarballs(published, local)).toEqual({
+      verdict: 'different',
+      summary: 'different content in: link.js',
+    })
+  })
+})
+
+test('reports a symlink replaced by a regular file as different', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    const files: FixtureFile[] = [
+      {
+        path: 'package.json',
+        content: '{"name":"demo-lib","version":"1.0.0"}',
+      },
+      { path: 'index.js', content: 'export const value = 42\n' },
+    ]
+
+    const published = await packFixture(cwd, files, {
+      symlinks: [{ path: 'link.js', target: 'index.js' }],
+    })
+    const local = await packFixture(cwd, [
+      ...files,
+      { path: 'link.js', content: 'export const value = 42\n' },
+    ])
 
     expect(comparePackageTarballs(published, local)).toEqual({
       verdict: 'different',

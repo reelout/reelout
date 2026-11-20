@@ -156,6 +156,44 @@ test('overwrites an existing release and returns a rollback that restores it', a
   expect(deleteRelease).not.toHaveBeenCalled()
 })
 
+test('overwrites an existing release without notes and restores the missing notes during rollback', async () => {
+  getReleaseByTag.mockResolvedValueOnce({
+    data: { id: 42, name: 'Original name', body: null },
+  })
+
+  const rollback = await createRelease(
+    context,
+    {
+      package: { location: '.' },
+      release: { tag: { name: 'v1.2.3', message: 'Overwrite notes' } },
+    } as ReleasePlan,
+    'mock-token',
+    repository
+  )
+
+  expect(updateRelease).toHaveBeenCalledTimes(1)
+  expect(updateRelease).toHaveBeenCalledWith({
+    owner: 'mock-owner',
+    repo: 'mock-repo',
+    release_id: 42,
+    name: 'v1.2.3',
+    body: 'Overwrite notes',
+  })
+  expect(createReleaseMock).not.toHaveBeenCalled()
+
+  await rollback()
+
+  expect(updateRelease).toHaveBeenCalledTimes(2)
+  expect(updateRelease).toHaveBeenLastCalledWith({
+    owner: 'mock-owner',
+    repo: 'mock-repo',
+    release_id: 42,
+    name: 'Original name',
+    body: null,
+  })
+  expect(deleteRelease).not.toHaveBeenCalled()
+})
+
 test('rethrows non-404 fetch errors', async () => {
   getReleaseByTag.mockRejectedValueOnce(
     Object.assign(new Error('Internal Server Error'), { status: 500 })
