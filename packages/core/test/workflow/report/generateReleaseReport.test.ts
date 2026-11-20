@@ -226,7 +226,7 @@ test('constructs structured package and release objects when release plans are p
   `)
 })
 
-test('includes versionQualifier and releaseChannel in report when present in context', () => {
+test('omits versionQualifier and releaseChannel from the report when set in the context', () => {
   context.versionQualifier = 'dev'
   context.releaseChannel = 'next'
 

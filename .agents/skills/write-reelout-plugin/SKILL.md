@@ -128,16 +128,16 @@ Resolution and registration rules:
 
 Handlers receive a mutable `ReleaseContext`. Commonly used fields:
 
-| Fields                                                     | Meaning                                                                                                   |
-| ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `cwd`, `env`, `signal`                                     | Working directory, environment variables, and optional abort signal                                       |
-| `logger`                                                   | `ConsolaInstance`; use `logger.debug` for verbose details                                                 |
-| `repository`                                               | `GitRepository \| null`; check before making host API calls                                               |
-| `ref`, `commit`, `author`                                  | Current branch, HEAD commit, and release commit author                                                    |
-| `dryRun`                                                   | Whether the workflow must avoid real side effects                                                         |
-| `packages`, `plans`                                        | Resolved packages and their `ReleasePlan`s; `plan.release` is `null` until a release is derived and built |
-| `outcome`                                                  | `ReleaseOutcome \| null`; set before `finalize` runs—`status`, thrown `error`, and failing `phase`        |
-| `type`, `versionQualifier`, `releaseChannel`, `allowEmpty` | Resolved CLI overrides                                                                                    |
+| Fields                                                     | Meaning                                                                                                     |
+| ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `cwd`, `env`, `signal`                                     | Working directory, environment variables, and optional abort signal                                         |
+| `logger`                                                   | `ConsolaInstance`; use `logger.debug` for verbose details                                                   |
+| `repository`                                               | `GitRepository \| null`; check before making host API calls                                                 |
+| `ref`, `commit`, `author`                                  | Current branch, HEAD commit, and release commit author                                                      |
+| `dryRun`                                                   | Whether the workflow must avoid real side effects                                                           |
+| `packages`, `plans`                                        | Resolved packages and their `ReleasePlan`s; `plan.release` is `null` until a release is derived and built   |
+| `outcome`                                                  | `ReleaseOutcome \| null`; set before `finalize` runs: `status`, the thrown `error`, and the failing `phase` |
+| `type`, `versionQualifier`, `releaseChannel`, `allowEmpty` | Resolved CLI overrides                                                                                      |
 
 Apply these rules to every handler:
 

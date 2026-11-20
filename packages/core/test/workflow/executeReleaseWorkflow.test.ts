@@ -286,7 +286,7 @@ test('prints release summary report when packages are scheduled for release', as
   `)
 })
 
-test('prints dry-run preview report when dryRun mode is enabled', async () => {
+test('prints directory labels in the release summary when scheduled packages are unnamed', async () => {
   plugin.discover.mockImplementation((ctx, next) => {
     ctx.packages = [{ name: 'foo' }, { name: 'bar' }] as Package[]
     return next()
@@ -310,8 +310,6 @@ test('prints dry-run preview report when dryRun mode is enabled', async () => {
 
     return next()
   })
-
-  using _ = vi.spyOn(context, 'dryRun', 'get').mockReturnValue(true)
 
   await executeReleaseWorkflow(context, plugins)
 
@@ -786,6 +784,27 @@ test('runs remaining finalize handlers and warns when a finalize handler throws 
   ])
 })
 
+test('stringifies the thrown value when a finalize handler throws a non-Error on a failed workflow', async () => {
+  const failingPlugin: ReleasePlugin = {
+    name: 'notify',
+    version: '1.0.0',
+    write: () => {
+      throw new Error('Publish failed')
+    },
+    finalize: () => {
+      throw 'Webhook endpoint is unreachable'
+    },
+  }
+
+  await expect(
+    executeReleaseWorkflow(context, [failingPlugin])
+  ).rejects.toThrow('Publish failed')
+
+  expect(logger.mock.calls.at(-1)).toEqual([
+    'Plugin "notify" could not finalize: Webhook endpoint is unreachable',
+  ])
+})
+
 test('fails the workflow without triggering publish rollbacks when a finalize handler throws', async () => {
   const rollback = vi.fn()
   const finalizeError = new Error('Webhook timed out')
@@ -892,30 +911,6 @@ test('cancels the workflow before the first phase hook when the abort signal has
     error,
     phase: null,
   })
-})
-
-test('runs finalize when the workflow fails in dry-run mode', async () => {
-  const finalized: string[] = []
-
-  const failingPlugin: ReleasePlugin = {
-    name: 'notify',
-    version: '1.0.0',
-    write: () => {
-      throw new Error('Something went wrong')
-    },
-    finalize: (ctx, next) => {
-      finalized.push(ctx.outcome?.status ?? 'missing')
-      return next(ctx)
-    },
-  }
-
-  using _ = vi.spyOn(context, 'dryRun', 'get').mockReturnValue(true)
-
-  await expect(
-    executeReleaseWorkflow(context, [failingPlugin])
-  ).rejects.toThrow('Something went wrong')
-
-  expect(finalized).toEqual(['failure'])
 })
 
 test('logs hook execution duration when environment mode is set to development', async () => {

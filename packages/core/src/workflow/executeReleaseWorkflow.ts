@@ -12,6 +12,7 @@ import {
   printReleaseReportAnnotation,
 } from './report'
 
+/** Failure of a `finalize` handler, collected for the post-report warning. */
 interface FinalizeFailure {
   plugin: string
   error: unknown
@@ -169,7 +170,8 @@ function throwIfCancelled(context: ReleaseContext): void {
  *
  * @param context Release execution context containing runtime options and logger
  * @param plugins List of release plugins to execute
- * @returns Promise that resolves when all workflow phases complete
+ * @returns Promise that resolves when all phases and `finalize` handlers
+ * complete
  * @throws If a lifecycle hook fails, the workflow is cancelled, or a finalize
  * handler fails on an otherwise successful workflow
  */
