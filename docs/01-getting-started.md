@@ -82,9 +82,9 @@ warning, and still exits `0`:
 - No `GITHUB_TOKEN` or `GITLAB_TOKEN`? The matching hosting releases are not
   created.
 
-Tags, changelogs, and the release commit still complete, and the release
-report lists every skipped step. Pass `--strict` to fail instead when a
-credential is missing, for pipelines that must publish everything.
+Tags, changelogs, and the release commit still complete. Pass `--strict` to
+fail instead when a credential is missing, for pipelines that must publish
+everything.
 
 Versions the registry already holds are skipped too: ReelOut compares the
 published tarball with the local package, skips the publish when the content

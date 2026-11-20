@@ -14,7 +14,7 @@ logging automatically when `RUNNER_DEBUG` or `ACTIONS_STEP_DEBUG` is truthy.
 | `The GITLAB_TOKEN environment variable is required in strict mode.`                                                | The GitLab plugin needs a token in strict mode                     | Set `GITLAB_TOKEN`, or drop `--strict` to skip GitLab releases instead                                                         |
 | `NPM_TOKEN is required for NPM authentication in strict mode.`                                                     | npm publishing needs registry credentials in strict mode           | Set `NPM_TOKEN`, or drop `--strict` to skip npm publishing instead                                                             |
 | `NPM_TOKEN or ambient registry credentials are invalid or expired.`                                                | The `whoami` pre-flight against the publish registry failed        | Refresh the token or ambient `.npmrc` credentials, then retry                                                                  |
-| `The GITHUB_TOKEN environment variable is invalid or expired.`                                                     | The GitHub token pre-flight check failed                           | Refresh `GITHUB_TOKEN`, then retry                                                                                             |
+| `The GITHUB_TOKEN environment variable could not be verified.`                                                     | The GitHub token pre-flight check failed                           | Refresh `GITHUB_TOKEN`, then retry                                                                                             |
 | `The GITLAB_TOKEN environment variable could not be verified.`                                                     | The GitLab token pre-flight check failed                           | Refresh `GITLAB_TOKEN`, then retry                                                                                             |
 | `Version "<name>@<version>" was not published: the registry already has this version with different content (...)` | The registry already holds this version with different content     | Revert to the published content, or publish a new version                                                                      |
 | `Version "<name>@<version>" was not published: the published content could not be verified (...)`                  | The published tarball could not be compared with the local package | Check the error output, then retry with `--debug`                                                                              |
@@ -37,9 +37,8 @@ step that needs it, logs a warning, and continues:
 - No `GITHUB_TOKEN` or `GITLAB_TOKEN`: the matching hosting releases are not
   created.
 
-Skips never change the exit code. The release report prints a `Skipped`
-section and, on GitHub Actions, the job summary gains a skipped-steps table.
-Pass `--strict` to fail the run instead when a credential is missing.
+Skips never change the exit code. Pass `--strict` to fail the run instead
+when a credential is missing.
 
 Versions already published with identical content are skipped too: ReelOut
 verifies the registry tarball against the local package and syncs the
@@ -103,5 +102,5 @@ These warnings are non-fatal but usually worth investigating:
 - `Changelog could not be generated for package at ...` — changelog generation failed for a package.
 - `Packages will not be published: NPM_TOKEN is required for NPM authentication.` — npm publishing was skipped for missing registry credentials.
 - `GitHub releases will not be created: GITHUB_TOKEN is not set.` — GitHub releases were skipped for a missing token.
-- `GitLab releases were not created: GITLAB_TOKEN is required for GitLab authentication.` — GitLab releases were skipped for a missing token.
+- `GitLab releases will not be created: GITLAB_TOKEN is not set.` — GitLab releases were skipped for a missing token.
 - `Skipping publish of "<name>@<version>": already published with identical content.` — the registry already holds this exact version; the dist-tag was synced instead.
