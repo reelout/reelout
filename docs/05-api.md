@@ -46,9 +46,11 @@ await executeReleaseWorkflow(context, plugins)
 ```
 
 `createContext` accepts the options the CLI derives from flags: `filter`,
-`type`, `qualifier`, `channel`, `allowEmpty`, `dryRun`, and `debug`. Pass an
-optional `signal` (`AbortSignal`) to cancel the workflow. Set `dryRun: false`
-or omit it to perform a real release.
+`type`, `qualifier`, `channel`, `allowEmpty`, `dryRun`, `strict`, and `debug`.
+Pass an optional `signal` (`AbortSignal`) to cancel the workflow. Set
+`dryRun: false` or omit it to perform a real release. Pass `strict: true` to
+turn missing-credential skipping into errors, matching the CLI's `--strict`
+flag.
 
 ## Resolving configuration
 

@@ -169,6 +169,7 @@ CLI options override the corresponding release settings for a run:
 | `--channel <name\|true\|false>`      | Set the npm dist-tag, use the matching branch rule, or disable the channel                   |
 | `--allow-empty`                      | Run the workflow even when no releasable changes are detected                                |
 | `--dry-run`                          | Preview the release without writing files or creating or publishing release assets           |
+| `--strict`                           | Turn missing-credential skipping into errors, for pipelines that must publish everything     |
 | `--debug`                            | Enable verbose logging for troubleshooting                                                   |
 
 For `--qualifier` and `--channel`, `true` uses the matching rule's value when

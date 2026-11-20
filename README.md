@@ -15,6 +15,10 @@ publish packages through an extensible plugin system.
 - Supports prerelease branches and configurable release channels.
 - Extends the workflow with plugins for changelogs, npm publishing, Git tags,
   and GitHub or GitLab releases.
+- Skips steps whose credentials are missing instead of failing; `--strict`
+  turns the skips into errors.
+- Verifies already-published versions and skips them when the content is
+  identical, syncing their dist-tags.
 - Provides a dry run so you can inspect a release before publishing.
 
 ## Installation
@@ -68,6 +72,7 @@ Options:
   --channel <boolean or string>    Set the npm dist-tag (for example, `beta`); use `false` to disable it or `true` to follow branch rules.
   --allow-empty                    Run the release workflow even when no releasable changes are detected.
   --dry-run                        Preview the release without writing files, creating commits or tags, or publishing packages or releases.
+  --strict                         Turn missing-credential skipping into errors, for pipelines that must publish everything.
   --debug                          Enable verbose logging for troubleshooting. (default: false)
   -v, --version                    Display the version number.
   -h, --help                       Display command usage and options.
@@ -84,6 +89,26 @@ npx reelout --qualifier beta
 Releasing from an `alpha`, `beta`, or `next` branch applies the matching
 qualifier and npm channel automatically. See
 [Configuration](./docs/02-config.md) to define custom branch rules.
+
+## Credential-aware releases
+
+ReelOut publishes what your environment allows and reports the rest:
+
+- Without registry credentials (`NPM_TOKEN`, ambient `.npmrc`
+  authentication, or OIDC), npm publishing is skipped with a warning.
+- Without `GITHUB_TOKEN` or `GITLAB_TOKEN`, the matching hosting releases are
+  skipped with a warning.
+
+Skipped steps never fail the run: the remaining work completes, the exit code
+stays `0`, and the release report lists every skip. Pass `--strict` to turn
+missing credentials into errors, for pipelines that must publish everything.
+
+When a package version is already published, ReelOut compares the registry
+tarball with the local package before publishing. Identical content skips the
+publish and syncs the release-channel dist-tag; different or unverifiable
+content fails the release first. Existing GitHub and GitLab releases for a
+planned tag are overwritten, and the original content is restored if a later
+step fails.
 
 ## Documentation
 
