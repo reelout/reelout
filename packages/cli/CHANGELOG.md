@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.5.4](https://github.com/reelout/reelout/compare/%40reelout%2Fcli%400.5.3...%40reelout%2Fcli%400.5.4) (2026-11-20)
+
+### Bug Fixes
+
+- **core:** report finalize failures as warnings on successful releases ([#21](https://github.com/reelout/reelout/issues/21)) ([b1c7595](https://github.com/reelout/reelout/commit/b1c759590a44d57c9eead7c530533cf4345ecd2b))
+
 ## [0.5.3](https://github.com/reelout/reelout/compare/%40reelout%2Fcli%400.5.2...%40reelout%2Fcli%400.5.3) (2026-11-20)
 
 ### Features

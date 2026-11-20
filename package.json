@@ -1,6 +1,6 @@
 {
   "name": "reelout",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Plugin-driven release automation for JavaScript and TypeScript monorepos.",
   "keywords": [
     "release",

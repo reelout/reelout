@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.9.1](https://github.com/reelout/reelout/compare/%40reelout%2Fcore%400.9.0...%40reelout%2Fcore%400.9.1) (2026-11-20)
+
+### Bug Fixes
+
+- **core:** report finalize failures as warnings on successful releases ([#21](https://github.com/reelout/reelout/issues/21)) ([b1c7595](https://github.com/reelout/reelout/commit/b1c759590a44d57c9eead7c530533cf4345ecd2b))
+
 ## [0.9.0](https://github.com/reelout/reelout/compare/%40reelout%2Fcore%400.8.0...%40reelout%2Fcore%400.9.0) (2026-11-20)
 
 ### Features
