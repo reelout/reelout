@@ -64,13 +64,14 @@ export async function verifyAuth(
  * Confirm registry credentials by querying the authenticated registry user.
  *
  * Runs the package manager's `whoami` command against the publish registry
- * and lets failures propagate so invalid or expired credentials abort the
- * release before anything is published.
+ * and wraps failures in an error naming the invalid credentials, so invalid
+ * or expired tokens abort the release before anything is published.
  *
  * @param context Release context containing environment and working directory
  * @param pkg Target package metadata object
  * @param packageManager Information about the active package manager
  * @param env Prepared authentication environment, if credentials were injected
+ * @throws If the `whoami` command fails, carrying the original error as the cause
  */
 async function assertRegistryAuth(
   context: ReleaseContext,
@@ -80,23 +81,30 @@ async function assertRegistryAuth(
 ): Promise<void> {
   const registry = await resolvePublishRegistry(context, pkg, packageManager)
 
-  if (packageManager.isYarnBerry) {
-    await execCommand('yarn', ['npm', 'whoami'], {
-      cwd: context.cwd,
-      env: { ...context.env, ...env },
-      signal: context.signal,
-    })
+  try {
+    if (packageManager.isYarnBerry) {
+      await execCommand('yarn', ['npm', 'whoami'], {
+        cwd: context.cwd,
+        env: { ...context.env, ...env },
+        signal: context.signal,
+      })
 
-    return
-  }
-
-  await execCommand(
-    packageManager.isPnpm ? 'pnpm' : 'npm',
-    ['whoami', '--registry', registry],
-    {
-      cwd: context.cwd,
-      env: { ...context.env, ...env },
-      signal: context.signal,
+      return
     }
-  )
+
+    await execCommand(
+      packageManager.isPnpm ? 'pnpm' : 'npm',
+      ['whoami', '--registry', registry],
+      {
+        cwd: context.cwd,
+        env: { ...context.env, ...env },
+        signal: context.signal,
+      }
+    )
+  } catch (error) {
+    throw new Error(
+      'NPM_TOKEN or ambient registry credentials are invalid or expired.',
+      { cause: error }
+    )
+  }
 }

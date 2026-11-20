@@ -1411,7 +1411,7 @@ test('rejects workflow execution when registry authentication verification fails
   ] as ReleasePlan[]
 
   await expect(executeReleaseWorkflow(context, [plugin()])).rejects.toThrow(
-    '401 Unauthorized: invalid auth token'
+    'NPM_TOKEN or ambient registry credentials are invalid or expired.'
   )
 
   expect(execCommand).toHaveBeenCalledTimes(1)
@@ -1494,7 +1494,7 @@ test('rejects workflow execution when ambient registry credentials fail verifica
   ] as ReleasePlan[]
 
   await expect(executeReleaseWorkflow(context, [plugin()])).rejects.toThrow(
-    '401 Unauthorized: invalid auth token'
+    'NPM_TOKEN or ambient registry credentials are invalid or expired.'
   )
 
   expect(publishPackage).toHaveBeenCalledTimes(0)

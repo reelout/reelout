@@ -252,13 +252,16 @@ test('rejects when the whoami pre-flight check fails for NPM_TOKEN', async () =>
 
     resolvePackageManager.mockResolvedValue('npm')
 
-    execCommand.mockRejectedValueOnce(
-      new Error('401 Unauthorized: invalid auth token')
-    )
+    const requestError = new Error('401 Unauthorized: invalid auth token')
 
-    await expect(verifyAuth(context)).rejects.toThrow(
-      '401 Unauthorized: invalid auth token'
+    execCommand.mockRejectedValueOnce(requestError)
+
+    const error: unknown = await verifyAuth(context).catch((err) => err)
+
+    expect(error).toMatchInlineSnapshot(
+      `[Error: NPM_TOKEN or ambient registry credentials are invalid or expired.]`
     )
+    expect((error as Error).cause).toBe(requestError)
   })
 })
 
@@ -274,13 +277,16 @@ test('rejects when the whoami pre-flight check fails for ambient credentials', a
       '//registry.npmjs.org/:_authToken=mock-ambient-token'
     )
 
-    execCommand.mockRejectedValueOnce(
-      new Error('401 Unauthorized: invalid auth token')
-    )
+    const requestError = new Error('401 Unauthorized: invalid auth token')
 
-    await expect(verifyAuth(context)).rejects.toThrow(
-      '401 Unauthorized: invalid auth token'
+    execCommand.mockRejectedValueOnce(requestError)
+
+    const error: unknown = await verifyAuth(context).catch((err) => err)
+
+    expect(error).toMatchInlineSnapshot(
+      `[Error: NPM_TOKEN or ambient registry credentials are invalid or expired.]`
     )
+    expect((error as Error).cause).toBe(requestError)
   })
 })
 
