@@ -7,19 +7,40 @@ logging automatically when `RUNNER_DEBUG` or `ACTIONS_STEP_DEBUG` is truthy.
 
 ## Common errors
 
-| Message                                                                             | Cause                                                      | Fix                                                                        |
-| ----------------------------------------------------------------------------------- | ---------------------------------------------------------- | -------------------------------------------------------------------------- |
-| `A Git remote must be configured to push tags.`                                     | No `origin` remote is configured                           | `git remote add origin <url>`                                              |
-| `The GITHUB_TOKEN environment variable is required.`                                | The GitHub plugin needs a token                            | Set `GITHUB_TOKEN` (GitHub Actions provides `${{ secrets.GITHUB_TOKEN }}`) |
-| `The GITLAB_TOKEN environment variable is required.`                                | The GitLab plugin needs a token                            | Set `GITLAB_TOKEN`                                                         |
-| `Initialize a Git repository with at least one commit before running this command.` | ReelOut runs in a fresh or empty directory                 | Initialize the repository and make at least one commit                     |
-| `Check out a Git branch in your repository before proceeding.`                      | HEAD is detached or the repo has no branch                 | Check out a branch                                                         |
-| `Package name is required to build a tag name.`                                     | A non-root workspace package has no `name` in its manifest | Add a `name` to that `package.json`                                        |
-| `Package version "<v>" in "<dir>" is not a valid semantic version.`                 | A manifest contains a non-SemVer version                   | Fix the `version` field                                                    |
-| `The current version "<v>" is not a valid semantic version.`                        | The previous stable version could not be parsed            | Fix the `version` field                                                    |
-| `The resolved version qualifier "<q>" is not a valid SemVer prerelease identifier.` | The qualifier is not a valid prerelease identifier         | Use identifiers such as `alpha`, `beta.1`, `rc.2`                          |
-| `Version "<v>" must be strictly lower than preceding version "<p>".`                | A package version would move backwards                     | Correct the affected version                                               |
-| `Command '<cmd>' failed (exit code N)`                                              | An underlying `git` or `npm` command failed                | Check the error output for stderr, then retry with `--debug`               |
+| Message                                                                                               | Cause                                                              | Fix                                                                                                                            |
+| ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| `A Git remote must be configured to push tags.`                                                       | No `origin` remote is configured                                   | `git remote add origin <url>`                                                                                                  |
+| `The GITHUB_TOKEN environment variable is required in strict mode.`                                   | The GitHub plugin needs a token in strict mode                     | Set `GITHUB_TOKEN` (GitHub Actions provides `${{ secrets.GITHUB_TOKEN }}`), or drop `--strict` to skip GitHub releases instead |
+| `The GITLAB_TOKEN environment variable is required.`                                                  | The GitLab plugin needs a token in strict mode                     | Set `GITLAB_TOKEN`, or drop `--strict` to skip GitLab releases instead                                                         |
+| `NPM_TOKEN is required for NPM authentication in strict mode.`                                        | npm publishing needs registry credentials in strict mode           | Set `NPM_TOKEN`, or drop `--strict` to skip npm publishing instead                                                             |
+| `Cannot publish <name>@<version>: the registry already has this version with different content (...)` | The registry already holds this version with different content     | Revert to the published content, or publish a new version                                                                      |
+| `Cannot publish <name>@<version>: the published content could not be verified (...)`                  | The published tarball could not be compared with the local package | Check the error output, then retry with `--debug`                                                                              |
+| `Initialize a Git repository with at least one commit before running this command.`                   | ReelOut runs in a fresh or empty directory                         | Initialize the repository and make at least one commit                                                                         |
+| `Check out a Git branch in your repository before proceeding.`                                        | HEAD is detached or the repo has no branch                         | Check out a branch                                                                                                             |
+| `Package name is required to build a tag name.`                                                       | A non-root workspace package has no `name` in its manifest         | Add a `name` to that `package.json`                                                                                            |
+| `Package version "<v>" in "<dir>" is not a valid semantic version.`                                   | A manifest contains a non-SemVer version                           | Fix the `version` field                                                                                                        |
+| `The current version "<v>" is not a valid semantic version.`                                          | The previous stable version could not be parsed                    | Fix the `version` field                                                                                                        |
+| `The resolved version qualifier "<q>" is not a valid SemVer prerelease identifier.`                   | The qualifier is not a valid prerelease identifier                 | Use identifiers such as `alpha`, `beta.1`, `rc.2`                                                                              |
+| `Version "<v>" must be strictly lower than preceding version "<p>".`                                  | A package version would move backwards                             | Correct the affected version                                                                                                   |
+| `Command '<cmd>' failed (exit code N)`                                                                | An underlying `git` or `npm` command failed                        | Check the error output for stderr, then retry with `--debug`                                                                   |
+
+## Missing credentials
+
+When a credential is missing and the run is not `--strict`, ReelOut skips the
+step that needs it, logs a warning, and continues:
+
+- No registry credentials (`NPM_TOKEN`, ambient `.npmrc` authentication, or
+  OIDC): packages are not published.
+- No `GITHUB_TOKEN` or `GITLAB_TOKEN`: the matching hosting releases are not
+  created.
+
+Skips never change the exit code. The release report prints a `Skipped`
+section and, on GitHub Actions, the job summary gains a skipped-steps table.
+Pass `--strict` to fail the run instead when a credential is missing.
+
+Versions already published with identical content are skipped too: ReelOut
+verifies the registry tarball against the local package and syncs the
+release-channel dist-tag, so re-running a release is safe.
 
 ## A plugin could not be resolved
 
@@ -55,13 +76,15 @@ checkout instead (for example, `fetch-depth: 0` with `actions/checkout`).
 
 `--dry-run` simulates the workflow. Built-in plugins log `[DRY RUN]` for
 skipped side effects, including file and changelog writes, the release commit,
-tag pushes, and GitHub release creation.
+tag pushes, and GitHub release creation. Steps skipped for missing
+credentials are recorded as skipped steps and listed in the report's
+`Skipped` section.
 
 ## Failure rollback
 
 On failure, the Git plugin removes local tags it created and remote tags it
-pushed. The GitHub and GitLab plugins also remove releases they created earlier
-in the run.
+pushed. The GitHub and GitLab plugins also restore the name and notes of
+releases they overwrote and remove releases they created earlier in the run.
 
 Rollbacks run while the error unwinds. Afterwards, `finalize` handlers still
 run with the failure recorded on `context.outcome`, so notification plugins
@@ -75,3 +98,6 @@ These warnings are non-fatal but usually worth investigating:
 - `Version could not be determined for package at ...` — a package has no readable version.
 - `Tag could not be determined for package at ...` — no previous tag resolved for a package.
 - `Changelog could not be generated for package at ...` — changelog generation failed for a package.
+- `Packages will not be published: NPM_TOKEN is required for NPM authentication.` — npm publishing was skipped for missing registry credentials.
+- `GitHub releases will not be created: GITHUB_TOKEN is not set.` — GitHub releases were skipped for a missing token.
+- `Skipping publish of <name>@<version>: already published with identical content.` — the registry already holds this exact version; the dist-tag was synced instead.
