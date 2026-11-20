@@ -24,7 +24,7 @@ export async function verifyToken(token: string): Promise<void> {
     await octokit.rest.users.getAuthenticated()
   } catch (err) {
     throw new Error(
-      'The GITHUB_TOKEN environment variable is invalid or expired.',
+      'The GITHUB_TOKEN environment variable could not be verified.',
       { cause: err }
     )
   }

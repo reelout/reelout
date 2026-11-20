@@ -70,7 +70,7 @@ beforeEach(() => {
   getReleaseByTag.mockRejectedValue(notFound())
 })
 
-test('skips github release creation when GITHUB_TOKEN is missing', async () => {
+test('skips GitHub release creation when GITHUB_TOKEN is missing', async () => {
   context.repository = repository
 
   context.plans = [plan]
@@ -149,7 +149,7 @@ test('fails workflow execution when the GitHub token is invalid', async () => {
   await expect(
     executeReleaseWorkflow(context, [plugin()])
   ).rejects.toMatchInlineSnapshot(
-    '[Error: The GITHUB_TOKEN environment variable is invalid or expired.]'
+    '[Error: The GITHUB_TOKEN environment variable could not be verified.]'
   )
 
   expect(getReleaseByTag).not.toHaveBeenCalled()
@@ -172,7 +172,7 @@ test('fails workflow execution when the GitHub token is invalid during dry-run',
   await expect(
     executeReleaseWorkflow(context, [plugin()])
   ).rejects.toMatchInlineSnapshot(
-    '[Error: The GITHUB_TOKEN environment variable is invalid or expired.]'
+    '[Error: The GITHUB_TOKEN environment variable could not be verified.]'
   )
 
   expect(createRelease).not.toHaveBeenCalled()
@@ -202,7 +202,7 @@ test('fails workflow execution when repository context is unavailable', async ()
   `)
 })
 
-test('skips creating github releases during dry-run mode', async () => {
+test('verifies the GitHub token during dry-run mode without creating releases', async () => {
   context.env = { GITHUB_TOKEN: 'token' }
 
   context.dryRun = true
@@ -218,7 +218,7 @@ test('skips creating github releases during dry-run mode', async () => {
   expect(createRelease).not.toHaveBeenCalled()
 })
 
-test('previews the skipped github release during dry-run mode', async () => {
+test('previews the GitHub release skip during dry-run mode when GITHUB_TOKEN is missing', async () => {
   context.dryRun = true
 
   context.repository = repository
@@ -246,7 +246,7 @@ test('previews the skipped github release during dry-run mode', async () => {
   `)
 })
 
-test('creates github releases for packages in reverse alphabetical order', async () => {
+test('creates GitHub releases for packages in reverse alphabetical order', async () => {
   context.env = { GITHUB_TOKEN: 'token' }
 
   context.repository = repository
@@ -293,7 +293,7 @@ test('creates github releases for packages in reverse alphabetical order', async
   })
 })
 
-test('overwrites an existing github release for a planned tag', async () => {
+test('overwrites an existing GitHub release for a planned tag', async () => {
   context.env = { GITHUB_TOKEN: 'token' }
 
   context.repository = repository
@@ -320,7 +320,7 @@ test('overwrites an existing github release for a planned tag', async () => {
   ])
 })
 
-test('restores an overwritten github release when a subsequent plugin fails', async () => {
+test('restores an overwritten GitHub release when a subsequent plugin fails', async () => {
   context.env = { GITHUB_TOKEN: 'token' }
 
   context.repository = repository
@@ -371,7 +371,7 @@ test('restores an overwritten github release when a subsequent plugin fails', as
   expect(deleteRelease).not.toHaveBeenCalled()
 })
 
-test('deletes created github releases when a subsequent plugin fails', async () => {
+test('deletes created GitHub releases when a subsequent plugin fails', async () => {
   context.env = { GITHUB_TOKEN: 'token' }
 
   context.repository = repository

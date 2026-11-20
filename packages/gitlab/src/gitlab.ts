@@ -55,7 +55,7 @@ const gitlab = (): ReleasePlugin => ({
       }
 
       context.logger.warn(
-        'GitLab releases were not created: GITLAB_TOKEN is required for GitLab authentication.'
+        'GitLab releases will not be created: GITLAB_TOKEN is not set.'
       )
 
       return next(context)

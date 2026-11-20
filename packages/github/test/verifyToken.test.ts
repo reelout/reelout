@@ -39,7 +39,7 @@ test('throws a wrapped error when GitHub rejects the token', async () => {
   const error = (await verifyToken('mock-token').catch((err) => err)) as Error
 
   expect(error).toMatchInlineSnapshot(
-    '[Error: The GITHUB_TOKEN environment variable is invalid or expired.]'
+    '[Error: The GITHUB_TOKEN environment variable could not be verified.]'
   )
   expect(error.cause).toBe(rejection)
   expect(error.message).not.toContain('mock-token')

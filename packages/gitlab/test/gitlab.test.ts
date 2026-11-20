@@ -87,7 +87,7 @@ beforeEach(() => {
   showReleaseMock.mockRejectedValue(notFoundResponse())
 })
 
-test('skips gitlab release creation when GITLAB_TOKEN environment variable is missing', async () => {
+test('skips GitLab release creation when GITLAB_TOKEN environment variable is missing', async () => {
   vi.stubEnv('GITLAB_TOKEN', undefined)
 
   context.repository = createMockRepository('gitlab')
@@ -103,7 +103,7 @@ test('skips gitlab release creation when GITLAB_TOKEN environment variable is mi
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
       [
-        "GitLab releases were not created: GITLAB_TOKEN is required for GitLab authentication.",
+        "GitLab releases will not be created: GITLAB_TOKEN is not set.",
       ],
       [
         "Status: [32mSUCCESS[39m",
@@ -211,7 +211,7 @@ test('fails workflow execution when repository context is unavailable', async ()
   `)
 })
 
-test('skips creating gitlab releases during dry-run mode', async () => {
+test('skips creating GitLab releases during dry-run mode', async () => {
   context.env = { GITLAB_TOKEN: 'token' }
 
   context.dryRun = true
@@ -237,7 +237,7 @@ test('skips creating gitlab releases during dry-run mode', async () => {
   `)
 })
 
-test('previews the gitlab release skip during dry-run mode when GITLAB_TOKEN environment variable is missing', async () => {
+test('previews the GitLab release skip during dry-run mode when GITLAB_TOKEN environment variable is missing', async () => {
   vi.stubEnv('GITLAB_TOKEN', undefined)
 
   context.dryRun = true
@@ -255,7 +255,7 @@ test('previews the gitlab release skip during dry-run mode when GITLAB_TOKEN env
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
       [
-        "GitLab releases were not created: GITLAB_TOKEN is required for GitLab authentication.",
+        "GitLab releases will not be created: GITLAB_TOKEN is not set.",
       ],
       [
         "Status: [32mSUCCESS[39m [33m(dry run)[39m",
@@ -267,7 +267,7 @@ test('previews the gitlab release skip during dry-run mode when GITLAB_TOKEN env
   `)
 })
 
-test('creates gitlab releases for packages in reverse alphabetical order', async () => {
+test('creates GitLab releases for packages in reverse alphabetical order', async () => {
   context.env = { GITLAB_TOKEN: 'token' }
 
   context.repository = createMockRepository('gitlab')
@@ -302,7 +302,7 @@ test('creates gitlab releases for packages in reverse alphabetical order', async
   })
 })
 
-test('rolls back published gitlab releases when a subsequent plugin fails', async () => {
+test('rolls back published GitLab releases when a subsequent plugin fails', async () => {
   context.env = { GITLAB_TOKEN: 'token' }
 
   context.repository = createMockRepository('gitlab')
@@ -326,7 +326,7 @@ test('rolls back published gitlab releases when a subsequent plugin fails', asyn
   ])
 })
 
-test('restores overwritten gitlab releases instead of deleting them during rollback', async () => {
+test('restores overwritten GitLab releases instead of deleting them during rollback', async () => {
   context.env = { GITLAB_TOKEN: 'token' }
 
   context.repository = createMockRepository('gitlab')
@@ -371,7 +371,7 @@ test('restores overwritten gitlab releases instead of deleting them during rollb
   ])
 })
 
-test('does not roll back gitlab releases that were not written during the run', async () => {
+test('does not roll back GitLab releases that were not written during the run', async () => {
   context.env = { GITLAB_TOKEN: 'token' }
 
   context.repository = createMockRepository('gitlab')
@@ -394,7 +394,7 @@ test('does not roll back gitlab releases that were not written during the run', 
   ])
 })
 
-test('updates an existing gitlab release with the generated content', async () => {
+test('updates an existing GitLab release with the generated content', async () => {
   context.env = { GITLAB_TOKEN: 'token' }
 
   context.repository = createMockRepository('gitlab')
