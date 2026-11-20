@@ -27,7 +27,10 @@ The `finalize` hook is terminal: it runs on every workflow outcome. When a
 phase hook throws, plugin rollbacks run while the error unwinds, then every
 `finalize` handler still runs with the failure recorded on `context.outcome`.
 The same applies when the workflow is cancelled between phases. Handlers can
-use this to notify on both success and failure.
+use this to notify on both success and failure. When a `finalize` handler
+itself throws, the remaining handlers still run and the error is reported as
+a warning after the release report; a failing `finalize` handler never
+changes the workflow outcome.
 
 ## Skipping steps
 
@@ -165,10 +168,10 @@ dry-run and rollback safety, registration, and testing. Install it into your
 project with the [`skills`](https://skills.sh) CLI:
 
 ```sh
-npx skills add reelout/reelout --skill write-reelout-plugin
+npx skills add reelout/reelout --skill create-reelout-plugin
 ```
 
-The skill source lives at [`.agents/skills/write-reelout-plugin/SKILL.md`](https://github.com/reelout/reelout/blob/main/.agents/skills/write-reelout-plugin/SKILL.md).
+The skill source lives at [`.agents/skills/create-reelout-plugin/SKILL.md`](https://github.com/reelout/reelout/blob/main/.agents/skills/create-reelout-plugin/SKILL.md).
 
 ## Built-in plugins
 

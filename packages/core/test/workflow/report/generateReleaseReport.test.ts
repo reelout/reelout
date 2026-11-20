@@ -112,6 +112,7 @@ test('constructs structured package and release objects when release plans are p
 
   expect(report).toMatchInlineSnapshot(`
     {
+      "dryRun": false,
       "outcome": null,
       "packages": [],
       "plans": [
@@ -234,12 +235,21 @@ test('omits versionQualifier and releaseChannel from the report when set in the 
 
   expect(report).toMatchInlineSnapshot(`
     {
+      "dryRun": false,
       "outcome": null,
       "packages": [],
       "plans": [],
       "skipped": [],
     }
   `)
+})
+
+test('carries the dry-run flag from the context in the report', () => {
+  context.dryRun = true
+
+  const report = generateReleaseReport(context)
+
+  expect(report.dryRun).toBe(true)
 })
 
 test('omits release plan from report when release version is null or missing', () => {
@@ -252,6 +262,7 @@ test('omits release plan from report when release version is null or missing', (
 
   expect(report).toMatchInlineSnapshot(`
     {
+      "dryRun": false,
       "outcome": null,
       "packages": [],
       "plans": [],
@@ -276,6 +287,7 @@ test('carries the raw release outcome in the report when the workflow failed', (
 
   expect(report).toMatchInlineSnapshot(`
     {
+      "dryRun": false,
       "outcome": {
         "error": [Error: Something went wrong],
         "phase": {
@@ -300,6 +312,7 @@ test('carries the raw release outcome in the report when the workflow failed', (
 
   expect(report).toMatchInlineSnapshot(`
     {
+      "dryRun": false,
       "outcome": {
         "error": "Nothing went wrong, actually",
         "phase": null,

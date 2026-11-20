@@ -212,7 +212,7 @@ test('skips creating gitlab releases during dry-run mode', async () => {
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
       [
-        "Status: [32mSUCCESS[39m",
+        "Status: [32mSUCCESS[39m [33m(dry run)[39m",
       ],
       [
         "Release complete: [33mNo packages are scheduled for release.[39m",
@@ -251,7 +251,7 @@ test('previews the gitlab release skip during dry-run mode when GITLAB_TOKEN env
         "GitLab releases were not created: GITLAB_TOKEN is required for GitLab authentication.",
       ],
       [
-        "Status: [32mSUCCESS[39m",
+        "Status: [32mSUCCESS[39m [33m(dry run)[39m",
       ],
       [
         "Skipped: [1m[33m1 skipped[39m[22m

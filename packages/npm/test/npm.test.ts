@@ -506,7 +506,7 @@ test('does not modify package manifests when dry-run mode is enabled', async () 
         "[33mPackage could not be loaded: JSON file at "[1m/repo/package.json[22m" could not be read.[39m",
       ],
       [
-        "Status: [32mSUCCESS[39m",
+        "Status: [32mSUCCESS[39m [33m(dry run)[39m",
       ],
       [
         "Release complete: [1m[32m1 released[39m[22m [90m(0)[39m
@@ -752,7 +752,7 @@ test('forwards dryRun flag to publisher when dry-run mode is enabled', async () 
         "[33mPackage could not be loaded: JSON file at "[1m/repo/package.json[22m" could not be read.[39m",
       ],
       [
-        "Status: [32mSUCCESS[39m",
+        "Status: [32mSUCCESS[39m [33m(dry run)[39m",
       ],
       [
         "Release complete: [1m[32m2 released[39m[22m [90m(0)[39m

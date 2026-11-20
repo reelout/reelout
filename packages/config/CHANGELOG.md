@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.4.11](https://github.com/reelout/reelout/compare/%40reelout%2Fconfig%400.4.10...%40reelout%2Fconfig%400.4.11) (2026-11-20)
+
+### Features
+
+- **core:** mark dry runs in release reports ([#24](https://github.com/reelout/reelout/issues/24)) ([1bb4d31](https://github.com/reelout/reelout/commit/1bb4d318a6c4382e9f06ea1075f06fc51864548e))
+
+## [0.4.10](https://github.com/reelout/reelout/compare/%40reelout%2Fconfig%400.4.9...%40reelout%2Fconfig%400.4.10) (2026-11-20)
+
+### Bug Fixes
+
+- **core:** report finalize failures as warnings on successful releases ([#21](https://github.com/reelout/reelout/issues/21)) ([b1c7595](https://github.com/reelout/reelout/commit/b1c759590a44d57c9eead7c530533cf4345ecd2b))
+
+## [0.4.9](https://github.com/reelout/reelout/compare/%40reelout%2Fconfig%400.4.8...%40reelout%2Fconfig%400.4.9) (2026-11-20)
+
+### Features
+
+- **core:** run finalize hook on all terminal outcomes ([#19](https://github.com/reelout/reelout/issues/19)) ([97ae51e](https://github.com/reelout/reelout/commit/97ae51e0df83abcc2978f6bf687dad2d044e08f6))
+
 ## [0.4.8](https://github.com/reelout/reelout/compare/%40reelout%2Fconfig%400.4.7...%40reelout%2Fconfig%400.4.8) (2026-11-19)
 
 ### Features

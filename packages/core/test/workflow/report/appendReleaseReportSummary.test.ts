@@ -284,6 +284,60 @@ test('labels unnamed packages with their directory in the release table', async 
   })
 })
 
+test('appends the dry-run marker to the status line when the release ran in dry-run mode', async () => {
+  await temporaryDirectoryTask(async (directory) => {
+    const filePath = path.join(directory, 'summary.md')
+
+    appendReleaseReportSummary(
+      context.logger,
+      { GITHUB_ACTIONS: 'true', GITHUB_STEP_SUMMARY: filePath },
+      createReport({
+        dryRun: true,
+        outcome: createOutcome(),
+      })
+    )
+
+    expect(await fs.readFile(filePath, 'utf-8')).toMatchInlineSnapshot(`
+      "
+      ## ReelOut Release Report
+
+      **Status:** Success (dry run)
+
+      No packages are scheduled for release.
+      "
+    `)
+  })
+})
+
+test('appends the dry-run marker to the failure status when a dry run fails', async () => {
+  await temporaryDirectoryTask(async (directory) => {
+    const filePath = path.join(directory, 'summary.md')
+
+    appendReleaseReportSummary(
+      context.logger,
+      { GITHUB_ACTIONS: 'true', GITHUB_STEP_SUMMARY: filePath },
+      createReport({
+        dryRun: true,
+        outcome: createOutcome({
+          status: 'failure',
+          error: 'Publish failed\nPlease check NPM_TOKEN',
+        }),
+      })
+    )
+
+    expect(await fs.readFile(filePath, 'utf-8')).toMatchInlineSnapshot(`
+      "
+      ## ReelOut Release Report
+
+      **Status:** Failure (dry run)
+
+      > Publish failed
+      > Please check NPM_TOKEN
+      "
+    `)
+  })
+})
+
 test('does not create the summary file when the GitHub Actions flag is absent', async () => {
   await temporaryDirectoryTask(async (directory) => {
     const filePath = path.join(directory, 'summary.md')

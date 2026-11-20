@@ -81,7 +81,8 @@ checkout instead (for example, `fetch-depth: 0` with `actions/checkout`).
 skipped side effects, including file and changelog writes, the release commit,
 tag pushes, and GitHub release creation. Steps skipped for missing
 credentials are recorded as skipped steps and listed in the report's
-`Skipped` section.
+`Skipped` section. The release report marks dry runs on the status line, in
+both the console output and the GitHub Actions job summary.
 
 ## Failure rollback
 

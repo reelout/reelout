@@ -249,7 +249,7 @@ test('previews the skipped github release during dry-run mode', async () => {
         "GitHub releases will not be created: GITHUB_TOKEN is not set.",
       ],
       [
-        "Status: [32mSUCCESS[39m",
+        "Status: [32mSUCCESS[39m [33m(dry run)[39m",
       ],
       [
         "Skipped: [1m[33m1 skipped[39m[22m

@@ -431,7 +431,7 @@ test('prints a dry-run report for workspace releases', async () => {
             "[33mPackage could not be loaded: JSON file at "[1m<cwd>/packages/pkg5/package.json[22m" could not be parsed.[39m",
           ],
           [
-            "Status: [32mSUCCESS[39m",
+            "Status: [32mSUCCESS[39m [33m(dry run)[39m",
           ],
           [
             "Release complete: [1m[32m3 released[39m[22m [90m(4)[39m

@@ -13,7 +13,8 @@ import { resolveOutcomeErrorMessage } from './resolveErrorMessage'
  * Logs the terminal outcome status, a warning section for every skipped
  * step, and details for planned package releases. Displays package names,
  * directories, and version changes on success, or outputs the error message
- * on failure.
+ * on failure. Dry runs append a `(dry run)` marker to the status line; real
+ * releases print the status unmarked.
  *
  * @param logger Logger instance for outputting messages
  * @param report Release report containing outcome and package details
@@ -28,7 +29,9 @@ export function printReleaseReport(
       failure: colors.red('FAILURE'),
     }[report.outcome.status]
 
-    logger.info(`Status: ${statusLabel}`)
+    logger.info(
+      `Status: ${[statusLabel, report.dryRun && colors.yellow('(dry run)')].filter(Boolean).join(' ')}`
+    )
   }
 
   if (report.skipped.length > 0) {

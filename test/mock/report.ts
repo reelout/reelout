@@ -15,6 +15,7 @@ export const createOutcome = (
 export const createReport = (
   report: Partial<ReleaseReport>
 ): ReleaseReport => ({
+  dryRun: false,
   outcome: null,
   skipped: [],
   packages: [],
