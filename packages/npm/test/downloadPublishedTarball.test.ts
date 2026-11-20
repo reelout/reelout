@@ -141,6 +141,6 @@ test('throws when the registry responds with a non-OK status', async () => {
   await expect(
     downloadPublishedTarball(context, plan, npm, TARBALL_URL)
   ).rejects.toThrow(
-    `Failed to download published tarball from ${TARBALL_URL}: HTTP 404`
+    `Published tarball at "${TARBALL_URL}" could not be downloaded: HTTP 404`
   )
 })

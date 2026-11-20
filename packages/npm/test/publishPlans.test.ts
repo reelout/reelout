@@ -399,7 +399,7 @@ test('rejects before any publish when the registry version has different content
   })
 
   await expect(executeReleaseWorkflow(context, [plugin()])).rejects.toThrow(
-    'Cannot publish a@1.2.3: the registry already has this version with different content (different content in: lib/index.js).'
+    'Version "a@1.2.3" was not published: the registry already has this version with different content (different content in: lib/index.js).'
   )
 
   expect(execCommand).toHaveBeenCalledTimes(2)
@@ -424,7 +424,7 @@ test('rejects before any publish when the published content cannot be verified',
   })
 
   await expect(executeReleaseWorkflow(context, [plugin()])).rejects.toThrow(
-    'Cannot publish a@1.2.3: the published content could not be verified (the published tarball could not be parsed: truncated gzip stream).'
+    'Version "a@1.2.3" was not published: the published content could not be verified (the published tarball could not be parsed: truncated gzip stream).'
   )
 
   expect(publishPackage).toHaveBeenCalledTimes(0)
@@ -446,7 +446,7 @@ test('rejects before any publish when the published manifest lacks a tarball URL
   )
 
   await expect(executeReleaseWorkflow(context, [plugin()])).rejects.toThrow(
-    'Cannot publish a@1.2.3: the published content could not be verified (the published manifest does not include a tarball URL).'
+    'Version "a@1.2.3" was not published: the published content could not be verified (the published manifest does not include a tarball URL).'
   )
 
   expect(downloadTarball).toHaveBeenCalledTimes(0)
@@ -483,7 +483,7 @@ test('rejects when the probe output cannot be parsed', async () => {
   execCommand.mockImplementationOnce(async () => 'not-json')
 
   await expect(executeReleaseWorkflow(context, [plugin()])).rejects.toThrow(
-    'Could not parse registry metadata for a@1.2.3'
+    'Registry metadata for "a@1.2.3" could not be parsed'
   )
 
   expect(publishPackage).toHaveBeenCalledTimes(0)

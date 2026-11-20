@@ -153,12 +153,12 @@ async function probePlan(
 
   if (verdict.verdict === 'different') {
     throw new Error(
-      `Cannot publish ${target}: the registry already has this version with different content (${verdict.summary}).`
+      `Version "${target}" was not published: the registry already has this version with different content (${verdict.summary}).`
     )
   }
 
   throw new Error(
-    `Cannot publish ${target}: the published content could not be verified (${verdict.reason}).`
+    `Version "${target}" was not published: the published content could not be verified (${verdict.reason}).`
   )
 }
 

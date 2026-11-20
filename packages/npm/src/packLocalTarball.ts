@@ -56,7 +56,7 @@ export async function packLocalTarball(
 
     if (tarballName === undefined || tarballs.length !== 1) {
       throw new Error(
-        `Expected exactly one packed tarball in ${packDir}, found ${tarballs.length}.`
+        `A single packed tarball was expected in "${packDir}", found ${tarballs.length}.`
       )
     }
 

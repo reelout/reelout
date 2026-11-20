@@ -127,14 +127,14 @@ function parseRegistryMetadata(
     metadata = Array.isArray(parsed) ? parsed[0] : parsed
   } catch (error) {
     throw new Error(
-      `Could not parse registry metadata for ${target}: ${formatError(error)}`,
+      `Registry metadata for "${target}" could not be parsed: ${formatError(error)}`,
       { cause: error }
     )
   }
 
   if (!isJsonObject(metadata)) {
     throw new Error(
-      `Could not parse registry metadata for ${target}: unexpected metadata format`
+      `Registry metadata for "${target}" could not be parsed: unexpected metadata format`
     )
   }
 

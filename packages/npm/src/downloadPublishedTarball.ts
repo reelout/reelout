@@ -50,7 +50,7 @@ export async function downloadPublishedTarball(
 
   if (!response.ok) {
     throw new Error(
-      `Failed to download published tarball from ${tarballUrl}: HTTP ${response.status}`
+      `Published tarball at "${tarballUrl}" could not be downloaded: HTTP ${response.status}`
     )
   }
 
