@@ -244,6 +244,7 @@ export interface ReleasePlugin<P extends Package = Package> {
 export type ReleaseHookName = Exclude<keyof ReleasePlugin, 'name' | 'version'>
 
 export interface ReleaseReport {
+  dryRun: boolean
   outcome: ReleaseOutcome | null
   packages: {
     location: string
