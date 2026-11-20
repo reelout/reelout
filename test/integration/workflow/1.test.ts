@@ -37,7 +37,8 @@ import {
 //   U5  feat(pkg1): upgrade and
 //       feat(pkg2): upgrade        --CI--> pkg1  1.1.0 <- 1.0.0  minor
 //                                       +   pkg2  1.1.0 <- 1.0.0  minor
-//   U6  fix(pkg1): runtime fix     --CI--> pkg1  1.1.1 <- 1.1.0  patch
+//   U6  fix(pkg1): resolve
+//       runtime regression         --CI--> pkg1  1.1.1 <- 1.1.0  patch
 //   U7  dispatch (type: minor)     --CI--> nothing scheduled
 
 test('simulates mainline release workflows under manual promotion', async () => {

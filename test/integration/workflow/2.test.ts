@@ -28,7 +28,7 @@ import {
 } from '../../mock/git'
 
 // Parallel release tracks for @scope/pkg1 (config rules map main to the
-// dev.{date} channel and release-* branches to the rc channel):
+// dev.{date} qualifier and release-* branches to the rc qualifier):
 //
 //   main          B0 -- F1 -- F2 -- A -- F3 -------------- F4
 //                              |         \
@@ -40,7 +40,7 @@ import {
 //   B0   U1 init (pkg1@1.6.0-0)        F1   U2 feat
 //   F2   U3 feat                       A    U5 advance mainline (1.7.0-0)
 //   F3   U6 fix                        F3'  U7 cherry-pick of F3
-//   F5'  U8 fix on the track           F4   U10 feat (after 2026-01-02)
+//   F5'  U8 fix on the track           F4   U10 feat (on 2026-01-02)
 //
 //   CI outcomes:
 //     main         1.6.0-dev.20260101.0, 1.6.0-dev.20260101.1,

@@ -313,6 +313,8 @@ test('includes commits from both sides of a merge when slicing history at a tag'
     await execGit(cwd, ['commit', '-m', 'chore: start 1.3.0 development'])
     await execGit(cwd, ['tag', 'v1.3.0-dev.0'])
 
+    // The merge conflicts on package.json; the expected failure is
+    // swallowed, and the conflict is resolved by keeping the dev version.
     await execGit(cwd, ['merge', 'release/1.2.0']).catch(() => {})
     await writePackageJson(cwd, { version: '1.3.0-dev.0' })
     await execGit(cwd, ['add', '.'])

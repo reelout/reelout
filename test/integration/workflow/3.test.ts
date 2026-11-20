@@ -133,7 +133,7 @@ async function fetchReleaseBranch(cwd: string) {
 //
 //   main          B0 -- C -- D -- X -- E -- (CI: release 1.3.0-dev.1)
 //                       |_____|
-//                       release/1.2.0, fast-forward merged
+//                       release/1.2.0 (branched from B0), fast-forward merged
 //
 //   B0  chore: start 1.2.0 development  (tag v1.2.0-dev.0)
 //   C   fix: stabilize release candidate
@@ -141,7 +141,7 @@ async function fetchReleaseBranch(cwd: string) {
 //   X   chore: start 1.3.0 development  (tag v1.3.0-dev.0)
 //   E   feat: add next cycle feature
 
-test('continues the dev release channel after merging a release branch into main', async () => {
+test('continues the dev release channel after a fast-forward merge of a release branch into main', async () => {
   await temporaryDirectoryTask(async (remote) => {
     // User 1: Initialize the repository in the 1.2.0 development cycle
     await initializeDevRepository(remote)
