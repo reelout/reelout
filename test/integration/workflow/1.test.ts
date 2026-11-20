@@ -26,6 +26,21 @@ import {
   initializeGitRepository,
 } from '../../mock/git'
 
+// Mainline release flow under manual promotion (monorepo with
+// @scope/pkg1 and @scope/pkg2; each user push triggers a CI run on main):
+//
+//   U1  chore: init                --CI--> nothing scheduled
+//   U2  feat(pkg1): minor update   --CI--> pkg1  0.1.0 <- 0.0.0  minor
+//   U3  feat(pkg2): minor update   --CI--> pkg2  0.1.0 <- 0.0.0  minor
+//   U4  promotion dispatch         --CI--> pkg1  1.0.0 <- 0.1.0  major
+//                                       +   pkg2  1.0.0 <- 0.1.0  major
+//   U5  feat(pkg1): upgrade and
+//       feat(pkg2): upgrade        --CI--> pkg1  1.1.0 <- 1.0.0  minor
+//                                       +   pkg2  1.1.0 <- 1.0.0  minor
+//   U6  fix(pkg1): resolve
+//       runtime regression         --CI--> pkg1  1.1.1 <- 1.1.0  patch
+//   U7  dispatch (type: minor)     --CI--> nothing scheduled
+
 test('simulates mainline release workflows under manual promotion', async () => {
   await temporaryDirectoryTask(async (remote) => {
     // User 1: Init repository & project structure

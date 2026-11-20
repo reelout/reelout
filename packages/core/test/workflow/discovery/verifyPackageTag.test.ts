@@ -3,6 +3,7 @@
 
 import { execGit, pushGitChanges, verifyPackageTag } from '@reelout/core'
 import { buildPackage, writePackageJson } from '@reelout/npm'
+import { writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { temporaryDirectoryTask } from 'tempy'
 import { beforeEach, expect, test } from 'vitest'
@@ -143,5 +144,51 @@ test('returns false when tag is disconnected from current repository history', a
       expect(await verifyPackageTag(cwd, pkg, 'v1.1.0')).toBe(false)
       expect(await verifyPackageTag(cwd, pkg, 'v1.2.0-dev.0')).toBe(true)
     })
+  })
+})
+
+test('returns true when a release branch tag is connected through a merge commit', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    await initializeGitRepository(cwd)
+
+    await writePackageJson(cwd, { name: 'app', version: '1.2.0-dev.0' })
+    await execGit(cwd, ['add', '.'])
+    await execGit(cwd, ['commit', '-m', 'chore: initialize 1.2.0 development'])
+    await execGit(cwd, ['tag', 'v1.2.0-dev.0'])
+
+    await execGit(cwd, ['checkout', '-b', 'release/1.2.0'])
+
+    await writeFile(path.join(cwd, 'index.js'), 'export const value = 1;')
+    await execGit(cwd, ['add', '.'])
+    await execGit(cwd, ['commit', '-m', 'fix: stabilize release candidate'])
+
+    await writePackageJson(cwd, { name: 'app', version: '1.2.0' })
+    await execGit(cwd, ['add', '.'])
+    await execGit(cwd, ['commit', '-m', 'chore: release 1.2.0'])
+    await execGit(cwd, ['tag', 'v1.2.0'])
+
+    await execGit(cwd, ['checkout', 'main'])
+
+    await writePackageJson(cwd, { name: 'app', version: '1.3.0-dev.0' })
+    await execGit(cwd, ['add', '.'])
+    await execGit(cwd, ['commit', '-m', 'chore: start 1.3.0 development'])
+    await execGit(cwd, ['tag', 'v1.3.0-dev.0'])
+
+    // The merge conflicts on package.json; the expected failure is
+    // swallowed, and the conflict is resolved by keeping the dev version.
+    await execGit(cwd, ['merge', 'release/1.2.0']).catch(() => {})
+    await writePackageJson(cwd, { name: 'app', version: '1.3.0-dev.0' })
+    await execGit(cwd, ['add', '.'])
+    await execGit(cwd, ['commit', '--no-edit'])
+
+    const pkg = await buildPackage({
+      rootDir: cwd,
+      packageDir: '.',
+      workspace,
+      packageManager: 'npm',
+    })
+
+    expect(pkg.version).toBe('1.3.0-dev.0')
+    expect(await verifyPackageTag(cwd, pkg, 'v1.2.0')).toBe(true)
   })
 })
