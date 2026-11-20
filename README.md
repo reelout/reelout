@@ -15,10 +15,6 @@ publish packages through an extensible plugin system.
 - Supports prerelease branches and configurable release channels.
 - Extends the workflow with plugins for changelogs, npm publishing, Git tags,
   and GitHub or GitLab releases.
-- Skips steps whose credentials are missing instead of failing; `--strict`
-  turns the skips into errors.
-- Verifies already-published versions and skips them when the content is
-  identical, syncing their dist-tags.
 - Provides a dry run so you can inspect a release before publishing.
 
 ## Installation
