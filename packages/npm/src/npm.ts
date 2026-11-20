@@ -17,13 +17,14 @@ import { version } from '../package.json'
 import { bumpPackageDependencies } from './bumpPackageDependencies'
 import { isSameRepository } from './isSameRepository'
 import { loadPackages } from './loadPackages'
-import { publishPackage } from './publishPackage'
+import { PLUGIN_NAME } from './pluginName'
+import { publishPlans } from './publishPlans'
 import { resolveGitRepositoryFromPackage } from './resolveGitRepositoryFromPackage'
 import { resolveWorkspaceMembers } from './resolveWorkspaceMembers'
 import type { PublishAccess } from './types'
 import { verifyAuth } from './verifyAuth'
 
-export const PLUGIN_NAME = '@reelout/npm'
+export { PLUGIN_NAME }
 
 export interface PluginOptions {
   workspace?: Partial<Workspace>
@@ -41,9 +42,12 @@ export interface PluginOptions {
  *   registry authentication, failing in strict mode or recording a skipped publish step when no credentials exist.
  * - `discover`: Discovers workspace member packages, filters them against the `filter` patterns, and loads package metadata into context.
  * - `write`: Bumps internal workspace dependency versions in `package.json` files (skipped in dry-run).
- * - `publish`: Authenticates and publishes non-private packages to NPM, enabling provenance when
- *   the manifest repository is valid, matches the context repository, and is public. Skips entirely
- *   when configure-stage verification found no registry authentication.
+ * - `publish`: Authenticates and probes each publishable package version before
+ *   publishing, skipping versions the registry already holds with identical content
+ *   (syncing their dist-tags) and failing on different or unverifiable content.
+ *   Publishes non-private packages to NPM, enabling provenance when the manifest
+ *   repository is valid, matches the context repository, and is public. Skips
+ *   entirely when configure-stage verification found no registry authentication.
  *
  * @param options Configuration options for NPM workspace discovery and publishing behavior.
  * @returns A release plugin configured for NPM workspace management and package publication.
@@ -161,17 +165,11 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
         }
       } catch {}
 
-      for (const plan of context.plans) {
-        if (plan.package.provider === PLUGIN_NAME) {
-          await publishPackage(context, plan, {
-            dryRun: context.dryRun,
-            tag: context.releaseChannel,
-            access: options.access,
-            provenance,
-            stage: options.stage,
-          })
-        }
-      }
+      await publishPlans(context, {
+        access: options.access,
+        provenance,
+        stage: options.stage,
+      })
 
       return next(context)
     },
