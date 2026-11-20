@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.6.0](https://github.com/reelout/reelout/compare/%40reelout%2Fcontext%400.5.2...%40reelout%2Fcontext%400.6.0) (2026-11-20)
+
+### Features
+
+- **core:** run finalize hook on all terminal outcomes ([#19](https://github.com/reelout/reelout/issues/19)) ([97ae51e](https://github.com/reelout/reelout/commit/97ae51e0df83abcc2978f6bf687dad2d044e08f6))
+
 ## [0.5.2](https://github.com/reelout/reelout/compare/%40reelout%2Fcontext%400.5.1...%40reelout%2Fcontext%400.5.2) (2026-11-19)
 
 ### Features
