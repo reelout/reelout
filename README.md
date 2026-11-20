@@ -90,26 +90,6 @@ Releasing from an `alpha`, `beta`, or `next` branch applies the matching
 qualifier and npm channel automatically. See
 [Configuration](./docs/02-config.md) to define custom branch rules.
 
-## Credential-aware releases
-
-ReelOut publishes what your environment allows and reports the rest:
-
-- Without registry credentials (`NPM_TOKEN`, ambient `.npmrc`
-  authentication, or OIDC), npm publishing is skipped with a warning.
-- Without `GITHUB_TOKEN` or `GITLAB_TOKEN`, the matching hosting releases are
-  skipped with a warning.
-
-Skipped steps never fail the run: the remaining work completes, the exit code
-stays `0`, and the release report lists every skip. Pass `--strict` to turn
-missing credentials into errors, for pipelines that must publish everything.
-
-When a package version is already published, ReelOut compares the registry
-tarball with the local package before publishing. Identical content skips the
-publish and syncs the release-channel dist-tag; different or unverifiable
-content fails the release first. Existing GitHub and GitLab releases for a
-planned tag are overwritten, and the original content is restored if a later
-step fails.
-
 ## Documentation
 
 - [Getting Started](./docs/01-getting-started.md) — install ReelOut, preview a release, and publish your first version.

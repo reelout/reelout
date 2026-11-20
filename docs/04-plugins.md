@@ -35,7 +35,7 @@ changes the workflow outcome.
 ## Skipping steps
 
 A plugin that cannot perform its work — most commonly because a credential is
-missing — records a skipped step instead of failing:
+missing — logs a warning and skips the work instead of failing:
 
 ```ts
 async publish(context, next) {
@@ -43,12 +43,6 @@ async publish(context, next) {
     if (context.strict) {
       throw new Error('MY_TOKEN is required in strict mode.')
     }
-
-    context.skippedSteps.push({
-      plugin: 'my-plugin',
-      hook: 'publish',
-      reason: 'MY_TOKEN is required for my-plugin.',
-    })
 
     context.logger.warn('My releases will not be created: MY_TOKEN is required.')
 
@@ -59,12 +53,10 @@ async publish(context, next) {
 }
 ```
 
-Push exactly one record per skipped step and log one warning. Skips never
-change the release outcome: the workflow completes, the exit code stays `0`,
-and the release report renders a `Skipped` section listing every record. On
-GitHub Actions, the job summary gains a skipped-steps table. Throw instead of
-skipping when `context.strict` is `true`, so pipelines that require every step
-fail fast.
+Log one warning per skipped step. Skips never change the release outcome: the
+workflow completes, the exit code stays `0`, and the warnings appear in the
+console output. Throw instead of skipping when `context.strict` is `true`, so
+pipelines that require every step fail fast.
 
 ## Priorities
 
