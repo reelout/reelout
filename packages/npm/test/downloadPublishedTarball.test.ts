@@ -45,8 +45,10 @@ const pkg = { location: '.' } as Package
 
 const plan = { package: pkg, history: [], release: null } as ReleasePlan
 
+const scopedPkg = { location: '.', name: '@mock-scope/a' } as Package
+
 const scopedPlan = {
-  package: { location: '.', name: '@mock-scope/a' },
+  package: scopedPkg,
   history: [],
   release: null,
 } as ReleasePlan

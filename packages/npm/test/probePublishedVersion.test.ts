@@ -3,7 +3,7 @@
 
 import '../../../test/mock/env'
 
-import type { ReleasePlan } from '@reelout/core'
+import type { Package, ReleasePlan } from '@reelout/core'
 import type { PackageManagerInfo } from '@reelout/npm'
 import { probePublishedVersion } from '@reelout/npm'
 import { expect, test, vi } from 'vitest'
@@ -22,8 +22,10 @@ vi.mock(import('@reelout/npm/prepareAuth'), () => ({
 
 const packageManager = { name: 'npm' } as PackageManagerInfo
 
+const pkg = { name: 'a', location: 'a' } as Package
+
 const plan = {
-  package: { name: 'a', location: 'a' },
+  package: pkg,
   history: [],
   release: { type: 'patch', version: '1.2.3' },
 } as ReleasePlan

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
-import type { ReleasePlan } from '@reelout/core'
+import type { Package, ReleasePlan } from '@reelout/core'
 import type { PackageManagerInfo } from '@reelout/npm'
 import { packLocalTarball } from '@reelout/npm'
 import { writeFile } from 'node:fs/promises'
@@ -16,11 +16,9 @@ vi.mock(import('@reelout/core/util/execCommand'), () => ({
     execCommand(command, args, options),
 }))
 
-const plan = {
-  package: { location: '.' },
-  history: [],
-  release: null,
-} as ReleasePlan
+const pkg = { location: '.' } as Package
+
+const plan = { package: pkg, history: [], release: null } as ReleasePlan
 
 const npm = { name: 'npm' } as PackageManagerInfo
 
