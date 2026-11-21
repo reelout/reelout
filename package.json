@@ -45,7 +45,7 @@
   ],
   "scripts": {
     "build": "pnpm -r build && vite build --ssr --sourcemap",
-    "clean": "rimraf -g **/{*.tsbuildinfo,coverage,dist,generated}",
+    "clean": "rimraf -g **/{coverage,dist,generated}",
     "dev": "concurrently \"pnpm -r --parallel dev\" \"vite build --ssr --watch\"",
     "format": "eslint --fix . && prettier --write .",
     "lint": "eslint . && prettier --check . && tsx scripts/check.ts .",
