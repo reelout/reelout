@@ -2,40 +2,54 @@
 // Copyright (c) 2026 Fai
 
 import { verifyToken } from '@reelout/gitlab'
+import type { GitRepository } from '@reelout/core'
 import { beforeEach, expect, test, vi } from 'vitest'
 
-const showCurrentUserMock = vi.hoisted(() => vi.fn())
+const showProjectMock = vi.hoisted(() => vi.fn())
 
 const Gitlab = vi.hoisted(() =>
   vi.fn(function () {
-    return { Users: { showCurrentUser: showCurrentUserMock } }
+    return { Projects: { show: showProjectMock } }
   })
 )
 
 vi.mock('@gitbeaker/rest', () => ({ Gitlab }))
 
+const repository: GitRepository = {
+  host: 'gitlab',
+  owner: 'mock-owner',
+  repo: 'mock-repo',
+  url: 'https://gitlab.com/mock-owner/mock-repo',
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
 })
 
-test('verifies the token against the current-user endpoint', async () => {
-  showCurrentUserMock.mockResolvedValueOnce({ username: 'mock-user' })
+test('verifies the token against the release project', async () => {
+  showProjectMock.mockResolvedValueOnce({
+    path_with_namespace: 'mock-owner/mock-repo',
+  })
 
-  await verifyToken('mock-token')
+  await verifyToken('mock-token', repository)
 
   expect(Gitlab).toHaveBeenCalledTimes(1)
   expect(Gitlab).toHaveBeenCalledWith(
     expect.objectContaining({ token: 'mock-token' })
   )
-  expect(showCurrentUserMock).toHaveBeenCalledTimes(1)
+  expect(showProjectMock).toHaveBeenCalledWith(
+    encodeURIComponent('mock-owner/mock-repo')
+  )
 })
 
-test('wraps current-user request failures with the verification error', async () => {
+test('wraps project request failures with the verification error', async () => {
   const requestError = new Error('401 Unauthorized')
 
-  showCurrentUserMock.mockRejectedValueOnce(requestError)
+  showProjectMock.mockRejectedValueOnce(requestError)
 
-  const error: unknown = await verifyToken('mock-token').catch((err) => err)
+  const error: unknown = await verifyToken('mock-token', repository).catch(
+    (err) => err
+  )
 
   expect(error).toMatchInlineSnapshot(
     `[Error: The GITLAB_TOKEN environment variable could not be verified.]`

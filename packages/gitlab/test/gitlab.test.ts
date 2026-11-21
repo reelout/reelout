@@ -12,7 +12,7 @@ import {
   logger,
 } from '../../../test/mock/context'
 
-const showCurrentUserMock = vi.hoisted(() => vi.fn())
+const showProjectMock = vi.hoisted(() => vi.fn())
 
 const showReleaseMock = vi.hoisted(() => vi.fn())
 
@@ -25,7 +25,7 @@ const removeReleaseMock = vi.hoisted(() => vi.fn())
 const Gitlab = vi.hoisted(() =>
   vi.fn(function () {
     return {
-      Users: { showCurrentUser: showCurrentUserMock },
+      Projects: { show: showProjectMock },
       ProjectReleases: {
         create: createReleaseMock,
         edit: editReleaseMock,
@@ -95,7 +95,7 @@ test('skips GitLab release creation when GITLAB_TOKEN environment variable is mi
   await executeReleaseWorkflow(context, [plugin()])
 
   expect(context.outcome?.status).toBe('success')
-  expect(showCurrentUserMock).not.toHaveBeenCalled()
+  expect(showProjectMock).not.toHaveBeenCalled()
   expect(createReleaseMock).not.toHaveBeenCalled()
   expect(removeReleaseMock).not.toHaveBeenCalled()
   expect(logger.mock.calls).toMatchInlineSnapshot(`
@@ -132,7 +132,7 @@ test('fails workflow execution when GITLAB_TOKEN environment variable is missing
       "plugin": "@reelout/gitlab",
     }
   `)
-  expect(showCurrentUserMock).not.toHaveBeenCalled()
+  expect(showProjectMock).not.toHaveBeenCalled()
   expect(createReleaseMock).not.toHaveBeenCalled()
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
@@ -153,7 +153,7 @@ test('fails workflow execution when GITLAB_TOKEN fails verification', async () =
 
   context.plans = plans
 
-  showCurrentUserMock.mockRejectedValueOnce(new Error('Unauthorized'))
+  showProjectMock.mockRejectedValueOnce(new Error('Unauthorized'))
 
   await expect(
     executeReleaseWorkflow(context, [plugin()])
@@ -218,7 +218,7 @@ test('skips creating GitLab releases during dry-run mode', async () => {
 
   await executeReleaseWorkflow(context, [plugin()])
 
-  expect(showCurrentUserMock).toHaveBeenCalledTimes(1)
+  expect(showProjectMock).toHaveBeenCalledTimes(1)
   expect(Gitlab).toHaveBeenCalledWith({ token: 'token' })
   expect(createReleaseMock).toHaveBeenCalledTimes(0)
   expect(logger.mock.calls).toMatchInlineSnapshot(`
@@ -243,7 +243,7 @@ test('previews the GitLab release skip during dry-run mode when GITLAB_TOKEN env
   await executeReleaseWorkflow(context, [plugin()])
 
   expect(context.outcome?.status).toBe('success')
-  expect(showCurrentUserMock).not.toHaveBeenCalled()
+  expect(showProjectMock).not.toHaveBeenCalled()
   expect(createReleaseMock).not.toHaveBeenCalled()
   expect(removeReleaseMock).not.toHaveBeenCalled()
   expect(logger.mock.calls).toMatchInlineSnapshot(`
@@ -274,7 +274,7 @@ test('creates GitLab releases for packages in reverse alphabetical order', async
 
   await executeReleaseWorkflow(context, [plugin()])
 
-  expect(showCurrentUserMock).toHaveBeenCalledTimes(1)
+  expect(showProjectMock).toHaveBeenCalledTimes(1)
   expect(createReleaseMock).toHaveBeenCalledTimes(3)
   expect(createReleaseMock).toHaveBeenNthCalledWith(1, projectId, {
     name: 'v-b',
@@ -399,7 +399,7 @@ test('updates an existing GitLab release with the generated content', async () =
 
   await executeReleaseWorkflow(context, [plugin()])
 
-  expect(showCurrentUserMock).toHaveBeenCalledTimes(1)
+  expect(showProjectMock).toHaveBeenCalledTimes(1)
   expect(showReleaseMock).toHaveBeenCalledTimes(1)
   expect(showReleaseMock).toHaveBeenCalledWith(projectId, 'v1.0.0')
   expect(editReleaseMock).toHaveBeenCalledTimes(1)
