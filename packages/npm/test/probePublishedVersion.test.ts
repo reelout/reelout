@@ -106,3 +106,19 @@ test('omits the tarball URL when the dist entry has no string tarball', async ()
     distTags: { latest: '1.2.3' },
   })
 })
+
+test('defaults to empty dist-tags when the manifest omits them', async () => {
+  execCommand.mockImplementationOnce(async () =>
+    JSON.stringify({
+      name: 'a',
+      version: '1.2.3',
+    })
+  )
+
+  const probe = await probePublishedVersion(context, plan, packageManager)
+
+  expect(probe).toEqual({
+    status: 'published',
+    distTags: {},
+  })
+})
