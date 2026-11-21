@@ -17,8 +17,9 @@ import {
   printReleaseReportAnnotation,
 } from './report'
 
-/** Failure of a `finalize` handler, collected for the post-report warning. */
-interface FinalizeFailure {
+/** Failure of a hook handler, recorded with the owning hook and plugin. */
+interface HandlerFailure {
+  hook: ReleaseHookName
   plugin: string
   error: unknown
 }
@@ -30,8 +31,9 @@ interface FinalizeFailure {
  * `{ priority, handler }` definition — and wraps the handler in shared timing
  * and logging middleware. When the wrapped handler throws, the failure is
  * attributed to the current hook and plugin on `context.outcome` before the
- * error rethrows, except for `finalize` handlers whose failures never change
- * the workflow outcome.
+ * error rethrows. The `??=` assignment never overwrites a recorded outcome,
+ * so `finalize` failures — which run after the outcome is recorded — leave it
+ * unchanged.
  *
  * @param hookName Name of the hook to resolve
  * @param plugin Plugin owning the hook entry
@@ -90,12 +92,10 @@ function resolvePluginHook(
       } catch (err) {
         hasError = true
 
-        if (hookName !== 'finalize') {
-          context.outcome ??= {
-            status: 'failure',
-            error: err,
-            phase: current,
-          }
+        context.outcome ??= {
+          status: 'failure',
+          error: err,
+          phase: current,
         }
 
         throw err
@@ -121,27 +121,29 @@ function resolvePluginHook(
 }
 
 /**
- * Collect `finalize` handler failures for the post-report warning.
+ * Collect hook handler failures with the owning hook and plugin.
  *
- * Records a thrown error with the owning plugin and rethrows it, leaving the
- * rescue to the hook manager middleware so the remaining `finalize` handlers
- * still run.
+ * Records a thrown error and rethrows it. The hook manager middleware
+ * rescues rethrown `finalize` errors so the remaining `finalize` handlers
+ * still run; other hook errors keep the fail-fast unwinding behavior.
  *
- * @param handler Finalize handler to wrap
- * @param plugin Plugin owning the finalize handler
- * @param failures Collected finalize failures
- * @returns Wrapped finalize handler
+ * @param handler Hook handler to wrap
+ * @param hookName Name of the hook the handler is registered for
+ * @param plugin Plugin owning the hook handler
+ * @param failures Collected handler failures
+ * @returns Wrapped hook handler
  */
-function collectFinalizeFailures(
+function collectHandlerFailures(
   handler: HookHandler<ReleaseContext>,
+  hookName: ReleaseHookName,
   plugin: ReleasePlugin,
-  failures: FinalizeFailure[]
+  failures: HandlerFailure[]
 ): HookHandler<ReleaseContext> {
   return async (context, next) => {
     try {
       return await handler(context, next)
     } catch (error) {
-      failures.push({ plugin: plugin.name, error })
+      failures.push({ hook: hookName, plugin: plugin.name, error })
       throw error
     }
   }
@@ -178,9 +180,9 @@ function throwIfCancelled(context: ReleaseContext): void {
  * run while the error unwinds, then every `finalize` handler runs with the
  * failure recorded on `context.outcome`. When a `finalize` handler throws,
  * the hook manager middleware rescues the error so the remaining handlers
- * still run, and each failure is logged as a warning after the report. A
- * failing `finalize` handler never changes the workflow outcome and never
- * masks the original workflow error.
+ * still run, and each `finalize` failure is logged as a warning after the
+ * report. A failing `finalize` handler never changes the workflow outcome
+ * and never masks the original workflow error.
  *
  * @param context Release execution context containing runtime options and logger
  * @param plugins List of release plugins to execute
@@ -192,13 +194,9 @@ export async function executeReleaseWorkflow(
   context: ReleaseContext,
   plugins: readonly ReleasePlugin[]
 ): Promise<void> {
-  const phaseHookNames = RELEASE_HOOK_NAMES.filter(
-    (name) => name !== 'finalize'
-  )
-
   context.outcome = null
 
-  const finalizeFailures: FinalizeFailure[] = []
+  const handlerFailures: HandlerFailure[] = []
 
   const manager = new HookManager<
     Record<ReleaseHookName, HookHandler<ReleaseContext>>
@@ -220,14 +218,12 @@ export async function executeReleaseWorkflow(
 
       if (!definition) continue
 
-      const handler =
-        hookName === 'finalize'
-          ? collectFinalizeFailures(
-              definition.handler,
-              plugin,
-              finalizeFailures
-            )
-          : definition.handler
+      const handler = collectHandlerFailures(
+        definition.handler,
+        hookName,
+        plugin,
+        handlerFailures
+      )
 
       manager.on(hookName, handler, definition.priority)
     }
@@ -237,9 +233,9 @@ export async function executeReleaseWorkflow(
     index: number,
     context: ReleaseContext
   ): Promise<void> => {
-    const hook = phaseHookNames[index]
+    const hook = RELEASE_HOOK_NAMES[index]
 
-    if (!hook) return
+    if (!hook || hook === 'finalize') return
 
     throwIfCancelled(context)
 
@@ -272,7 +268,8 @@ export async function executeReleaseWorkflow(
   appendReleaseReportSummary(context.logger, context.env, report)
   printReleaseReportAnnotation(context.env, context.stdout, report)
 
-  for (const failure of finalizeFailures) {
+  for (const failure of handlerFailures) {
+    if (failure.hook !== 'finalize') continue
     if (failure.error === context.outcome.error) continue
 
     context.logger.warn(
