@@ -13,22 +13,31 @@ export const HookPriority = {
   Low: -50,
 } as const
 
-interface Tap<HookName, Context> {
+/**
+ * Registration options for a hook handler.
+ */
+interface HookOptions<Meta> {
+  priority?: number | undefined
+  meta?: Meta | undefined
+}
+
+interface Tap<HookName, Context, Meta = undefined> {
   name: HookName
   priority: number
   handler: HookMiddleware<Context>
+  meta: Meta | undefined
 }
 
 /**
  * Intercept a registered handler during dispatch.
  *
  * Runs in place of every registered handler, receiving the shared `context`,
- * the `registration` being dispatched, and the `next` function that continues
- * with the following handler.
+ * the `registration` being dispatched — including its `priority` and `meta` —
+ * and the `next` function that continues with the following handler.
  */
-export type Interceptor<HookName, Context> = (
+export type Interceptor<HookName, Context, Meta = undefined> = (
   context: Context,
-  registration: Tap<HookName, Context>,
+  registration: Tap<HookName, Context, Meta>,
   next: Next<Context>
 ) => void | Promise<void>
 
@@ -43,14 +52,16 @@ type InferContext<Handler extends HookMiddleware<unknown>> =
  */
 export class HookDispatcher<
   HookMap extends Record<keyof HookMap, HookMiddleware<unknown>>,
+  Meta = undefined,
 > {
   readonly #registry = new Map<
     keyof HookMap,
-    Tap<keyof HookMap, InferContext<HookMap[keyof HookMap]>>[]
+    Tap<keyof HookMap, InferContext<HookMap[keyof HookMap]>, Meta>[]
   >()
 
   readonly #middleware:
-    Interceptor<keyof HookMap, InferContext<HookMap[keyof HookMap]>> | undefined
+    | Interceptor<keyof HookMap, InferContext<HookMap[keyof HookMap]>, Meta>
+    | undefined
 
   /**
    * Create a hook dispatcher.
@@ -61,7 +72,8 @@ export class HookDispatcher<
   constructor(
     middleware?: Interceptor<
       keyof HookMap,
-      InferContext<HookMap[keyof HookMap]>
+      InferContext<HookMap[keyof HookMap]>,
+      Meta
     >
   ) {
     this.#middleware = middleware
@@ -71,20 +83,28 @@ export class HookDispatcher<
    * Register a handler function for a specific hook.
    *
    * Adds the `handler` to the internal registry for `name` and sorts the list
-   * so higher-priority handlers run first.
+   * so higher-priority handlers run first. An omitted or `undefined`
+   * `options.priority` defaults to `HookPriority.Normal`; `options.meta` is
+   * carried on the registration for the constructor middleware.
    *
    * @param name Name of the hook to register
    * @param handler Callback function executed when the hook triggers
-   * @param priority Execution order rank where higher values run earlier
+   * @param options Registration options carrying the execution order rank and
+   * the metadata exposed to the constructor middleware
    */
   on<HookName extends keyof HookMap>(
     name: HookName,
     handler: HookMiddleware<InferContext<HookMap[HookName]>>,
-    priority: number = HookPriority.Normal
+    options?: HookOptions<Meta>
   ): void {
     const registrations = this.#registry.get(name) ?? []
 
-    registrations.push({ name, handler, priority })
+    registrations.push({
+      name,
+      handler,
+      priority: options?.priority ?? HookPriority.Normal,
+      meta: options?.meta,
+    })
 
     registrations.sort((a, b) => b.priority - a.priority)
 

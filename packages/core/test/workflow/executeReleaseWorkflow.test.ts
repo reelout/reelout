@@ -999,6 +999,58 @@ test('logs failed duration and error status when a hook throws in development mo
   `)
 })
 
+test('logs exclusive handler duration when a hook calls next multiple times in development mode', async () => {
+  using _ = vi
+    .spyOn(process, 'env', 'get')
+    .mockReturnValue({ MODE: 'development' })
+
+  const outerPlugin: ReleasePlugin = {
+    name: 'outer',
+    version: '1.0.0',
+    configure: async (ctx, next) => {
+      await wait(1000)
+      await next(ctx)
+      await next(ctx)
+      await wait(500)
+    },
+  }
+
+  const innerPlugin: ReleasePlugin = {
+    name: 'inner',
+    version: '1.0.0',
+    configure: async () => {
+      await wait(2000)
+    },
+  }
+
+  await expect(
+    executeReleaseWorkflow(context, [outerPlugin, innerPlugin])
+  ).resolves.toBeUndefined()
+
+  expect(logger.mock.calls).toMatchInlineSnapshot(`
+    [
+      [
+        "[90m[configure][39m outer",
+      ],
+      [
+        "[90m[configure][39m inner",
+      ],
+      [
+        "[90m[configure][39m inner [36m2.00s[39m",
+      ],
+      [
+        "[90m[configure][39m outer [36m1.50s[39m",
+      ],
+      [
+        "Status: [32mSUCCESS[39m",
+      ],
+      [
+        "Release complete: [33mNo packages are scheduled for release.[39m",
+      ],
+    ]
+  `)
+})
+
 test('appends the release report to the GitHub Actions job summary when running on GitHub Actions', async () => {
   await temporaryDirectoryTask(async (directory) => {
     const filePath = path.join(directory, 'summary.md')
