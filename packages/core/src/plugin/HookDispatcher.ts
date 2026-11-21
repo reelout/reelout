@@ -1,12 +1,21 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
+/**
+ * Continuation that resumes the chain with the following middleware.
+ */
 export type Next<Context> = (context: Context) => Promise<void>
 
+/**
+ * Function executed as a single link in a hook dispatch chain.
+ */
 export type Middleware<Context> = {
   bivariant(context: Context, next: Next<Context>): void | Promise<void>
 }['bivariant']
 
+/**
+ * Priority ranks that order middleware within a hook.
+ */
 export const Priority = {
   High: 50,
   Normal: 0,

@@ -227,13 +227,13 @@ test('rethrows error when middleware throws an exception', async () => {
 test('dispatches each registered middleware through the constructor interceptor in priority order', async () => {
   const dispatched: string[] = []
 
-  dispatcher = new HookDispatcher<Record<string, Middleware<TestContext>>>(
-    async (ctx, registration, next) => {
-      dispatched.push(`${registration.hook}:${registration.priority}`)
+  const dispatcher = new HookDispatcher<
+    Record<string, Middleware<TestContext>>
+  >(async (ctx, registration, next) => {
+    dispatched.push(`${registration.hook}:${registration.priority}`)
 
-      return registration.middleware(ctx, next)
-    }
-  )
+    return registration.middleware(ctx, next)
+  })
 
   dispatcher.on(
     'run',
@@ -260,15 +260,15 @@ test('dispatches each registered middleware through the constructor interceptor 
 })
 
 test('continues the remaining middleware when the interceptor rescues a middleware error', async () => {
-  dispatcher = new HookDispatcher<Record<string, Middleware<TestContext>>>(
-    async (ctx, registration, next) => {
-      try {
-        return await registration.middleware(ctx, next)
-      } catch {
-        return next(ctx)
-      }
+  const dispatcher = new HookDispatcher<
+    Record<string, Middleware<TestContext>>
+  >(async (ctx, registration, next) => {
+    try {
+      return await registration.middleware(ctx, next)
+    } catch {
+      return next(ctx)
     }
-  )
+  })
 
   dispatcher.on('run', () => {
     throw new Error('Rescued failure')

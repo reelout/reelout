@@ -190,12 +190,14 @@ export async function executeReleaseWorkflow(
 
       return result
     } catch (error) {
-      middlewareFailures.push({ hook, plugin: plugin.name, error })
+      const phase = { hook, plugin: plugin.name }
+
+      middlewareFailures.push({ ...phase, error })
 
       context.outcome ??= {
         status: 'failure',
         error,
-        phase: { hook, plugin: plugin.name },
+        phase,
       }
 
       finish(true)
