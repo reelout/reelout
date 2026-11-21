@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.7.0](https://github.com/reelout/reelout/compare/%40reelout%2Fgit%400.6.4...%40reelout%2Fgit%400.7.0) (2026-11-21)
+
+### Features
+
+- make releases credential-aware ([#20](https://github.com/reelout/reelout/issues/20)) ([e4504a7](https://github.com/reelout/reelout/commit/e4504a709adea9f208589f4b2ad6027ae40bdf69))
+
 ## [0.6.4](https://github.com/reelout/reelout/compare/%40reelout%2Fgit%400.6.3...%40reelout%2Fgit%400.6.4) (2026-11-20)
 
 ### Features

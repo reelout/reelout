@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.7.0](https://github.com/reelout/reelout/compare/%40reelout%2Fcontext%400.6.2...%40reelout%2Fcontext%400.7.0) (2026-11-21)
+
+### Features
+
+- make releases credential-aware ([#20](https://github.com/reelout/reelout/issues/20)) ([e4504a7](https://github.com/reelout/reelout/commit/e4504a709adea9f208589f4b2ad6027ae40bdf69))
+
+### Bug Fixes
+
+- verify hosting tokens against the release repository ([#27](https://github.com/reelout/reelout/issues/27)) ([a4bf04f](https://github.com/reelout/reelout/commit/a4bf04f6eef9ebbdf9c406991f3471d19eda7660)), references [#20](https://github.com/reelout/reelout/issues/20)
+
 ## [0.6.2](https://github.com/reelout/reelout/compare/%40reelout%2Fcontext%400.6.1...%40reelout%2Fcontext%400.6.2) (2026-11-20)
 
 ### Features
