@@ -15,11 +15,17 @@ export const HookPriority = {
 
 interface HookRegistration<HookName, Context> {
   name: HookName
-  handler: HookHandler<Context>
   priority: number
+  handler: HookHandler<Context>
 }
 
-export type InferContext<Handler> =
+export type HandlerMiddleware<HookName, Context> = (
+  context: Context,
+  registration: HookRegistration<HookName, Context>,
+  next: NextFunction<Context>
+) => void | Promise<void>
+
+type InferContext<Handler extends HookHandler<unknown>> =
   Handler extends HookHandler<infer Context> ? Context : never
 
 /**
@@ -33,8 +39,21 @@ export class HookManager<
 > {
   readonly #registry = new Map<
     keyof HookMap,
-    HookRegistration<keyof HookMap, unknown>[]
+    HookRegistration<keyof HookMap, InferContext<HookMap[keyof HookMap]>>[]
   >()
+
+  readonly #middleware:
+    | HandlerMiddleware<keyof HookMap, InferContext<HookMap[keyof HookMap]>>
+    | undefined
+
+  constructor(
+    middleware?: HandlerMiddleware<
+      keyof HookMap,
+      InferContext<HookMap[keyof HookMap]>
+    >
+  ) {
+    this.#middleware = middleware
+  }
 
   /**
    * Register a handler function for a specific hook.
@@ -48,7 +67,7 @@ export class HookManager<
    */
   on<HookName extends keyof HookMap>(
     name: HookName,
-    handler: HookMap[HookName],
+    handler: HookHandler<InferContext<HookMap[HookName]>>,
     priority: number = HookPriority.Normal
   ): void {
     const registrations = this.#registry.get(name) ?? []
@@ -102,10 +121,9 @@ export class HookManager<
   ): Promise<void> {
     type Context = InferContext<HookMap[HookName]>
 
-    const registrations = (this.#registry.get(name) ?? []) as HookRegistration<
-      HookName,
-      Context
-    >[]
+    const registrations = this.#registry.get(name) ?? []
+
+    const middleware = this.#middleware
 
     const dispatch = async (index: number, context: Context): Promise<void> => {
       const registration = registrations[index]
@@ -116,11 +134,19 @@ export class HookManager<
 
       let isNextCalled = false
 
-      return await registration.handler(context, async (context) => {
+      const next: NextFunction<Context> = async (context) => {
         if (isNextCalled) return
         isNextCalled = true
         return await dispatch(index + 1, context)
-      })
+      }
+
+      let handler: HookHandler<Context> = registration.handler
+
+      if (middleware) {
+        handler = (context, next) => middleware(context, registration, next)
+      }
+
+      return await handler(context, next)
     }
 
     return await dispatch(0, context)

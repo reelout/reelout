@@ -3,7 +3,12 @@
 
 import { RELEASE_HOOK_NAMES } from '#config'
 import { HookManager, type HookHandler } from '#plugin'
-import type { ReleaseContext, ReleaseHookName, ReleasePlugin } from '#types'
+import type {
+  ReleaseContext,
+  ReleaseHookDefinition,
+  ReleaseHookName,
+  ReleasePlugin,
+} from '#types'
 import { colors } from 'consola/utils'
 import {
   appendReleaseReportSummary,
@@ -12,45 +17,16 @@ import {
   printReleaseReportAnnotation,
 } from './report'
 
-/** Failure of a `finalize` handler, collected for the post-report warning. */
-interface FinalizeFailure {
+interface woejwoejfowjefowje {
+  hook: ReleaseHookName
   plugin: string
   error: unknown
 }
 
-interface PluginHookRegistration {
-  /** Hook name the plugin handler registers under. */
-  hookName: ReleaseHookName
-  /** Plugin owning the hook entry. */
+function woeifwo(
+  hookName: ReleaseHookName,
   plugin: ReleasePlugin
-  /**
-   * Handle a thrown handler error instead of rethrowing it.
-   *
-   * When provided, the wrapper passes a thrown error to this callback and
-   * continues the middleware chain, so later handlers still run.
-   */
-  onHandlerError?: (error: unknown) => void
-}
-
-/**
- * Register a plugin's hook handler on the workflow hook manager.
- *
- * Normalizes the plugin's hook entry into a handler and priority, wraps the
- * handler in shared timing and logging middleware, and registers it under
- * the registration's hook name. When `onHandlerError` is provided, a thrown
- * handler error is passed to it and the middleware chain continues so later
- * handlers still run; without it the wrapper attributes the failure to the
- * current hook and plugin on `context.outcome` before rethrowing.
- *
- * @param manager Hook manager receiving the wrapped handler
- * @param registration Plugin hook registration carrying the error strategy
- */
-function registerPluginHook(
-  manager: HookManager<Record<ReleaseHookName, HookHandler<ReleaseContext>>>,
-  registration: PluginHookRegistration
-): void {
-  const { hookName, plugin } = registration
-
+): ReleaseHookDefinition | void {
   let hook = plugin[hookName]
 
   if (typeof hook === 'function') {
@@ -64,9 +40,9 @@ function registerPluginHook(
 
   const isSilent = import.meta.env.MODE === 'test'
 
-  manager.on(
-    hookName,
-    async (context, next) => {
+  return {
+    priority,
+    handler: async (context, next) => {
       const current = {
         hook: hookName,
         plugin: plugin.name,
@@ -99,11 +75,6 @@ function registerPluginHook(
       } catch (err) {
         hasError = true
 
-        if (registration.onHandlerError) {
-          registration.onHandlerError(err)
-          return await runNext()
-        }
-
         context.outcome ??= {
           status: 'failure',
           error: err,
@@ -129,8 +100,7 @@ function registerPluginHook(
         }
       }
     },
-    priority
-  )
+  }
 }
 
 /**
@@ -177,19 +147,44 @@ export async function executeReleaseWorkflow(
   context: ReleaseContext,
   plugins: readonly ReleasePlugin[]
 ): Promise<void> {
-  const phaseHookNames = RELEASE_HOOK_NAMES.filter(
-    (name) => name !== 'finalize'
-  )
-
   context.outcome = null
 
   const manager = new HookManager<
     Record<ReleaseHookName, HookHandler<ReleaseContext>>
-  >()
+  >(async (context, { name, handler }, next) => {
+    if (name === 'finalize') {
+      try {
+        return await handler(context, next)
+      } catch (err) {
+        return next(context)
+      }
+    }
 
-  for (const hookName of phaseHookNames) {
+    return handler(context, next)
+  })
+
+  const weowfjowjoe: woejwoejfowjefowje[] = []
+
+  for (const hook of RELEASE_HOOK_NAMES) {
     for (const plugin of plugins) {
-      registerPluginHook(manager, { hookName, plugin })
+      const x = woeifwo(hook, plugin)
+
+      if (x) {
+        const { handler } = x
+
+        manager.on(
+          hook,
+          async (context, next) => {
+            try {
+              return await handler(context, next)
+            } catch (err) {
+              weowfjowjoe.push({ hook, plugin: plugin.name, error: err })
+              throw err
+            }
+          },
+          x.priority
+        )
+      }
     }
   }
 
@@ -197,7 +192,7 @@ export async function executeReleaseWorkflow(
     index: number,
     context: ReleaseContext
   ): Promise<void> => {
-    const hook = phaseHookNames[index]
+    const hook = RELEASE_HOOK_NAMES[index]
 
     if (!hook) return
 
@@ -224,35 +219,22 @@ export async function executeReleaseWorkflow(
     }
   }
 
-  const finalizeFailures: FinalizeFailure[] = []
-
-  for (const plugin of plugins) {
-    registerPluginHook(manager, {
-      hookName: 'finalize',
-      plugin,
-      onHandlerError: (error) =>
-        finalizeFailures.push({ plugin: plugin.name, error }),
-    })
-  }
-
-  await manager.emit('finalize', context)
-
   const report = generateReleaseReport(context)
 
   printReleaseReport(context.logger, report)
   appendReleaseReportSummary(context.logger, context.env, report)
   printReleaseReportAnnotation(context.env, context.stdout, report)
 
-  for (const failure of finalizeFailures) {
-    if (failure.error === context.outcome.error) continue
-
-    context.logger.warn(
-      `Plugin "${failure.plugin}" could not finalize: ${
-        failure.error instanceof Error
-          ? failure.error.message
-          : String(failure.error)
-      }`
-    )
+  for (const woejowjfo of weowfjowjoe) {
+    if (woejowjfo.hook === 'finalize') {
+      context.logger.warn(
+        `Plugin "${woejowjfo.plugin}" could not finalize: ${
+          woejowjfo.error instanceof Error
+            ? woejowjfo.error.message
+            : String(woejowjfo.error)
+        }`
+      )
+    }
   }
 
   if (context.outcome.status === 'failure') {
