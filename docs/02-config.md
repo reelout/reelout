@@ -131,7 +131,7 @@ plugins: [
   '@reelout/core/analyzer',
   ['@reelout/npm', { access: 'public', provenance: true }],
   createMyPlugin({ verbose: true }),
-  { name: 'my-plugin', version: '1.0.0', finalize: myHandler },
+  { name: 'my-plugin', version: '1.0.0', finalize: myMiddleware },
 ]
 ```
 

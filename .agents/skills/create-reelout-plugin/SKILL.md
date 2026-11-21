@@ -1,6 +1,6 @@
 ---
 name: create-reelout-plugin
-description: 'Helps create, extend, and review ReelOut release plugins and hook handlers, including lifecycle, middleware, dry-run, rollback, registration, tests, and package setup.'
+description: 'Helps create, extend, and review ReelOut release plugins and hook middleware, including lifecycle, dry-run, rollback, registration, tests, and package setup.'
 ---
 
 # Create a ReelOut Plugin
@@ -203,6 +203,6 @@ runner:
 - For workflow-level examples, see
   [`packages/gitlab/test/gitlab.test.ts`](https://github.com/reelout/reelout/blob/main/packages/gitlab/test/gitlab.test.ts).
 
-Before finishing, confirm that successful handlers continue the chain once,
+Before finishing, confirm that successful middleware continue the chain once,
 failures report actionable errors, owned side effects are cleaned up where
 applicable, and exports and package metadata follow project conventions.
