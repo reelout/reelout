@@ -39,7 +39,7 @@ const packageManager = { name: 'npm' } as PackageManagerInfo
 
 const plan = {
   package: {
-    provider: 'npm',
+    provider: '@reelout/npm',
     name: 'a',
     version: '1.2.2',
     private: false,
