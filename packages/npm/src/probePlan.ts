@@ -4,7 +4,7 @@
 import type { ReleaseContext, ReleasePlan } from '@reelout/core'
 import { colors } from 'consola/utils'
 import type { PackageManagerInfo } from './inspectPackageManager'
-import type { PublishablePlan } from './isPublishablePlan'
+import type { ValidReleasePlan } from './isPublishablePlan'
 import { probePublishedVersion } from './probePublishedVersion'
 import { proveSamePublication } from './proveSamePublication'
 import { syncDistTag } from './syncDistTag'
@@ -23,7 +23,7 @@ import { syncDistTag } from './syncDistTag'
  */
 export async function probePlan(
   context: ReleaseContext,
-  plan: PublishablePlan,
+  plan: ValidReleasePlan,
   packageManager: PackageManagerInfo,
   skipped: Set<ReleasePlan>
 ): Promise<void> {

@@ -18,7 +18,7 @@ import { resolvePublishRegistry } from './resolvePublishRegistry'
  * - `oidc`: OIDC environment tokens are present.
  * - `token`: `NPM_TOKEN` or ambient registry credentials are present.
  */
-export type NpmAuthKind = 'none' | 'oidc' | 'token'
+export type AuthKind = 'none' | 'oidc' | 'token'
 
 /**
  * Verify that registry authentication is available for a release.
@@ -33,9 +33,7 @@ export type NpmAuthKind = 'none' | 'oidc' | 'token'
  * @param context Release context containing environment and working directory
  * @returns The detected authentication kind
  */
-export async function verifyAuth(
-  context: ReleaseContext
-): Promise<NpmAuthKind> {
+export async function verifyAuth(context: ReleaseContext): Promise<AuthKind> {
   const rootPackage = { location: '.', name: undefined } as Package
 
   if (context.env.NPM_TOKEN?.trim()) {

@@ -5,9 +5,9 @@ import type { Package, Release, ReleasePlan } from '@reelout/core'
 import { PLUGIN_NAME } from './PLUGIN_NAME'
 
 /**
- * A release plan that is publishable by the npm plugin.
+ * A release plan that is valid for publishing by the npm plugin.
  */
-export type PublishablePlan = ReleasePlan & {
+export type ValidReleasePlan = ReleasePlan & {
   package: Package & { name: string }
   release: Release & { version: string }
 }
@@ -18,7 +18,7 @@ export type PublishablePlan = ReleasePlan & {
  * @param plan The release plan to inspect
  * @returns True when the plan is npm-provided, public, named, and versioned
  */
-export function isPublishablePlan(plan: ReleasePlan): plan is PublishablePlan {
+export function isPublishablePlan(plan: ReleasePlan): plan is ValidReleasePlan {
   return (
     plan.package.provider === PLUGIN_NAME &&
     !plan.package.private &&
