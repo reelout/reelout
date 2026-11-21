@@ -2,8 +2,8 @@
 // Copyright (c) 2026 Fai
 
 import { verifyToken } from '@reelout/gitlab'
-import type { GitRepository } from '@reelout/core'
 import { beforeEach, expect, test, vi } from 'vitest'
+import { createMockRepository } from '../../../test/mock/context'
 
 const showProjectMock = vi.hoisted(() => vi.fn())
 
@@ -15,12 +15,7 @@ const Gitlab = vi.hoisted(() =>
 
 vi.mock('@gitbeaker/rest', () => ({ Gitlab }))
 
-const repository: GitRepository = {
-  host: 'gitlab',
-  owner: 'mock-owner',
-  repo: 'mock-repo',
-  url: 'https://gitlab.com/mock-owner/mock-repo',
-}
+const repository = createMockRepository('gitlab')
 
 beforeEach(() => {
   vi.clearAllMocks()

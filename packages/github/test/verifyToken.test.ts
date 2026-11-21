@@ -2,8 +2,8 @@
 // Copyright (c) 2026 Fai
 
 import { verifyToken } from '@reelout/github'
-import type { GitRepository } from '@reelout/core'
 import { beforeEach, expect, test, vi } from 'vitest'
+import { createMockRepository } from '../../../test/mock/context'
 
 const getRepo = vi.hoisted(() => vi.fn())
 
@@ -15,12 +15,7 @@ const Octokit = vi.hoisted(() =>
 
 vi.mock('@octokit/rest', () => ({ Octokit }))
 
-const repository: GitRepository = {
-  host: 'github',
-  owner: 'mock-owner',
-  repo: 'mock-repo',
-  url: 'https://github.com/mock-owner/mock-repo',
-}
+const repository = createMockRepository('github')
 
 beforeEach(() => {
   vi.clearAllMocks()
