@@ -68,6 +68,7 @@ Options:
   --channel <boolean or string>    Set the npm dist-tag (for example, `beta`); use `false` to disable it or `true` to follow branch rules.
   --allow-empty                    Run the release workflow even when no releasable changes are detected.
   --dry-run                        Preview the release without writing files, creating commits or tags, or publishing packages or releases.
+  --strict                         Turn missing-credential skipping into errors, for pipelines that must publish everything.
   --debug                          Enable verbose logging for troubleshooting. (default: false)
   -v, --version                    Display the version number.
   -h, --help                       Display command usage and options.

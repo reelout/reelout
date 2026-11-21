@@ -178,6 +178,7 @@ export interface ReleaseContext<P extends Package = Package> {
   releaseChannel: string | undefined
   allowEmpty: boolean
   dryRun: boolean
+  strict: boolean
   packages: P[]
   plans: ReleasePlan<P>[]
   outcome: ReleaseOutcome | null

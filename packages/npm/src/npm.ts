@@ -7,6 +7,7 @@ import {
   normalizeWorkspace,
   sortPackages,
   type Package,
+  type ReleasePlan,
   type ReleasePlugin,
   type Workspace,
 } from '@reelout/core'
@@ -15,14 +16,21 @@ import * as gitlab from '@reelout/gitlab'
 import { colors } from 'consola/utils'
 import { version } from '../package.json'
 import { bumpPackageDependencies } from './bumpPackageDependencies'
+import { inspectPackageManager } from './inspectPackageManager'
+import { isCompleteReleasePlan } from './isCompleteReleasePlan'
+import { isPublishOverRejection } from './isPublishOverRejection'
 import { isSameRepository } from './isSameRepository'
 import { loadPackages } from './loadPackages'
+import { PLUGIN_NAME } from './PLUGIN_NAME'
+import { probeReleasePlan } from './probeReleasePlan'
 import { publishPackage } from './publishPackage'
+import { recoverFromPublishOverRejection } from './recoverFromPublishOverRejection'
 import { resolveGitRepositoryFromPackage } from './resolveGitRepositoryFromPackage'
 import { resolveWorkspaceMembers } from './resolveWorkspaceMembers'
 import type { PublishAccess } from './types'
+import { verifyAuth } from './verifyAuth'
 
-export const PLUGIN_NAME = '@reelout/npm'
+export { PLUGIN_NAME }
 
 export interface PluginOptions {
   workspace?: Partial<Workspace>
@@ -36,107 +44,176 @@ export interface PluginOptions {
  *
  * @remarks
  * **Lifecycle Stages:**
- * - `configure`: Resolves and attaches Git repository metadata from root package configuration.
+ * - `configure`: Resolves and attaches Git repository metadata from root package configuration, then verifies
+ *   registry authentication, failing in strict mode or skipping the publish phase when no credentials exist.
  * - `discover`: Discovers workspace member packages, filters them against the `filter` patterns, and loads package metadata into context.
  * - `write`: Bumps internal workspace dependency versions in `package.json` files (skipped in dry-run).
- * - `publish`: Authenticates and publishes non-private packages to NPM, enabling provenance when
- *   the manifest repository is valid, matches the context repository, and is public.
+ * - `publish`: Authenticates and probes each publishable package version before
+ *   publishing, skipping versions the registry already holds with identical content
+ *   (syncing their dist-tags) and failing on different or unverifiable content.
+ *   Publishes non-private packages to NPM, enabling provenance when the manifest
+ *   repository is valid, matches the context repository, and is public. Skips
+ *   entirely when configure-stage verification found no registry authentication.
  *
  * @param options Configuration options for NPM workspace discovery and publishing behavior.
  * @returns A release plugin configured for NPM workspace management and package publication.
  */
-const npm = (options: PluginOptions = {}): ReleasePlugin => ({
-  name: PLUGIN_NAME,
-  version,
-  configure: async (context, next) => {
-    const repo = await resolveGitRepositoryFromPackage(context.cwd)
-    context.repository = repo ?? context.repository
+const npm = (options: PluginOptions = {}): ReleasePlugin => {
+  let publishSkipped = false
 
-    return next(context)
-  },
-  discover: async (context, next) => {
-    const packages: Package[] = []
+  return {
+    name: PLUGIN_NAME,
+    version,
+    configure: async (context, next) => {
+      const repo = await resolveGitRepositoryFromPackage(context.cwd)
+      context.repository = repo ?? context.repository
 
-    const workspace = normalizeWorkspace(context.cwd, options.workspace)
+      const authKind = await verifyAuth(context)
 
-    workspace.members ??= await resolveWorkspaceMembers(context.cwd)
+      if (authKind === 'none') {
+        if (context.strict) {
+          throw new Error(
+            'NPM_TOKEN is required for NPM authentication in strict mode.'
+          )
+        }
 
-    for (const result of await loadPackages(context.cwd, workspace)) {
-      if (result.status === 'fulfilled') {
-        packages.push({
-          ...result.value,
-          provider: PLUGIN_NAME,
-        })
-      } else {
+        publishSkipped = true
+
         context.logger.warn(
           colors.yellow(
-            `Package could not be loaded: ${formatError(result.reason)}`
+            'Packages will not be published: NPM_TOKEN is required for NPM authentication.'
           )
         )
       }
-    }
 
-    context.packages = sortPackages(
-      filterPackages(context.packages.concat(packages), context.filter)
-    )
+      return next(context)
+    },
+    discover: async (context, next) => {
+      const packages: Package[] = []
 
-    return next(context)
-  },
-  write: async (context, next) => {
-    if (context.dryRun) {
-      context.logger.debug('[DRY RUN] Package files will not be updated.')
-    } else {
-      await bumpPackageDependencies(
-        context.cwd,
-        context.plans.filter((plan) => plan.package.provider === PLUGIN_NAME)
-      )
-    }
+      const workspace = normalizeWorkspace(context.cwd, options.workspace)
 
-    return next(context)
-  },
-  publish: async (context, next) => {
-    let { provenance } = options
+      workspace.members ??= await resolveWorkspaceMembers(context.cwd)
 
-    try {
-      if (provenance == null) {
-        const repo = await resolveGitRepositoryFromPackage(context.cwd)
-
-        if (
-          repo &&
-          context.repository &&
-          isSameRepository(repo, context.repository)
-        ) {
-          if (repo.host === 'github' && context.env.GITHUB_TOKEN) {
-            provenance = await github.isRepositoryPublic(
-              context.env.GITHUB_TOKEN,
-              repo
+      for (const result of await loadPackages(context.cwd, workspace)) {
+        if (result.status === 'fulfilled') {
+          packages.push({
+            ...result.value,
+            provider: PLUGIN_NAME,
+          })
+        } else {
+          context.logger.warn(
+            colors.yellow(
+              `Package could not be loaded: ${formatError(result.reason)}`
             )
-          }
-
-          if (repo.host === 'gitlab' && context.env.GITLAB_TOKEN) {
-            provenance = await gitlab.isRepositoryPublic(
-              context.env.GITLAB_TOKEN,
-              repo
-            )
-          }
+          )
         }
       }
-    } catch {}
 
-    for (const plan of context.plans) {
-      if (plan.package.provider === PLUGIN_NAME) {
-        await publishPackage(context, plan, {
-          dryRun: context.dryRun,
-          tag: context.releaseChannel,
-          access: options.access,
-          provenance,
-          stage: options.stage,
-        })
+      context.packages = sortPackages(
+        filterPackages(context.packages.concat(packages), context.filter)
+      )
+
+      return next(context)
+    },
+    write: async (context, next) => {
+      if (context.dryRun) {
+        context.logger.debug('[DRY RUN] Package files will not be updated.')
+      } else {
+        await bumpPackageDependencies(
+          context.cwd,
+          context.plans.filter((plan) => plan.package.provider === PLUGIN_NAME)
+        )
       }
-    }
 
-    return next(context)
-  },
-})
+      return next(context)
+    },
+    publish: async (context, next) => {
+      if (publishSkipped) {
+        context.logger.debug(
+          'NPM publishing was skipped: no registry authentication was found.'
+        )
+
+        return next(context)
+      }
+
+      let { provenance } = options
+
+      try {
+        if (provenance == null) {
+          const repo = await resolveGitRepositoryFromPackage(context.cwd)
+
+          if (
+            repo &&
+            context.repository &&
+            isSameRepository(repo, context.repository)
+          ) {
+            if (repo.host === 'github' && context.env.GITHUB_TOKEN) {
+              provenance = await github.isRepositoryPublic(
+                context.env.GITHUB_TOKEN,
+                repo
+              )
+            }
+
+            if (repo.host === 'gitlab' && context.env.GITLAB_TOKEN) {
+              provenance = await gitlab.isRepositoryPublic(
+                context.env.GITLAB_TOKEN,
+                repo
+              )
+            }
+          }
+        }
+      } catch {}
+
+      const publishable = context.plans.filter(isCompleteReleasePlan)
+
+      const packageManager =
+        publishable.length > 0
+          ? await inspectPackageManager(context.cwd, { env: context.env })
+          : undefined
+
+      const skipped = new Set<ReleasePlan>()
+
+      if (packageManager) {
+        for (const plan of publishable) {
+          await probeReleasePlan(context, plan, packageManager, skipped)
+        }
+      }
+
+      for (const plan of context.plans) {
+        if (plan.package.provider !== PLUGIN_NAME || skipped.has(plan)) {
+          continue
+        }
+
+        try {
+          await publishPackage(context, plan, {
+            dryRun: context.dryRun,
+            tag: context.releaseChannel,
+            access: options.access,
+            provenance,
+            stage: options.stage,
+          })
+        } catch (error) {
+          if (
+            packageManager === undefined ||
+            !isCompleteReleasePlan(plan) ||
+            !isPublishOverRejection(error)
+          ) {
+            throw error
+          }
+
+          await recoverFromPublishOverRejection(
+            context,
+            plan,
+            packageManager,
+            error
+          )
+        }
+      }
+
+      return next(context)
+    },
+  }
+}
 
 export default npm

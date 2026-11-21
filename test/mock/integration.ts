@@ -12,7 +12,11 @@ vi.mock(import('@reelout/npm/publishPackage'), async () => ({
 }))
 
 vi.mock(import('@reelout/github/createRelease'), async () => ({
-  createRelease: vi.fn(),
+  createRelease: vi.fn(async () => async () => {}),
+}))
+
+vi.mock(import('@reelout/github/verifyToken'), async () => ({
+  verifyToken: vi.fn(async () => {}),
 }))
 
 vi.mock(import('@reelout/github/isRepositoryPublic'), async () => ({
@@ -29,5 +33,5 @@ beforeEach(() => {
   vi.stubEnv('GITHUB_ACTIONS', undefined)
   vi.stubEnv('GITHUB_STEP_SUMMARY', undefined)
   vi.stubEnv('GITHUB_TOKEN', 'mock-github-token')
-  vi.stubEnv('NPM_TOKEN', 'mock-npm-token')
+  vi.stubEnv('NPM_ID_TOKEN', 'mock-id-token')
 })

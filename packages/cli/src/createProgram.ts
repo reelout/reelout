@@ -32,6 +32,7 @@ interface Flags {
   channel?: boolean | string | undefined
   allowEmpty?: boolean | undefined
   dryRun?: boolean | undefined
+  strict?: boolean | undefined
   debug?: boolean | undefined
 }
 
@@ -88,6 +89,10 @@ export async function createProgram(
     .option(
       '--dry-run',
       'Preview the release without writing files, creating commits or tags, or publishing packages or releases.'
+    )
+    .option(
+      '--strict',
+      'Turn missing-credential skipping into errors, for pipelines that must publish everything.'
     )
     .option(
       '--debug',

@@ -30,14 +30,7 @@ export async function hasAuth(
   pkg: Package,
   packageManager: Partial<PackageManagerInfo>
 ): Promise<boolean> {
-  if (context.env.NPM_ID_TOKEN) {
-    return true
-  }
-
-  if (
-    context.env.ACTIONS_ID_TOKEN_REQUEST_URL &&
-    context.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN
-  ) {
+  if (hasOIDCAuth(context.env)) {
     return true
   }
 
@@ -85,6 +78,27 @@ export async function hasAuth(
     if (credentials.token || credentials.auth) {
       return true
     }
+  }
+
+  return false
+}
+
+/**
+ * Determine whether OpenID Connect environment tokens are configured.
+ *
+ * Detects a pre-issued `NPM_ID_TOKEN` or a GitHub Actions OIDC token pair
+ * without reading configuration files or spawning package manager commands.
+ *
+ * @param env Environment variables to inspect
+ * @returns True if OIDC environment tokens exist, otherwise false
+ */
+export function hasOIDCAuth(env: Readonly<NodeJS.ProcessEnv>): boolean {
+  if (env.NPM_ID_TOKEN) {
+    return true
+  }
+
+  if (env.ACTIONS_ID_TOKEN_REQUEST_URL && env.ACTIONS_ID_TOKEN_REQUEST_TOKEN) {
+    return true
   }
 
   return false

@@ -104,6 +104,8 @@ test('renders formatted help output when options are configured', async () => {
       --dry-run                        Preview the release without writing files,
                                        creating commits or tags, or publishing
                                        packages or releases.
+      --strict                         Turn missing-credential skipping into errors,
+                                       for pipelines that must publish everything.
       --debug                          Enable verbose logging for troubleshooting.
                                        (default: false)
       -v, --version                    Display the version number.
@@ -158,6 +160,11 @@ test('registers default release options when program is created', async () => {
       [
         "--dry-run",
         "Preview the release without writing files, creating commits or tags, or publishing packages or releases.",
+        undefined,
+      ],
+      [
+        "--strict",
+        "Turn missing-credential skipping into errors, for pipelines that must publish everything.",
         undefined,
       ],
       [
@@ -273,6 +280,36 @@ test('enables dryRun option when --dry-run flag is provided', async () => {
 
   await program.parseAsync(['node', 'test', '--dry-run'])
   expect(program.opts().dryRun).toBe(true)
+})
+
+test('enables strict option when --strict flag is provided', async () => {
+  resolveConfig.mockResolvedValue({ plugins: [] })
+
+  const program = await createProgram(options)
+
+  await program.parseAsync(['node', 'test'])
+  expect(program.opts().strict).toBe(undefined)
+
+  await program.parseAsync(['node', 'test', '--strict'])
+  expect(program.opts().strict).toBe(true)
+})
+
+test('forwards the strict flag into the context options when the command action runs', async () => {
+  resolveConfig.mockResolvedValue({ plugins: [] })
+
+  createContext.mockResolvedValue({})
+
+  const program = await createProgram(options)
+
+  await program.parseAsync(['node', 'test'])
+
+  expect(createContext.mock.calls).toHaveLength(1)
+  expect(createContext.mock.calls[0]?.[0]).not.toHaveProperty('strict')
+
+  await program.parseAsync(['node', 'test', '--strict'])
+
+  expect(createContext.mock.calls).toHaveLength(2)
+  expect(createContext.mock.calls[1]?.[0]).toMatchObject({ strict: true })
 })
 
 test('enables debug option when --debug flag is provided', async () => {

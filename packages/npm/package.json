@@ -49,6 +49,7 @@
     "lodash-es": "catalog:",
     "semver": "catalog:",
     "sort-package-json": "catalog:",
+    "tar": "catalog:",
     "yaml": "catalog:"
   },
   "devDependencies": {

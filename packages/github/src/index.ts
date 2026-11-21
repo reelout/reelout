@@ -3,6 +3,8 @@
 
 export * from './createRelease'
 export * from './deleteRelease'
+export * from './fetchRelease'
 export * from './github'
 export { default } from './github'
 export * from './isRepositoryPublic'
+export * from './verifyToken'

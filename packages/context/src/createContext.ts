@@ -34,6 +34,7 @@ export interface CreateContextOptions extends Omit<
   channel?: boolean | string | undefined
   allowEmpty?: boolean | undefined
   dryRun?: boolean | undefined
+  strict?: boolean | undefined
   debug?: boolean | undefined
 }
 
@@ -126,6 +127,7 @@ export async function createContext(
     releaseChannel,
     allowEmpty: !!options.allowEmpty,
     dryRun: !!options.dryRun,
+    strict: !!options.strict,
     packages: [],
     plans: [],
     outcome: null,

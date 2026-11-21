@@ -69,7 +69,26 @@ Running without `--dry-run` performs the release. With the default plugins, Reel
 3. **Write** changelogs, update package versions and internal dependency ranges,
    and create a release commit.
 4. **Publish** eligible packages to npm, push tags, and create a GitHub release
-   for each tag.
+   for each tag. Steps whose credentials are missing are skipped with a
+   warning (see [Missing credentials](#missing-credentials)).
+
+## Missing credentials
+
+When a credential is missing, ReelOut skips the step that needs it, logs a
+warning, and still exits `0`:
+
+- No registry credentials (`NPM_TOKEN`, ambient `.npmrc` authentication, or
+  OIDC)? Packages are not published.
+- No `GITHUB_TOKEN` or `GITLAB_TOKEN`? The matching hosting releases are not
+  created.
+
+Tags, changelogs, and the release commit still complete. Pass `--strict` to
+fail instead when a credential is missing, for pipelines that must publish
+everything.
+
+Versions the registry already holds are skipped too: ReelOut compares the
+published tarball with the local package, skips the publish when the content
+is identical, and syncs the release-channel dist-tag.
 
 ## Prereleases and channels
 

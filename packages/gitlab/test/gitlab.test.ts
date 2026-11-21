@@ -12,17 +12,60 @@ import {
   logger,
 } from '../../../test/mock/context'
 
-const createRelease = vi.hoisted(() => vi.fn())
+const showCurrentUserMock = vi.hoisted(() => vi.fn())
 
-const deleteRelease = vi.hoisted(() => vi.fn())
+const showReleaseMock = vi.hoisted(() => vi.fn())
 
-vi.mock(import('@reelout/gitlab/createRelease'), () => ({
-  createRelease,
-}))
+const editReleaseMock = vi.hoisted(() => vi.fn())
 
-vi.mock(import('@reelout/gitlab/deleteRelease'), () => ({
-  deleteRelease,
-}))
+const createReleaseMock = vi.hoisted(() => vi.fn())
+
+const removeReleaseMock = vi.hoisted(() => vi.fn())
+
+const Gitlab = vi.hoisted(() =>
+  vi.fn(function () {
+    return {
+      Users: { showCurrentUser: showCurrentUserMock },
+      ProjectReleases: {
+        create: createReleaseMock,
+        edit: editReleaseMock,
+        remove: removeReleaseMock,
+        show: showReleaseMock,
+      },
+    }
+  })
+)
+
+vi.mock('@gitbeaker/rest', () => ({ Gitlab }))
+
+const notFoundResponse = () => ({ cause: { response: { status: 404 } } })
+
+const createReleasePlan = (location: string, tag: string): ReleasePlan =>
+  ({
+    package: { location },
+    release: { tag: { name: tag, message: `Release notes for ${tag}` } },
+  }) as ReleasePlan
+
+const createNamedReleasePlan = (name: string, tag: string): ReleasePlan =>
+  ({
+    package: { location: name, name },
+    release: { tag: { name: tag, message: `Release notes for ${tag}` } },
+  }) as ReleasePlan
+
+const failingPlugin = {
+  name: 'test',
+  version: '1.0.0',
+  publish: () => {
+    throw new Error('Something went wrong')
+  },
+}
+
+const projectId = encodeURIComponent('mock-owner/mock-repo')
+
+const existingRelease = {
+  name: 'Old release name',
+  description: 'Old release description',
+}
 
 const plans = [
   {
@@ -40,11 +83,38 @@ const plans = [
 ] as ReleasePlan[]
 
 beforeEach(() => {
-  vi.resetAllMocks()
+  vi.clearAllMocks()
+  showReleaseMock.mockRejectedValue(notFoundResponse())
 })
 
-test('fails workflow execution when GITLAB_TOKEN environment variable is missing', async () => {
-  vi.stubEnv('GITLAB_TOKEN', undefined)
+test('skips GitLab release creation when GITLAB_TOKEN environment variable is missing', async () => {
+  context.repository = createMockRepository('gitlab')
+
+  context.plans = plans
+
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(context.outcome?.status).toBe('success')
+  expect(showCurrentUserMock).not.toHaveBeenCalled()
+  expect(createReleaseMock).not.toHaveBeenCalled()
+  expect(removeReleaseMock).not.toHaveBeenCalled()
+  expect(logger.mock.calls).toMatchInlineSnapshot(`
+    [
+      [
+        "GitLab releases will not be created: GITLAB_TOKEN is not set.",
+      ],
+      [
+        "Status: [32mSUCCESS[39m",
+      ],
+      [
+        "Release complete: [33mNo packages are scheduled for release.[39m",
+      ],
+    ]
+  `)
+})
+
+test('fails workflow execution when GITLAB_TOKEN environment variable is missing in strict mode', async () => {
+  context.strict = true
 
   context.repository = createMockRepository('gitlab')
 
@@ -53,17 +123,59 @@ test('fails workflow execution when GITLAB_TOKEN environment variable is missing
   await expect(
     executeReleaseWorkflow(context, [plugin()])
   ).rejects.toMatchInlineSnapshot(
-    `[Error: The GITLAB_TOKEN environment variable is required.]`
+    `[Error: The GITLAB_TOKEN environment variable is required in strict mode.]`
   )
 
-  expect(createRelease).not.toHaveBeenCalled()
+  expect(context.outcome?.phase).toMatchInlineSnapshot(`
+    {
+      "hook": "configure",
+      "plugin": "@reelout/gitlab",
+    }
+  `)
+  expect(showCurrentUserMock).not.toHaveBeenCalled()
+  expect(createReleaseMock).not.toHaveBeenCalled()
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
       [
         "Status: [31mFAILURE[39m",
       ],
       [
-        "Release complete: [31mThe GITLAB_TOKEN environment variable is required.[39m",
+        "Release complete: [31mThe GITLAB_TOKEN environment variable is required in strict mode.[39m",
+      ],
+    ]
+  `)
+})
+
+test('fails workflow execution when GITLAB_TOKEN fails verification', async () => {
+  context.env = { GITLAB_TOKEN: 'token' }
+
+  context.repository = createMockRepository('gitlab')
+
+  context.plans = plans
+
+  showCurrentUserMock.mockRejectedValueOnce(new Error('Unauthorized'))
+
+  await expect(
+    executeReleaseWorkflow(context, [plugin()])
+  ).rejects.toMatchInlineSnapshot(
+    `[Error: The GITLAB_TOKEN environment variable could not be verified.]`
+  )
+
+  expect(context.outcome?.phase).toMatchInlineSnapshot(`
+    {
+      "hook": "configure",
+      "plugin": "@reelout/gitlab",
+    }
+  `)
+  expect(createReleaseMock).not.toHaveBeenCalled()
+  expect(removeReleaseMock).not.toHaveBeenCalled()
+  expect(logger.mock.calls).toMatchInlineSnapshot(`
+    [
+      [
+        "Status: [31mFAILURE[39m",
+      ],
+      [
+        "Release complete: [31mThe GITLAB_TOKEN environment variable could not be verified.[39m",
       ],
     ]
   `)
@@ -82,7 +194,7 @@ test('fails workflow execution when repository context is unavailable', async ()
     `[Error: A Git repository is required to create a GitLab release.]`
   )
 
-  expect(createRelease).not.toHaveBeenCalled()
+  expect(createReleaseMock).not.toHaveBeenCalled()
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
       [
@@ -95,7 +207,7 @@ test('fails workflow execution when repository context is unavailable', async ()
   `)
 })
 
-test('skips creating gitlab releases during dry-run mode', async () => {
+test('skips creating GitLab releases during dry-run mode', async () => {
   context.env = { GITLAB_TOKEN: 'token' }
 
   context.dryRun = true
@@ -106,7 +218,9 @@ test('skips creating gitlab releases during dry-run mode', async () => {
 
   await executeReleaseWorkflow(context, [plugin()])
 
-  expect(createRelease).toHaveBeenCalledTimes(0)
+  expect(showCurrentUserMock).toHaveBeenCalledTimes(1)
+  expect(Gitlab).toHaveBeenCalledWith({ token: 'token' })
+  expect(createReleaseMock).toHaveBeenCalledTimes(0)
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
       [
@@ -119,8 +233,8 @@ test('skips creating gitlab releases during dry-run mode', async () => {
   `)
 })
 
-test('creates gitlab releases for packages in reverse alphabetical order', async () => {
-  context.env = { GITLAB_TOKEN: 'token' }
+test('previews the GitLab release skip during dry-run mode when GITLAB_TOKEN environment variable is missing', async () => {
+  context.dryRun = true
 
   context.repository = createMockRepository('gitlab')
 
@@ -128,133 +242,207 @@ test('creates gitlab releases for packages in reverse alphabetical order', async
 
   await executeReleaseWorkflow(context, [plugin()])
 
-  expect(createRelease).toHaveBeenCalledTimes(3)
-  expect(createRelease).toHaveBeenNthCalledWith(
-    1,
-    expect.objectContaining({ cwd: '/repo' }),
-    expect.objectContaining({
-      package: expect.objectContaining({ entry: false, name: 'b' }),
-    }),
-    'token',
-    {
-      host: 'gitlab',
-      owner: 'mock-owner',
-      repo: 'mock-repo',
-      url: 'https://gitlab.com/mock-owner/mock-repo',
-    }
-  )
-  expect(createRelease).toHaveBeenNthCalledWith(
-    2,
-    expect.objectContaining({ cwd: '/repo' }),
-    expect.objectContaining({
-      package: expect.objectContaining({ entry: false, name: 'a' }),
-    }),
-    'token',
-    {
-      host: 'gitlab',
-      owner: 'mock-owner',
-      repo: 'mock-repo',
-      url: 'https://gitlab.com/mock-owner/mock-repo',
-    }
-  )
-  expect(createRelease).toHaveBeenNthCalledWith(
-    3,
-    expect.objectContaining({ cwd: '/repo' }),
-    expect.objectContaining({
-      package: expect.objectContaining({ entry: true }),
-    }),
-    'token',
-    {
-      host: 'gitlab',
-      owner: 'mock-owner',
-      repo: 'mock-repo',
-      url: 'https://gitlab.com/mock-owner/mock-repo',
-    }
-  )
+  expect(context.outcome?.status).toBe('success')
+  expect(showCurrentUserMock).not.toHaveBeenCalled()
+  expect(createReleaseMock).not.toHaveBeenCalled()
+  expect(removeReleaseMock).not.toHaveBeenCalled()
+  expect(logger.mock.calls).toMatchInlineSnapshot(`
+    [
+      [
+        "GitLab releases will not be created: GITLAB_TOKEN is not set.",
+      ],
+      [
+        "Status: [32mSUCCESS[39m [33m(dry run)[39m",
+      ],
+      [
+        "Release complete: [33mNo packages are scheduled for release.[39m",
+      ],
+    ]
+  `)
 })
 
-test('rolls back published gitlab releases when a subsequent plugin fails', async () => {
+test('creates GitLab releases for packages in reverse alphabetical order', async () => {
   context.env = { GITLAB_TOKEN: 'token' }
 
   context.repository = createMockRepository('gitlab')
 
-  context.plans = plans
-
-  const plugins = [
-    plugin(),
-    {
-      name: 'test',
-      version: '1.0.0',
-      publish: () => {
-        throw new Error('Something went wrong')
-      },
-    },
+  context.plans = [
+    createReleasePlan('.', 'v-root'),
+    createNamedReleasePlan('a', 'v-a'),
+    createNamedReleasePlan('b', 'v-b'),
   ]
 
-  await expect(executeReleaseWorkflow(context, plugins)).rejects.toThrow(
-    'Something went wrong'
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(showCurrentUserMock).toHaveBeenCalledTimes(1)
+  expect(createReleaseMock).toHaveBeenCalledTimes(3)
+  expect(createReleaseMock).toHaveBeenNthCalledWith(1, projectId, {
+    name: 'v-b',
+    tag_name: 'v-b',
+    description: 'Release notes for v-b',
+    ref: 'abc123',
+  })
+  expect(createReleaseMock).toHaveBeenNthCalledWith(2, projectId, {
+    name: 'v-a',
+    tag_name: 'v-a',
+    description: 'Release notes for v-a',
+    ref: 'abc123',
+  })
+  expect(createReleaseMock).toHaveBeenNthCalledWith(3, projectId, {
+    name: 'v-root',
+    tag_name: 'v-root',
+    description: 'Release notes for v-root',
+    ref: 'abc123',
+  })
+})
+
+test('rolls back published GitLab releases when a subsequent plugin fails', async () => {
+  context.env = { GITLAB_TOKEN: 'token' }
+
+  context.repository = createMockRepository('gitlab')
+
+  context.plans = [
+    createReleasePlan('.', 'v-root'),
+    createNamedReleasePlan('a', 'v-a'),
+    createNamedReleasePlan('b', 'v-b'),
+  ]
+
+  await expect(
+    executeReleaseWorkflow(context, [plugin(), failingPlugin])
+  ).rejects.toThrow('Something went wrong')
+
+  expect(createReleaseMock).toHaveBeenCalledTimes(3)
+  expect(removeReleaseMock).toHaveBeenCalledTimes(3)
+  expect(removeReleaseMock.mock.calls.map((call) => call[1])).toEqual([
+    'v-b',
+    'v-a',
+    'v-root',
+  ])
+})
+
+test('restores overwritten GitLab releases instead of deleting them during rollback', async () => {
+  context.env = { GITLAB_TOKEN: 'token' }
+
+  context.repository = createMockRepository('gitlab')
+
+  context.plans = [
+    createReleasePlan('.', 'v-root'),
+    createNamedReleasePlan('a', 'v-a'),
+    createNamedReleasePlan('b', 'v-b'),
+  ]
+
+  showReleaseMock.mockImplementation(
+    async (_projectId: string, tagName: string) => {
+      if (tagName === 'v-b') {
+        return existingRelease
+      }
+
+      throw notFoundResponse()
+    }
   )
 
-  expect(deleteRelease.mock.calls).toMatchInlineSnapshot(`
-    [
-      [
-        {
-          "package": {
-            "dependencies": [
-              "a",
-              "b",
-            ],
-            "entry": true,
-            "location": ".",
-          },
-          "release": null,
-        },
-        "token",
-        {
-          "host": "gitlab",
-          "owner": "mock-owner",
-          "repo": "mock-repo",
-          "url": "https://gitlab.com/mock-owner/mock-repo",
-        },
-      ],
-      [
-        {
-          "package": {
-            "dependencies": [
-              "b",
-            ],
-            "entry": false,
-            "location": "a",
-            "name": "a",
-          },
-          "release": null,
-        },
-        "token",
-        {
-          "host": "gitlab",
-          "owner": "mock-owner",
-          "repo": "mock-repo",
-          "url": "https://gitlab.com/mock-owner/mock-repo",
-        },
-      ],
-      [
-        {
-          "package": {
-            "dependencies": [],
-            "entry": false,
-            "location": "b",
-            "name": "b",
-          },
-          "release": null,
-        },
-        "token",
-        {
-          "host": "gitlab",
-          "owner": "mock-owner",
-          "repo": "mock-repo",
-          "url": "https://gitlab.com/mock-owner/mock-repo",
-        },
-      ],
-    ]
-  `)
+  await expect(
+    executeReleaseWorkflow(context, [plugin(), failingPlugin])
+  ).rejects.toThrow('Something went wrong')
+
+  expect(createReleaseMock).toHaveBeenCalledTimes(2)
+  expect(editReleaseMock).toHaveBeenCalledTimes(2)
+  expect(editReleaseMock).toHaveBeenNthCalledWith(1, projectId, 'v-b', {
+    name: 'v-b',
+    description: 'Release notes for v-b',
+  })
+  expect(editReleaseMock).toHaveBeenNthCalledWith(2, projectId, 'v-b', {
+    name: 'Old release name',
+    description: 'Old release description',
+  })
+  expect(removeReleaseMock).toHaveBeenCalledTimes(2)
+  expect(removeReleaseMock.mock.calls.map((call) => call[1])).toEqual([
+    'v-a',
+    'v-root',
+  ])
+  expect(logger.mock.calls).toContainEqual([
+    'GitLab release for tag "v-b" already exists: its name and description were overwritten with the freshly generated content.',
+  ])
+})
+
+test('does not roll back GitLab releases that were not written during the run', async () => {
+  context.env = { GITLAB_TOKEN: 'token' }
+
+  context.repository = createMockRepository('gitlab')
+
+  context.plans = [
+    { package: { location: '.' }, release: null } as ReleasePlan,
+    createNamedReleasePlan('a', 'v-a'),
+    createNamedReleasePlan('b', 'v-b'),
+  ]
+
+  await expect(
+    executeReleaseWorkflow(context, [plugin(), failingPlugin])
+  ).rejects.toThrow('Something went wrong')
+
+  expect(createReleaseMock).toHaveBeenCalledTimes(2)
+  expect(removeReleaseMock).toHaveBeenCalledTimes(2)
+  expect(removeReleaseMock.mock.calls.map((call) => call[1])).toEqual([
+    'v-b',
+    'v-a',
+  ])
+})
+
+test('updates an existing GitLab release with the generated content', async () => {
+  context.env = { GITLAB_TOKEN: 'token' }
+
+  context.repository = createMockRepository('gitlab')
+
+  context.plans = [createReleasePlan('pkg', 'v1.0.0')]
+
+  showReleaseMock.mockResolvedValueOnce(existingRelease)
+
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(showCurrentUserMock).toHaveBeenCalledTimes(1)
+  expect(showReleaseMock).toHaveBeenCalledTimes(1)
+  expect(showReleaseMock).toHaveBeenCalledWith(projectId, 'v1.0.0')
+  expect(editReleaseMock).toHaveBeenCalledTimes(1)
+  expect(editReleaseMock).toHaveBeenCalledWith(projectId, 'v1.0.0', {
+    name: 'v1.0.0',
+    description: 'Release notes for v1.0.0',
+  })
+  expect(createReleaseMock).not.toHaveBeenCalled()
+  expect(removeReleaseMock).not.toHaveBeenCalled()
+  expect(logger.mock.calls).toContainEqual([
+    'GitLab release for tag "v1.0.0" already exists: its name and description were overwritten with the freshly generated content.',
+  ])
+})
+
+test('restores overwritten releases and deletes created releases independently during rollback', async () => {
+  context.env = { GITLAB_TOKEN: 'token' }
+
+  context.repository = createMockRepository('gitlab')
+
+  context.plans = [
+    createReleasePlan('a', 'v1.0.0'),
+    createReleasePlan('b', 'v2.0.0'),
+  ]
+
+  showReleaseMock.mockImplementation(
+    async (_projectId: string, tagName: string) => {
+      if (tagName === 'v1.0.0') {
+        return existingRelease
+      }
+
+      throw notFoundResponse()
+    }
+  )
+
+  await expect(
+    executeReleaseWorkflow(context, [plugin(), failingPlugin])
+  ).rejects.toThrow('Something went wrong')
+
+  expect(editReleaseMock).toHaveBeenCalledTimes(2)
+  expect(editReleaseMock).toHaveBeenNthCalledWith(2, projectId, 'v1.0.0', {
+    name: 'Old release name',
+    description: 'Old release description',
+  })
+  expect(removeReleaseMock).toHaveBeenCalledTimes(1)
+  expect(removeReleaseMock).toHaveBeenCalledWith(projectId, 'v2.0.0')
 })

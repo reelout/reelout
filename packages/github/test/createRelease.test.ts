@@ -4,35 +4,50 @@
 import { buildReleaseNotes, type ReleasePlan } from '@reelout/core'
 import { createRelease } from '@reelout/github'
 import { beforeEach, expect, test, vi } from 'vitest'
-import { context, repository } from '../../../test/mock/context'
+import { context, logger, repository } from '../../../test/mock/context'
 import { createMockCommit } from '../../../test/mock/git'
+
+const getReleaseByTag = vi.hoisted(() => vi.fn())
 
 const createReleaseMock = vi.hoisted(() => vi.fn())
 
+const updateRelease = vi.hoisted(() => vi.fn())
+
+const deleteRelease = vi.hoisted(() => vi.fn())
+
 const Octokit = vi.hoisted(() =>
   vi.fn(function () {
-    return { rest: { repos: { createRelease: createReleaseMock } } }
+    return {
+      rest: {
+        repos: {
+          getReleaseByTag,
+          createRelease: createReleaseMock,
+          updateRelease,
+          deleteRelease,
+        },
+      },
+    }
   })
 )
 
 vi.mock('@octokit/rest', () => ({ Octokit }))
 
+const notFound = () => Object.assign(new Error('Not Found'), { status: 404 })
+
 beforeEach(() => {
   vi.clearAllMocks()
+  getReleaseByTag.mockRejectedValue(notFound())
 })
 
-test('does not create release without message', async () => {
-  await createRelease(
+test('returns no rollback without a tag message', async () => {
+  const first = await createRelease(
     context,
-    {
-      package: { location: '.' },
-      release: null,
-    } as ReleasePlan,
+    { package: { location: '.' }, release: null } as ReleasePlan,
     'token',
     repository
   )
 
-  await createRelease(
+  const second = await createRelease(
     context,
     {
       package: { location: '.' },
@@ -42,12 +57,13 @@ test('does not create release without message', async () => {
     repository
   )
 
+  expect(first).toBeUndefined()
+  expect(second).toBeUndefined()
   expect(Octokit).not.toHaveBeenCalled()
-  expect(createReleaseMock).not.toHaveBeenCalled()
 })
 
-test('creates release when tag has message', async () => {
-  await createRelease(
+test('creates a release and returns a rollback that deletes it', async () => {
+  const rollback = await createRelease(
     context,
     {
       package: { location: '.' },
@@ -64,10 +80,19 @@ test('creates release when tag has message', async () => {
     repository
   )
 
+  if (!rollback) {
+    throw new Error('Expected createRelease to return a rollback.')
+  }
+
   expect(Octokit).toHaveBeenCalledTimes(1)
   expect(Octokit).toHaveBeenCalledWith(
     expect.objectContaining({ auth: 'mock-token' })
   )
+  expect(getReleaseByTag).toHaveBeenCalledWith({
+    owner: 'mock-owner',
+    repo: 'mock-repo',
+    tag: 'v1.2.3',
+  })
   expect(createReleaseMock).toHaveBeenCalledTimes(1)
   expect(createReleaseMock).toHaveBeenCalledWith({
     owner: 'mock-owner',
@@ -79,4 +104,144 @@ test('creates release when tag has message', async () => {
     draft: false,
     prerelease: false,
   })
+  expect(deleteRelease).not.toHaveBeenCalled()
+
+  getReleaseByTag.mockResolvedValueOnce({ data: { id: 42 } })
+
+  await rollback()
+
+  expect(deleteRelease).toHaveBeenCalledTimes(1)
+  expect(deleteRelease).toHaveBeenCalledWith({
+    owner: 'mock-owner',
+    repo: 'mock-repo',
+    release_id: 42,
+  })
+})
+
+test('overwrites an existing release and returns a rollback that restores it', async () => {
+  getReleaseByTag.mockResolvedValueOnce({
+    data: { id: 42, name: 'Original name', body: 'Original body' },
+  })
+
+  const rollback = await createRelease(
+    context,
+    {
+      package: { location: '.' },
+      release: { tag: { name: 'v1.2.3', message: 'Overwrite notes' } },
+    } as ReleasePlan,
+    'mock-token',
+    repository
+  )
+
+  if (!rollback) {
+    throw new Error('Expected createRelease to return a rollback.')
+  }
+
+  expect(updateRelease).toHaveBeenCalledTimes(1)
+  expect(updateRelease).toHaveBeenCalledWith({
+    owner: 'mock-owner',
+    repo: 'mock-repo',
+    release_id: 42,
+    name: 'v1.2.3',
+    body: 'Overwrite notes',
+  })
+  expect(createReleaseMock).not.toHaveBeenCalled()
+  expect(logger.mock.calls).toContainEqual([
+    'GitHub release for tag "v1.2.3" already exists: its name and notes were overwritten with the freshly generated content.',
+  ])
+
+  await rollback()
+
+  expect(updateRelease).toHaveBeenCalledTimes(2)
+  expect(updateRelease).toHaveBeenLastCalledWith({
+    owner: 'mock-owner',
+    repo: 'mock-repo',
+    release_id: 42,
+    name: 'Original name',
+    body: 'Original body',
+  })
+  expect(deleteRelease).not.toHaveBeenCalled()
+})
+
+test('overwrites an existing release without notes and restores the missing notes during rollback', async () => {
+  getReleaseByTag.mockResolvedValueOnce({
+    data: { id: 42, name: 'Original name', body: null },
+  })
+
+  const rollback = await createRelease(
+    context,
+    {
+      package: { location: '.' },
+      release: { tag: { name: 'v1.2.3', message: 'Overwrite notes' } },
+    } as ReleasePlan,
+    'mock-token',
+    repository
+  )
+
+  if (!rollback) {
+    throw new Error('Expected createRelease to return a rollback.')
+  }
+
+  expect(updateRelease).toHaveBeenCalledTimes(1)
+  expect(updateRelease).toHaveBeenCalledWith({
+    owner: 'mock-owner',
+    repo: 'mock-repo',
+    release_id: 42,
+    name: 'v1.2.3',
+    body: 'Overwrite notes',
+  })
+  expect(createReleaseMock).not.toHaveBeenCalled()
+
+  await rollback()
+
+  expect(updateRelease).toHaveBeenCalledTimes(2)
+  expect(updateRelease).toHaveBeenLastCalledWith({
+    owner: 'mock-owner',
+    repo: 'mock-repo',
+    release_id: 42,
+    name: 'Original name',
+    body: null,
+  })
+  expect(deleteRelease).not.toHaveBeenCalled()
+})
+
+test('rethrows non-404 fetch errors', async () => {
+  getReleaseByTag.mockRejectedValueOnce(
+    Object.assign(new Error('Internal Server Error'), { status: 500 })
+  )
+
+  await expect(
+    createRelease(
+      context,
+      {
+        package: { location: '.' },
+        release: { tag: { name: 'v1.2.3', message: 'Notes' } },
+      } as ReleasePlan,
+      'token',
+      repository
+    )
+  ).rejects.toThrow('Internal Server Error')
+
+  expect(createReleaseMock).not.toHaveBeenCalled()
+})
+
+test('rethrows 404 update errors instead of falling through to creation', async () => {
+  getReleaseByTag.mockResolvedValueOnce({
+    data: { id: 42, name: 'Original name', body: 'Original body' },
+  })
+  updateRelease.mockRejectedValueOnce(notFound())
+
+  await expect(
+    createRelease(
+      context,
+      {
+        package: { location: '.' },
+        release: { tag: { name: 'v1.2.3', message: 'Notes' } },
+      } as ReleasePlan,
+      'token',
+      repository
+    )
+  ).rejects.toThrow('Not Found')
+
+  expect(createReleaseMock).not.toHaveBeenCalled()
 })
