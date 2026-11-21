@@ -18,7 +18,7 @@ the plugin's behavior.
    [plugin guide](https://github.com/reelout/reelout/blob/main/docs/04-plugins.md)
    and inspect the installed `@reelout/core` sources:
    - `src/types.ts` for plugin, context, and hook types
-   - `src/plugin/HookManager.ts` for middleware and priorities
+   - `src/plugin/HookDispatcher.ts` for middleware and priorities
    - `src/config/resolvePlugin.ts` for plugin resolution
 
    Find the package under `node_modules/@reelout/core` or, for a transitive

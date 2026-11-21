@@ -179,7 +179,7 @@ The skill source lives at [`.agents/skills/create-reelout-plugin/SKILL.md`](http
 
 ## Programmatic utilities
 
-For programmatic use, `reelout` exports `createPlugin`, `HookManager`,
-`HandlerMiddleware`, `HookPriority`, and `RELEASE_HOOK_NAMES`. See the
+For programmatic use, `reelout` exports `createPlugin`, `HookDispatcher`,
+`Interceptor`, `HookPriority`, and `RELEASE_HOOK_NAMES`. See the
 [Programmatic API](./05-api.md) guide or the
 [API reference](https://reelout.overview.vercel.app/).

@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Fai
 
 import { RELEASE_HOOK_NAMES } from '#config'
-import { HookManager, type HookHandler } from '#plugin'
+import { HookDispatcher, type HookMiddleware } from '#plugin'
 import type {
   ReleaseContext,
   ReleaseHookDefinition,
@@ -123,7 +123,7 @@ function resolvePluginHook(
 /**
  * Wrap a hook handler so a thrown error is recorded before rethrowing.
  *
- * Each recorded failure keeps the owning hook and plugin. The hook manager
+ * Each recorded failure keeps the owning hook and plugin. The hook dispatcher
  * middleware rescues rethrown `finalize` errors so the remaining
  * `finalize` handlers still run; other hook errors keep the fail-fast
  * unwinding behavior.
@@ -135,11 +135,11 @@ function resolvePluginHook(
  * @returns Wrapped hook handler
  */
 function wrapHandlerWithFailureCollection(
-  handler: HookHandler<ReleaseContext>,
+  handler: HookMiddleware<ReleaseContext>,
   hookName: ReleaseHookName,
   plugin: ReleasePlugin,
   failures: HandlerFailure[]
-): HookHandler<ReleaseContext> {
+): HookMiddleware<ReleaseContext> {
   return async (context, next) => {
     try {
       return await handler(context, next)
@@ -176,14 +176,14 @@ function throwIfCancelled(context: ReleaseContext): void {
  *
  * Runs each lifecycle phase sequentially, dispatching plugin hooks in onion
  * order based on declared priority, and checks the abort signal before each
- * phase. Emits the `finalize` hook on every terminal outcome so plugins can
- * send notifications and clean up: when a phase hook throws, plugin rollbacks
- * run while the error unwinds, then every `finalize` handler runs with the
- * failure recorded on `context.outcome`. When a `finalize` handler throws,
- * the hook manager middleware rescues the error so the remaining handlers
- * still run, and each `finalize` failure is logged as a warning after the
- * report. A failing `finalize` handler never changes the workflow outcome
- * and never masks the original workflow error.
+ * phase. Dispatches the `finalize` hook on every terminal outcome so plugins
+ * can send notifications and clean up: when a phase hook throws, plugin
+ * rollbacks run while the error unwinds, then every `finalize` handler runs
+ * with the failure recorded on `context.outcome`. When a `finalize` handler
+ * throws, the hook dispatcher middleware rescues the error so the remaining
+ * handlers still run, and each `finalize` failure is logged as a warning
+ * after the report. A failing `finalize` handler never changes the workflow
+ * outcome and never masks the original workflow error.
  *
  * @param context Release execution context containing runtime options and logger
  * @param plugins List of release plugins to execute
@@ -199,8 +199,8 @@ export async function executeReleaseWorkflow(
 
   const handlerFailures: HandlerFailure[] = []
 
-  const manager = new HookManager<
-    Record<ReleaseHookName, HookHandler<ReleaseContext>>
+  const dispatcher = new HookDispatcher<
+    Record<ReleaseHookName, HookMiddleware<ReleaseContext>>
   >(async (context, registration, next) => {
     if (registration.name !== 'finalize') {
       return registration.handler(context, next)
@@ -226,7 +226,7 @@ export async function executeReleaseWorkflow(
         handlerFailures
       )
 
-      manager.on(hookName, handler, definition.priority)
+      dispatcher.on(hookName, handler, definition.priority)
     }
   }
 
@@ -242,7 +242,7 @@ export async function executeReleaseWorkflow(
 
     throwIfCancelled(context)
 
-    return await manager.emit(hook, context, (context) =>
+    return await dispatcher.dispatch(hook, context, (context) =>
       dispatch(index + 1, context)
     )
   }
@@ -263,7 +263,7 @@ export async function executeReleaseWorkflow(
     }
   }
 
-  await manager.emit('finalize', context)
+  await dispatcher.dispatch('finalize', context)
 
   const report = generateReleaseReport(context)
 

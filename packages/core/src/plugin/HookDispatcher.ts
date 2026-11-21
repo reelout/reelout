@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
-export type NextFunction<Context> = (context: Context) => Promise<void>
+export type Next<Context> = (context: Context) => Promise<void>
 
-export type HookHandler<Context> = {
-  bivariant(context: Context, next: NextFunction<Context>): void | Promise<void>
+export type HookMiddleware<Context> = {
+  bivariant(context: Context, next: Next<Context>): void | Promise<void>
 }['bivariant']
 
 export const HookPriority = {
@@ -13,54 +13,53 @@ export const HookPriority = {
   Low: -50,
 } as const
 
-interface HookRegistration<HookName, Context> {
+interface Tap<HookName, Context> {
   name: HookName
   priority: number
-  handler: HookHandler<Context>
+  handler: HookMiddleware<Context>
 }
 
 /**
- * Intercept a registered handler during emission.
+ * Intercept a registered handler during dispatch.
  *
  * Runs in place of every registered handler, receiving the shared `context`,
  * the `registration` being dispatched, and the `next` function that continues
  * with the following handler.
  */
-export type HandlerMiddleware<HookName, Context> = (
+export type Interceptor<HookName, Context> = (
   context: Context,
-  registration: HookRegistration<HookName, Context>,
-  next: NextFunction<Context>
+  registration: Tap<HookName, Context>,
+  next: Next<Context>
 ) => void | Promise<void>
 
-type InferContext<Handler extends HookHandler<unknown>> =
-  Handler extends HookHandler<infer Context> ? Context : never
+type InferContext<Handler extends HookMiddleware<unknown>> =
+  Handler extends HookMiddleware<infer Context> ? Context : never
 
 /**
- * Manage hook registrations and asynchronous execution chains.
+ * Dispatch registered hooks through asynchronous execution chains.
  *
  * Stores handlers in a prioritized registry and executes them sequentially in
  * priority order.
  */
-export class HookManager<
-  HookMap extends Record<keyof HookMap, HookHandler<unknown>>,
+export class HookDispatcher<
+  HookMap extends Record<keyof HookMap, HookMiddleware<unknown>>,
 > {
   readonly #registry = new Map<
     keyof HookMap,
-    HookRegistration<keyof HookMap, InferContext<HookMap[keyof HookMap]>>[]
+    Tap<keyof HookMap, InferContext<HookMap[keyof HookMap]>>[]
   >()
 
   readonly #middleware:
-    | HandlerMiddleware<keyof HookMap, InferContext<HookMap[keyof HookMap]>>
-    | undefined
+    Interceptor<keyof HookMap, InferContext<HookMap[keyof HookMap]>> | undefined
 
   /**
-   * Create a hook manager.
+   * Create a hook dispatcher.
    *
    * @param middleware Wrapper invoked in place of every registered handler
-   * during emission
+   * during dispatch
    */
   constructor(
-    middleware?: HandlerMiddleware<
+    middleware?: Interceptor<
       keyof HookMap,
       InferContext<HookMap[keyof HookMap]>
     >
@@ -80,7 +79,7 @@ export class HookManager<
    */
   on<HookName extends keyof HookMap>(
     name: HookName,
-    handler: HookHandler<InferContext<HookMap[HookName]>>,
+    handler: HookMiddleware<InferContext<HookMap[HookName]>>,
     priority: number = HookPriority.Normal
   ): void {
     const registrations = this.#registry.get(name) ?? []
@@ -103,7 +102,7 @@ export class HookManager<
    */
   off<HookName extends keyof HookMap>(
     name: HookName,
-    handler: HookHandler<InferContext<HookMap[HookName]>>
+    handler: HookMiddleware<InferContext<HookMap[HookName]>>
   ): void {
     const registrations = this.#registry.get(name)
 
@@ -116,22 +115,22 @@ export class HookManager<
   }
 
   /**
-   * Trigger execution of all handlers registered to a hook.
+   * Dispatch all handlers registered to a hook.
    *
    * Passes `context` through the handler pipeline in descending priority order
    * and dispatches each registration through the constructor middleware when
    * one is provided. Enables handlers to control execution flow using `next`
    * and executes `done` after the last handler completes.
    *
-   * @param name Name of the hook to trigger
+   * @param name Name of the hook to dispatch
    * @param context Shared payload passed into each handler
    * @param done Optional final callback run after the pipeline completes
    * @returns Promise that resolves when execution completes
    */
-  async emit<HookName extends keyof HookMap>(
+  async dispatch<HookName extends keyof HookMap>(
     name: HookName,
     context: InferContext<HookMap[HookName]>,
-    done?: NextFunction<InferContext<HookMap[HookName]>>
+    done?: Next<InferContext<HookMap[HookName]>>
   ): Promise<void> {
     type Context = InferContext<HookMap[HookName]>
 
@@ -148,13 +147,13 @@ export class HookManager<
 
       let isNextCalled = false
 
-      const next: NextFunction<Context> = async (context) => {
+      const next: Next<Context> = async (context) => {
         if (isNextCalled) return
         isNextCalled = true
         return await dispatch(index + 1, context)
       }
 
-      const handler: HookHandler<Context> = middleware
+      const handler: HookMiddleware<Context> = middleware
         ? (context, next) => middleware(context, registration, next)
         : registration.handler
 

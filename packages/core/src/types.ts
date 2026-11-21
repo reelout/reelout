@@ -4,7 +4,7 @@
 import type { ConsolaInstance } from 'consola/core'
 import type { CommitBase, CommitNote } from 'conventional-commits-parser'
 import type { Hosts } from 'hosted-git-info'
-import type { HookHandler } from './plugin'
+import type { HookMiddleware } from './plugin'
 
 export type GitRefType = 'branch'
 
@@ -224,11 +224,11 @@ export interface ReleasePlan<P extends Package = Package> {
 
 export interface ReleaseHookDefinition<P extends Package = Package> {
   priority?: number | undefined
-  handler: HookHandler<ReleaseContext<P>>
+  handler: HookMiddleware<ReleaseContext<P>>
 }
 
 export type ReleaseHook<P extends Package = Package> =
-  HookHandler<ReleaseContext<P>> | ReleaseHookDefinition<P>
+  HookMiddleware<ReleaseContext<P>> | ReleaseHookDefinition<P>
 
 export interface ReleasePlugin<P extends Package = Package> {
   name: string
