@@ -32,8 +32,7 @@ interface MiddlewareFailure {
  *
  * @param hookName Name of the hook to resolve
  * @param plugin Plugin owning the hook entry
- * @returns Normalized hook definition, or `undefined` when the plugin does
- * not implement the hook
+ * @returns Normalized hook definition, or `undefined` when unimplemented
  */
 function resolvePluginHook(
   hookName: ReleaseHookName,
@@ -167,17 +166,17 @@ export async function executeReleaseWorkflow(
     }
 
     const finish = (hasError: boolean): void => {
+      if (isSilent) return
+
       const duration =
         performance.now() - currentFrame.startTime - nextFrame.duration
       const color = durationColor(duration)
       const message = [label, color(formatDuration(duration))].join(' ')
 
-      if (!isSilent) {
-        if (hasError) {
-          context.logger.error(message)
-        } else {
-          context.logger.success(message)
-        }
+      if (hasError) {
+        context.logger.error(message)
+      } else {
+        context.logger.success(message)
       }
     }
 
