@@ -103,7 +103,7 @@ export class HookManager<
    */
   off<HookName extends keyof HookMap>(
     name: HookName,
-    handler: HookMap[HookName]
+    handler: HookHandler<InferContext<HookMap[HookName]>>
   ): void {
     const registrations = this.#registry.get(name)
 

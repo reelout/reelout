@@ -30,8 +30,8 @@ interface HandlerFailure {
  * Normalizes the plugin's hook entry — a bare handler function or a
  * `{ priority, handler }` definition — and wraps the handler in shared timing
  * and logging middleware. When the wrapped handler throws, the failure is
- * attributed to the current hook and plugin on `context.outcome` before the
- * error rethrows. The `??=` assignment never overwrites a recorded outcome,
+ * attributed to the current hook and plugin on `context.outcome` before
+ * rethrowing it. The `??=` assignment never overwrites a recorded outcome,
  * so `finalize` failures — which run after the outcome is recorded — leave it
  * unchanged.
  *
@@ -121,19 +121,20 @@ function resolvePluginHook(
 }
 
 /**
- * Collect hook handler failures with the owning hook and plugin.
+ * Wrap a hook handler so a thrown error is recorded before rethrowing.
  *
- * Records a thrown error and rethrows it. The hook manager middleware
- * rescues rethrown `finalize` errors so the remaining `finalize` handlers
- * still run; other hook errors keep the fail-fast unwinding behavior.
+ * Each recorded failure keeps the owning hook and plugin. The hook manager
+ * middleware rescues rethrown `finalize` errors so the remaining
+ * `finalize` handlers still run; other hook errors keep the fail-fast
+ * unwinding behavior.
  *
  * @param handler Hook handler to wrap
  * @param hookName Name of the hook the handler is registered for
  * @param plugin Plugin owning the hook handler
- * @param failures Collected handler failures
+ * @param failures Array of recorded handler failures
  * @returns Wrapped hook handler
  */
-function collectHandlerFailures(
+function wrapHandlerWithFailureCollection(
   handler: HookHandler<ReleaseContext>,
   hookName: ReleaseHookName,
   plugin: ReleasePlugin,
@@ -218,7 +219,7 @@ export async function executeReleaseWorkflow(
 
       if (!definition) continue
 
-      const handler = collectHandlerFailures(
+      const handler = wrapHandlerWithFailureCollection(
         definition.handler,
         hookName,
         plugin,
@@ -235,7 +236,9 @@ export async function executeReleaseWorkflow(
   ): Promise<void> => {
     const hook = RELEASE_HOOK_NAMES[index]
 
-    if (!hook || hook === 'finalize') return
+    if (!hook) return
+
+    if (hook === 'finalize') return await dispatch(index + 1, context)
 
     throwIfCancelled(context)
 
