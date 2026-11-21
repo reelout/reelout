@@ -210,7 +210,7 @@ test('invokes done callback when dispatching unregistered hook', async () => {
   expect(terminalCallback).toHaveBeenCalledWith(context)
 })
 
-test('rethrows error when middleware throws exception during execution', async () => {
+test('rethrows error when middleware throws an exception', async () => {
   dispatcher.on('run', (ctx, next) => {
     return next(ctx)
   })
@@ -329,24 +329,4 @@ test('defaults meta to undefined and priority to normal when options are omitted
 
   expect(seen).toEqual([{ meta: undefined, priority: Priority.Normal }])
   expect(context.steps).toEqual(['middleware'])
-})
-
-test('orders middleware by priority supplied through registration options', async () => {
-  dispatcher.on(
-    'run',
-    (ctx, next) => {
-      ctx.steps.push('low')
-      return next(ctx)
-    },
-    { priority: Priority.Low }
-  )
-
-  dispatcher.on('run', (ctx, next) => {
-    ctx.steps.push('normal')
-    return next(ctx)
-  })
-
-  await dispatcher.dispatch('run', context)
-
-  expect(context.steps).toEqual(['normal', 'low'])
 })

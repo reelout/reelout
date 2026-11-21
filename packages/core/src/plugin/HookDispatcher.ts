@@ -21,6 +21,12 @@ export interface RegistrationOptions<Meta> {
   meta?: Meta | undefined
 }
 
+/**
+ * A registration entry captured by `on`.
+ *
+ * Carries the `middleware`, its `priority` sort rank, and the `meta` exposed
+ * to the constructor interceptor.
+ */
 export interface Registration<HookName, Context, Meta = undefined> {
   hook: HookName
   priority: number
