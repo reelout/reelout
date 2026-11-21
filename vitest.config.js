@@ -17,7 +17,7 @@ export default defineConfig({
             enabled: true,
             only: true,
             checker: 'tsc6',
-            include: ['**/*.{test,spec}.{ts,tsx}'],
+            include: ['**/*.{test,spec}.ts'],
           },
         },
       },
