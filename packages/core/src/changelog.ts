@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
-import { HookPriority } from '#plugin'
+import { Priority } from '#plugin'
 import type { Package, ReleasePlugin } from '#types'
 import { formatError } from '#util'
 import {
@@ -28,8 +28,8 @@ const changelog = (): ReleasePlugin => ({
   name: '@reelout/core/changelog',
   version,
   discover: {
-    priority: HookPriority.Low,
-    handler: async (context, next) => {
+    priority: Priority.Low,
+    middleware: async (context, next) => {
       context.packages = await Promise.all(
         context.packages.map(async (pkg): Promise<Package> => ({
           ...pkg,

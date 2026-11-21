@@ -17,7 +17,7 @@ This ESM-only package requires Node.js `>=24.15`.
 Key exports:
 
 - **Workflow** — `executeReleaseWorkflow(context, plugins)` runs the release workflow.
-- **Plugin system** — `HookManager`, `HookPriority`, `RELEASE_HOOK_NAMES`, `createPlugin`, `resolvePlugin`.
+- **Plugin system** — `HookDispatcher`, `Priority`, `RELEASE_HOOK_NAMES`, `createPlugin`, `resolvePlugin`.
 - **Built-in plugins** — default exports from `@reelout/core/analyzer`, `@reelout/core/builder`, and `@reelout/core/changelog`.
 - **Versioning** — `bumpVersion`, `generateGitTagName`, `generateReleaseCommitMessage`, `buildReleaseNotes`.
 - **Git** — `parseGitCommit`, `pushGitChanges`, `restoreFullGitHistory`, and `ensureGitTag`.
