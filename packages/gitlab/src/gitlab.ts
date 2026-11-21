@@ -25,7 +25,10 @@ const readGitlabToken = (env: ReleaseContext['env']): string | undefined => {
  *
  * @remarks
  * **Lifecycle Stages:**
- * - `configure`: Checks the `GITLAB_TOKEN` environment variable. A missing token skips GitLab release creation with a warning — or throws under strict mode — and a provided token is verified against the release project so an invalid token fails before any mutation. Runs under dry-run.
+ * - `configure`: Checks the `GITLAB_TOKEN` environment variable. A missing token
+ *   skips GitLab release creation with a warning — or throws under strict mode — and
+ *   a provided token is verified against the release project so an invalid token
+ *   fails before any mutation. Runs under dry-run.
  * - `publish`: Creates GitLab releases in reverse alphabetical package order (ensuring the root package release
  *   is created last), overwriting existing releases for the same tag. Automatically rolls back if subsequent
  *   publishing stages fail: releases created by this run are deleted, and overwritten releases are restored

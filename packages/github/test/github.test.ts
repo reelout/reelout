@@ -190,6 +190,7 @@ test('fails workflow execution when repository context is unavailable', async ()
   )
 
   expect(createRelease).not.toHaveBeenCalled()
+  expect(getRepo).not.toHaveBeenCalled()
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
       [

@@ -5,11 +5,11 @@ import { verifyToken } from '@reelout/github'
 import type { GitRepository } from '@reelout/core'
 import { beforeEach, expect, test, vi } from 'vitest'
 
-const get = vi.hoisted(() => vi.fn())
+const getRepo = vi.hoisted(() => vi.fn())
 
 const Octokit = vi.hoisted(() =>
   vi.fn(function () {
-    return { rest: { repos: { get } } }
+    return { rest: { repos: { get: getRepo } } }
   })
 )
 
@@ -27,14 +27,14 @@ beforeEach(() => {
 })
 
 test('resolves when GitHub accepts the token for the repository', async () => {
-  get.mockResolvedValueOnce({ data: { full_name: 'mock-owner/mock-repo' } })
+  getRepo.mockResolvedValueOnce({ data: { full_name: 'mock-owner/mock-repo' } })
 
   await expect(verifyToken('mock-token', repository)).resolves.toBeUndefined()
 
   expect(Octokit).toHaveBeenCalledWith(
     expect.objectContaining({ auth: 'mock-token' })
   )
-  expect(get).toHaveBeenCalledWith({
+  expect(getRepo).toHaveBeenCalledWith({
     owner: 'mock-owner',
     repo: 'mock-repo',
   })
@@ -45,7 +45,7 @@ test('throws a wrapped error when GitHub rejects the token', async () => {
     status: 401,
   })
 
-  get.mockRejectedValueOnce(rejection)
+  getRepo.mockRejectedValueOnce(rejection)
 
   const error = (await verifyToken('mock-token', repository).catch(
     (err) => err

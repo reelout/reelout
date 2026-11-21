@@ -195,6 +195,7 @@ test('fails workflow execution when repository context is unavailable', async ()
   )
 
   expect(createReleaseMock).not.toHaveBeenCalled()
+  expect(showProjectMock).not.toHaveBeenCalled()
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
       [
