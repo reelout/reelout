@@ -915,7 +915,7 @@ test('cancels the workflow before the first phase hook when the abort signal has
   })
 })
 
-test('logs hook execution duration when environment mode is set to development', async () => {
+test('logs middleware execution durations in development mode', async () => {
   using _ = vi
     .spyOn(process, 'env', 'get')
     .mockReturnValue({ MODE: 'development' })
@@ -963,7 +963,7 @@ test('logs hook execution duration when environment mode is set to development',
   `)
 })
 
-test('logs failed duration and error status when a hook throws in development mode', async () => {
+test('logs the failed middleware duration as an error when a hook throws in development mode', async () => {
   using _ = vi
     .spyOn(process, 'env', 'get')
     .mockReturnValue({ MODE: 'development' })
@@ -999,7 +999,7 @@ test('logs failed duration and error status when a hook throws in development mo
   `)
 })
 
-test('logs exclusive middleware duration when a hook calls next multiple times in development mode', async () => {
+test('logs exclusive middleware duration when a middleware calls next multiple times in development mode', async () => {
   using _ = vi
     .spyOn(process, 'env', 'get')
     .mockReturnValue({ MODE: 'development' })

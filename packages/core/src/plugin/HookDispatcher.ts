@@ -48,8 +48,8 @@ export type Interceptor<HookName, Context, Meta = undefined> = (
   next: Next<Context>
 ) => void | Promise<void>
 
-type InferContext<Handler extends Middleware<unknown>> =
-  Handler extends Middleware<infer Context> ? Context : never
+type InferContext<M extends Middleware<unknown>> =
+  M extends Middleware<infer Context> ? Context : never
 
 /**
  * Dispatch registered hooks through asynchronous execution chains.

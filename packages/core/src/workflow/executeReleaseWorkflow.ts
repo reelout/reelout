@@ -27,8 +27,8 @@ interface MiddlewareFailure {
 /**
  * Resolve a plugin's hook entry into a normalized hook definition.
  *
- * Normalizes the plugin's hook entry — a bare middleware function or a
- * `{ priority, middleware }` definition — into its middleware and priority.
+ * Accepts a bare middleware function or a `{ priority, middleware }`
+ * definition and extracts its middleware and priority.
  *
  * @param hookName Name of the hook to resolve
  * @param plugin Plugin owning the hook entry
@@ -87,7 +87,7 @@ function formatDuration(duration: number): string {
  * Pick the console color for a duration, highlighting slow middleware.
  *
  * @param duration Duration in milliseconds
- * @returns Color function that warns when the duration reaches five seconds
+ * @returns Color function that highlights durations of five seconds or more
  */
 function durationColor(duration: number): (text: string) => string {
   return duration >= 5000 ? colors.yellow : colors.cyan
@@ -152,24 +152,23 @@ export async function executeReleaseWorkflow(
       context.logger.start(label)
     }
 
-    const currentFrame = { startTime: performance.now() }
-    const nextFrame = { duration: 0 }
+    const startedAt = performance.now()
+    let downstreamDuration = 0
 
     const runNext = async () => {
-      const startTime = performance.now()
+      const downstreamStart = performance.now()
 
       try {
         return await next(context)
       } finally {
-        nextFrame.duration += performance.now() - startTime
+        downstreamDuration += performance.now() - downstreamStart
       }
     }
 
     const finish = (hasError: boolean): void => {
       if (isSilent) return
 
-      const duration =
-        performance.now() - currentFrame.startTime - nextFrame.duration
+      const duration = performance.now() - startedAt - downstreamDuration
       const color = durationColor(duration)
       const message = [label, color(formatDuration(duration))].join(' ')
 
