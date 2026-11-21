@@ -31,7 +31,6 @@ const readGitlabToken = (env: ReleaseContext['env']): string | undefined => {
  *   publishing stages fail: releases created by this run are deleted, and overwritten releases are restored
  *   to their original content.
  *
- * @throws {Error} If `context.repository` is not configured, `GITLAB_TOKEN` is missing in strict mode, or a provided token fails verification.
  * @returns A release plugin configured for GitLab release creation.
  */
 const gitlab = (): ReleasePlugin => ({
@@ -82,7 +81,7 @@ const gitlab = (): ReleasePlugin => ({
 
     const repository = context.repository
 
-    const written: ReleaseRollback[] = []
+    const rollbacks: ReleaseRollback[] = []
 
     // Create releases in reverse order
     // so that the root package release is created last,
@@ -91,14 +90,14 @@ const gitlab = (): ReleasePlugin => ({
       const rollback = await createRelease(context, plan, token, repository)
 
       if (rollback) {
-        written.push(rollback)
+        rollbacks.push(rollback)
       }
     }
 
     try {
       return await next(context)
     } catch (err) {
-      await Promise.allSettled(written.map((rollback) => rollback()))
+      await Promise.allSettled(rollbacks.map((rollback) => rollback()))
 
       throw err
     }

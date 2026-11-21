@@ -88,8 +88,6 @@ beforeEach(() => {
 })
 
 test('skips GitLab release creation when GITLAB_TOKEN environment variable is missing', async () => {
-  vi.stubEnv('GITLAB_TOKEN', undefined)
-
   context.repository = createMockRepository('gitlab')
 
   context.plans = plans
@@ -116,8 +114,6 @@ test('skips GitLab release creation when GITLAB_TOKEN environment variable is mi
 })
 
 test('fails workflow execution when GITLAB_TOKEN environment variable is missing in strict mode', async () => {
-  vi.stubEnv('GITLAB_TOKEN', undefined)
-
   context.strict = true
 
   context.repository = createMockRepository('gitlab')
@@ -238,8 +234,6 @@ test('skips creating GitLab releases during dry-run mode', async () => {
 })
 
 test('previews the GitLab release skip during dry-run mode when GITLAB_TOKEN environment variable is missing', async () => {
-  vi.stubEnv('GITLAB_TOKEN', undefined)
-
   context.dryRun = true
 
   context.repository = createMockRepository('gitlab')
