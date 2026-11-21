@@ -3,7 +3,7 @@
 
 import { Gitlab } from '@gitbeaker/rest'
 import type { GitRepository, ReleasePlan } from '@reelout/core'
-import type { OriginalRelease } from './fetchRelease'
+import type { GitLabRelease } from './fetchRelease'
 
 /**
  * Restore an overwritten GitLab release to its original content.
@@ -20,7 +20,7 @@ import type { OriginalRelease } from './fetchRelease'
  */
 export async function restoreRelease(
   plan: ReleasePlan,
-  original: OriginalRelease,
+  original: GitLabRelease,
   token: string,
   repository: GitRepository
 ): Promise<void> {

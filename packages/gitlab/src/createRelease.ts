@@ -3,7 +3,7 @@
 
 import { Gitlab } from '@gitbeaker/rest'
 import type { GitRepository, ReleaseContext, ReleasePlan } from '@reelout/core'
-import { fetchRelease, type OriginalRelease } from './fetchRelease'
+import { fetchRelease, type GitLabRelease } from './fetchRelease'
 
 /**
  * Create or overwrite a GitLab release for a package tag.
@@ -17,7 +17,7 @@ import { fetchRelease, type OriginalRelease } from './fetchRelease'
  * @param plan Release plan containing the tag to publish
  * @param token GitLab authentication token
  * @param repository Target repository
- * @returns Promise resolving to `{ original: OriginalRelease }` when an
+ * @returns Promise resolving to `{ original: GitLabRelease }` when an
  * existing release was overwritten, `{ original: null }` when the release was
  * created, or `null` when the write was skipped
  */
@@ -26,7 +26,7 @@ export async function createRelease(
   plan: ReleasePlan,
   token: string,
   repository: GitRepository
-): Promise<{ original: OriginalRelease | null } | null> {
+): Promise<{ original: GitLabRelease | null } | null> {
   if (!plan.release?.tag?.message) {
     return null
   }

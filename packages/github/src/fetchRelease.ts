@@ -7,7 +7,7 @@ import type { GitRepository } from '@reelout/core'
 /**
  * A GitHub release that already exists for a tag.
  */
-export interface ExistingRelease {
+export interface GitHubRelease {
   /** Numeric id of the existing release. */
   id: number
   /** Release name as it existed before the overwrite. */
@@ -28,7 +28,7 @@ export async function fetchRelease(
   octokit: Octokit,
   repository: GitRepository,
   tagName: string
-): Promise<ExistingRelease | null> {
+): Promise<GitHubRelease | null> {
   try {
     const { data: existing } = await octokit.rest.repos.getReleaseByTag({
       owner: repository.owner,

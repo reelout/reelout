@@ -5,9 +5,9 @@ import type { Gitlab } from '@gitbeaker/rest'
 import { isNotFoundError } from './isNotFoundError'
 
 /**
- * Original GitLab release content captured before an overwrite.
+ * GitLab release content captured before an overwrite.
  */
-export interface OriginalRelease {
+export interface GitLabRelease {
   /** Release name as it existed before the overwrite. */
   name: string | null
   /** Release description as it existed before the overwrite. */
@@ -20,13 +20,13 @@ export interface OriginalRelease {
  * @param api Authenticated GitLab client
  * @param projectId Encoded project id the release belongs to
  * @param tagName Tag the release is looked up by
- * @returns The original release content, or null when the tag has no release
+ * @returns The GitLab release content, or null when the tag has no release
  */
 export async function fetchRelease(
   api: Gitlab,
   projectId: string,
   tagName: string
-): Promise<OriginalRelease | null> {
+): Promise<GitLabRelease | null> {
   try {
     const release = await api.ProjectReleases.show(projectId, tagName)
 
