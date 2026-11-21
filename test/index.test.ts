@@ -15,7 +15,7 @@ test('exposes the correct API contract', () => {
       "GIT_REL_FLAGS",
       "GIT_TRAILER_RELEASE_AGENT",
       "HookDispatcher",
-      "HookPriority",
+      "Priority",
       "RELEASE_HOOK_NAMES",
       "SEMVER_REGEX",
       "TTLCache",

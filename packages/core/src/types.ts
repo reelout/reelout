@@ -4,7 +4,7 @@
 import type { ConsolaInstance } from 'consola/core'
 import type { CommitBase, CommitNote } from 'conventional-commits-parser'
 import type { Hosts } from 'hosted-git-info'
-import type { HookMiddleware } from './plugin'
+import type { Middleware } from './plugin'
 
 export type GitRefType = 'branch'
 
@@ -150,7 +150,7 @@ export interface ReleasePhase {
  *
  * On failure, `error` holds the thrown error and `phase` attributes it to
  * the in-flight hook and plugin, or `null` when the failure arose outside
- * any plugin hook handler; on success both are `null`.
+ * any plugin hook middleware; on success both are `null`.
  */
 export interface ReleaseOutcome {
   status: ReleaseStatus
@@ -224,11 +224,11 @@ export interface ReleasePlan<P extends Package = Package> {
 
 export interface ReleaseHookDefinition<P extends Package = Package> {
   priority?: number | undefined
-  handler: HookMiddleware<ReleaseContext<P>>
+  middleware: Middleware<ReleaseContext<P>>
 }
 
 export type ReleaseHook<P extends Package = Package> =
-  HookMiddleware<ReleaseContext<P>> | ReleaseHookDefinition<P>
+  Middleware<ReleaseContext<P>> | ReleaseHookDefinition<P>
 
 export interface ReleasePlugin<P extends Package = Package> {
   name: string

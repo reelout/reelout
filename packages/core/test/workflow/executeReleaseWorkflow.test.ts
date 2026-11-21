@@ -9,7 +9,7 @@ import type {
   ReleasePlugin,
 } from '@reelout/core'
 import {
-  HookPriority,
+  Priority,
   RELEASE_HOOK_NAMES,
   executeReleaseWorkflow,
 } from '@reelout/core'
@@ -40,7 +40,7 @@ let executedHooks: string[]
 
 const trackedPlugin = RELEASE_HOOK_NAMES.reduce(
   (plugin, hook) => {
-    const handler = plugin[hook]
+    const middleware = plugin[hook]
 
     return {
       ...plugin,
@@ -62,7 +62,7 @@ const trackedPlugin = RELEASE_HOOK_NAMES.reduce(
           },
         } as ReleaseContext
 
-        return handler(proxy, next)
+        return middleware(proxy, next)
       }),
     }
   },
@@ -436,7 +436,7 @@ test('executes plugin hooks in onion order when dispatching phase middleware', a
   ])
 })
 
-test('executes only implemented plugin hooks when plugins omit optional handlers', async () => {
+test('executes only implemented plugin hooks when plugins omit optional middleware', async () => {
   const plugin1: ReleasePlugin = {
     name: 'plugin1',
     version: '1.0.0',
@@ -550,15 +550,15 @@ test('orders hook execution by defined priority when executing a workflow phase'
     name: 'plugin2',
     version: '1.0.0',
     configure: {
-      priority: HookPriority.Low,
-      handler: (ctx, next) => {
+      priority: Priority.Low,
+      middleware: (ctx, next) => {
         executionOrder.push('plugin2:configure')
         return next(ctx)
       },
     },
     discover: {
-      priority: HookPriority.Low,
-      handler: (ctx, next) => {
+      priority: Priority.Low,
+      middleware: (ctx, next) => {
         executionOrder.push('plugin2:discover')
         return next(ctx)
       },
@@ -703,7 +703,7 @@ test('rethrows the root-cause error when a rollback throws a different error', a
   })
 })
 
-test('exposes the failure outcome to finalize handlers when a phase hook throws', async () => {
+test('exposes the failure outcome to finalize middleware when a phase hook throws', async () => {
   const failureError = new Error('Publish failed')
   let outcome: ReleaseOutcome | null = null
 
@@ -730,7 +730,7 @@ test('exposes the failure outcome to finalize handlers when a phase hook throws'
   })
 })
 
-test('exposes the success outcome to finalize handlers when the workflow completes', async () => {
+test('exposes the success outcome to finalize middleware when the workflow completes', async () => {
   let outcome: ReleaseOutcome | null = null
 
   const notifyPlugin: ReleasePlugin = {
@@ -749,7 +749,7 @@ test('exposes the success outcome to finalize handlers when the workflow complet
   expect(outcome).toEqual({ status: 'success', error: null, phase: null })
 })
 
-test('runs remaining finalize handlers and warns when a finalize handler throws on a failed workflow', async () => {
+test('runs remaining finalize middleware and warns when a finalize middleware throws on a failed workflow', async () => {
   const failureError = new Error('Publish failed')
   const finalized: string[] = []
 
@@ -784,7 +784,7 @@ test('runs remaining finalize handlers and warns when a finalize handler throws 
   ])
 })
 
-test('stringifies the thrown value when a finalize handler throws a non-Error on a failed workflow', async () => {
+test('stringifies the thrown value when a finalize middleware throws a non-Error on a failed workflow', async () => {
   const failingPlugin: ReleasePlugin = {
     name: 'notify',
     version: '1.0.0',
@@ -805,7 +805,7 @@ test('stringifies the thrown value when a finalize handler throws a non-Error on
   ])
 })
 
-test('warns and keeps the release successful when a finalize handler throws on a successful workflow', async () => {
+test('warns and keeps the release successful when a finalize middleware throws on a successful workflow', async () => {
   const rollback = vi.fn()
 
   const notifyPlugin: ReleasePlugin = {
@@ -999,7 +999,7 @@ test('logs failed duration and error status when a hook throws in development mo
   `)
 })
 
-test('logs exclusive handler duration when a hook calls next multiple times in development mode', async () => {
+test('logs exclusive middleware duration when a hook calls next multiple times in development mode', async () => {
   using _ = vi
     .spyOn(process, 'env', 'get')
     .mockReturnValue({ MODE: 'development' })

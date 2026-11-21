@@ -3,8 +3,8 @@
 
 import {
   HookDispatcher,
-  HookPriority,
-  type HookMiddleware,
+  Priority,
+  type Middleware,
   type Next,
 } from '@reelout/core'
 import { beforeEach, expect, test, vi } from 'vitest'
@@ -19,14 +19,14 @@ interface PluginMeta {
 }
 
 let context: TestContext
-let dispatcher: HookDispatcher<Record<string, HookMiddleware<TestContext>>>
+let dispatcher: HookDispatcher<Record<string, Middleware<TestContext>>>
 
 beforeEach(() => {
   context = { value: 'test', steps: [] }
-  dispatcher = new HookDispatcher<Record<string, HookMiddleware<TestContext>>>()
+  dispatcher = new HookDispatcher<Record<string, Middleware<TestContext>>>()
 })
 
-test('executes handlers in registration order when priority is omitted', async () => {
+test('executes middleware in registration order when priority is omitted', async () => {
   dispatcher.on('run', (ctx, next) => {
     ctx.steps.push('first')
     return next(ctx)
@@ -42,14 +42,14 @@ test('executes handlers in registration order when priority is omitted', async (
   expect(context.steps).toEqual(['first', 'second'])
 })
 
-test('executes handlers in descending priority order when priorities differ', async () => {
+test('executes middleware in descending priority order when priorities differ', async () => {
   dispatcher.on(
     'run',
     (ctx, next) => {
       ctx.steps.push('normal')
       return next(ctx)
     },
-    { priority: HookPriority.Normal }
+    { priority: Priority.Normal }
   )
 
   dispatcher.on(
@@ -58,7 +58,7 @@ test('executes handlers in descending priority order when priorities differ', as
       ctx.steps.push('high')
       return next(ctx)
     },
-    { priority: HookPriority.High }
+    { priority: Priority.High }
   )
 
   dispatcher.on(
@@ -67,7 +67,7 @@ test('executes handlers in descending priority order when priorities differ', as
       ctx.steps.push('low')
       return next(ctx)
     },
-    { priority: HookPriority.Low }
+    { priority: Priority.Low }
   )
 
   await dispatcher.dispatch('run', context)
@@ -75,14 +75,14 @@ test('executes handlers in descending priority order when priorities differ', as
   expect(context.steps).toEqual(['high', 'normal', 'low'])
 })
 
-test('preserves registration order when handlers share equal priorities', async () => {
+test('preserves registration order when middleware share equal priorities', async () => {
   dispatcher.on(
     'run',
     (ctx, next) => {
       ctx.steps.push('a')
       return next(ctx)
     },
-    { priority: HookPriority.Normal }
+    { priority: Priority.Normal }
   )
 
   dispatcher.on(
@@ -91,7 +91,7 @@ test('preserves registration order when handlers share equal priorities', async 
       ctx.steps.push('b')
       return next(ctx)
     },
-    { priority: HookPriority.Normal }
+    { priority: Priority.Normal }
   )
 
   await dispatcher.dispatch('run', context)
@@ -99,28 +99,28 @@ test('preserves registration order when handlers share equal priorities', async 
   expect(context.steps).toEqual(['a', 'b'])
 })
 
-test('does not execute handler when unregistered before dispatch', async () => {
-  const handler = async (ctx: TestContext, next: Next<TestContext>) => {
+test('does not execute middleware when unregistered before dispatch', async () => {
+  const middleware = async (ctx: TestContext, next: Next<TestContext>) => {
     ctx.steps.push('removed')
     return next(ctx)
   }
 
-  dispatcher.on('run', handler)
-  dispatcher.off('run', handler)
+  dispatcher.on('run', middleware)
+  dispatcher.off('run', middleware)
 
   await dispatcher.dispatch('run', context)
 
   expect(context.steps).toEqual([])
 })
 
-test('does not throw when unregistering non-existent hook or handler', async () => {
-  const handler = (ctx: TestContext) => {}
+test('does not throw when unregistering non-existent hook or middleware', async () => {
+  const middleware = (ctx: TestContext) => {}
 
-  expect(() => dispatcher.off('unknown', handler)).not.toThrow()
+  expect(() => dispatcher.off('unknown', middleware)).not.toThrow()
 
-  dispatcher.on('run', handler)
+  dispatcher.on('run', middleware)
 
-  expect(() => dispatcher.off('other', handler)).not.toThrow()
+  expect(() => dispatcher.off('other', middleware)).not.toThrow()
 
   await dispatcher.dispatch('run', context)
 
@@ -210,28 +210,28 @@ test('invokes done callback when dispatching unregistered hook', async () => {
   expect(terminalCallback).toHaveBeenCalledWith(context)
 })
 
-test('rethrows error when handler throws exception during execution', async () => {
+test('rethrows error when middleware throws exception during execution', async () => {
   dispatcher.on('run', (ctx, next) => {
     return next(ctx)
   })
 
   dispatcher.on('run', () => {
-    throw new Error('Handler execution failed')
+    throw new Error('Middleware execution failed')
   })
 
   await expect(dispatcher.dispatch('run', context)).rejects.toThrow(
-    'Handler execution failed'
+    'Middleware execution failed'
   )
 })
 
-test('dispatches each registered handler through the constructor middleware in priority order', async () => {
+test('dispatches each registered middleware through the constructor interceptor in priority order', async () => {
   const dispatched: string[] = []
 
-  dispatcher = new HookDispatcher<Record<string, HookMiddleware<TestContext>>>(
+  dispatcher = new HookDispatcher<Record<string, Middleware<TestContext>>>(
     async (ctx, registration, next) => {
-      dispatched.push(`${registration.name}:${registration.priority}`)
+      dispatched.push(`${registration.hook}:${registration.priority}`)
 
-      return registration.handler(ctx, next)
+      return registration.middleware(ctx, next)
     }
   )
 
@@ -241,7 +241,7 @@ test('dispatches each registered handler through the constructor middleware in p
       ctx.steps.push('normal')
       return next(ctx)
     },
-    { priority: HookPriority.Normal }
+    { priority: Priority.Normal }
   )
 
   dispatcher.on(
@@ -250,23 +250,20 @@ test('dispatches each registered handler through the constructor middleware in p
       ctx.steps.push('high')
       return next(ctx)
     },
-    { priority: HookPriority.High }
+    { priority: Priority.High }
   )
 
   await dispatcher.dispatch('run', context)
 
-  expect(dispatched).toEqual([
-    `run:${HookPriority.High}`,
-    `run:${HookPriority.Normal}`,
-  ])
+  expect(dispatched).toEqual([`run:${Priority.High}`, `run:${Priority.Normal}`])
   expect(context.steps).toEqual(['high', 'normal'])
 })
 
-test('continues the remaining handlers when the middleware rescues a handler error', async () => {
-  dispatcher = new HookDispatcher<Record<string, HookMiddleware<TestContext>>>(
+test('continues the remaining middleware when the interceptor rescues a middleware error', async () => {
+  dispatcher = new HookDispatcher<Record<string, Middleware<TestContext>>>(
     async (ctx, registration, next) => {
       try {
-        return await registration.handler(ctx, next)
+        return await registration.middleware(ctx, next)
       } catch {
         return next(ctx)
       }
@@ -287,16 +284,16 @@ test('continues the remaining handlers when the middleware rescues a handler err
   expect(context.steps).toEqual(['after-rescue'])
 })
 
-test('exposes registration meta to the constructor middleware', async () => {
+test('exposes registration meta to the constructor interceptor', async () => {
   const seen: (PluginMeta | undefined)[] = []
 
   const dispatcher = new HookDispatcher<
-    Record<string, HookMiddleware<TestContext>>,
+    Record<string, Middleware<TestContext>>,
     PluginMeta
   >(async (ctx, registration, next) => {
     seen.push(registration.meta)
 
-    return registration.handler(ctx, next)
+    return registration.middleware(ctx, next)
   })
 
   dispatcher.on('run', (ctx, next) => next(ctx), {
@@ -315,33 +312,33 @@ test('defaults meta to undefined and priority to normal when options are omitted
   }[] = []
 
   const dispatcher = new HookDispatcher<
-    Record<string, HookMiddleware<TestContext>>,
+    Record<string, Middleware<TestContext>>,
     PluginMeta
   >(async (ctx, registration, next) => {
     seen.push({ meta: registration.meta, priority: registration.priority })
 
-    return registration.handler(ctx, next)
+    return registration.middleware(ctx, next)
   })
 
   dispatcher.on('run', (ctx, next) => {
-    ctx.steps.push('handler')
+    ctx.steps.push('middleware')
     return next(ctx)
   })
 
   await dispatcher.dispatch('run', context)
 
-  expect(seen).toEqual([{ meta: undefined, priority: HookPriority.Normal }])
-  expect(context.steps).toEqual(['handler'])
+  expect(seen).toEqual([{ meta: undefined, priority: Priority.Normal }])
+  expect(context.steps).toEqual(['middleware'])
 })
 
-test('orders handlers by priority supplied through registration options', async () => {
+test('orders middleware by priority supplied through registration options', async () => {
   dispatcher.on(
     'run',
     (ctx, next) => {
       ctx.steps.push('low')
       return next(ctx)
     },
-    { priority: HookPriority.Low }
+    { priority: Priority.Low }
   )
 
   dispatcher.on('run', (ctx, next) => {

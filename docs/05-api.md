@@ -93,7 +93,7 @@ await program.parseAsync(process.argv)
 
 `createProcessAbortSignal` returns an `AbortSignal` that fires on `SIGINT` or
 `SIGTERM`. When the signal fires between phases, the workflow stops, still runs
-`finalize` handlers for cleanup, and rejects with a cancellation error.
+`finalize` middleware for cleanup, and rejects with a cancellation error.
 
 ## Standalone utilities
 
@@ -101,7 +101,7 @@ The re-exported packages expose the workflow's building blocks, which you can us
 
 - **Versioning** — `bumpVersion`, `generateGitTagName`, `generateReleaseCommitMessage`, `buildReleaseNotes`
 - **Git** — `parseGitCommit`, `pushGitChanges`, `restoreFullGitHistory`, `readGitHistory`
-- **Plugin system** — `HookDispatcher`, `Interceptor`, `HookPriority`, `RELEASE_HOOK_NAMES`, `createPlugin`
+- **Plugin system** — `HookDispatcher`, `Interceptor`, `Priority`, `RELEASE_HOOK_NAMES`, `createPlugin`
 - **npm** (from `@reelout/npm`) — `readPackageJson`, `writePackageJson`, `resolveWorkspaceMembers`, `prepareAuth`, `publishPackage`
 
 Browse the full surface in the [API reference](https://reelout.overview.vercel.app/).

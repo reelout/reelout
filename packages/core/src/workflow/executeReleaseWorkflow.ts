@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Fai
 
 import { RELEASE_HOOK_NAMES } from '#config'
-import { HookDispatcher, type HookMiddleware } from '#plugin'
+import { HookDispatcher, type Middleware } from '#plugin'
 import type {
   ReleaseContext,
   ReleaseHookDefinition,
@@ -17,8 +17,8 @@ import {
   printReleaseReportAnnotation,
 } from './report'
 
-/** Failure of a hook handler, recorded with the owning hook and plugin. */
-interface HandlerFailure {
+/** Failure of a hook middleware, recorded with the owning hook and plugin. */
+interface MiddlewareFailure {
   hook: ReleaseHookName
   plugin: string
   error: unknown
@@ -27,8 +27,8 @@ interface HandlerFailure {
 /**
  * Resolve a plugin's hook entry into a normalized hook definition.
  *
- * Normalizes the plugin's hook entry — a bare handler function or a
- * `{ priority, handler }` definition — into its handler and priority.
+ * Normalizes the plugin's hook entry — a bare middleware function or a
+ * `{ priority, middleware }` definition — into its middleware and priority.
  *
  * @param hookName Name of the hook to resolve
  * @param plugin Plugin owning the hook entry
@@ -42,15 +42,15 @@ function resolvePluginHook(
   let hook = plugin[hookName]
 
   if (typeof hook === 'function') {
-    hook = { handler: hook }
+    hook = { middleware: hook }
   }
 
-  const handler = hook?.handler
+  const middleware = hook?.middleware
   const priority = hook?.priority
 
-  if (!handler) return
+  if (!middleware) return
 
-  return { priority, handler }
+  return { priority, middleware }
 }
 
 /**
@@ -85,7 +85,7 @@ function formatDuration(duration: number): string {
 }
 
 /**
- * Pick the console color for a duration, highlighting slow handlers.
+ * Pick the console color for a duration, highlighting slow middleware.
  *
  * @param duration Duration in milliseconds
  * @returns Color function that warns when the duration reaches five seconds
@@ -110,21 +110,21 @@ function hookLabel(hook: ReleaseHookName, plugin: string): string {
  *
  * Runs each lifecycle phase sequentially, dispatching plugin hooks in onion
  * order based on declared priority, and checks the abort signal before each
- * phase. Each dispatched handler runs through a single constructor
+ * phase. Each dispatched middleware runs through a single constructor
  * interceptor that also attributes failures to the owning hook and plugin,
- * collects handler failures, and rescues `finalize` errors so the remaining
- * `finalize` handlers still run. Outside `test` mode the interceptor logs
- * every handler's exclusive duration — its wall-clock time minus the time
- * consumed by downstream handlers — on completion. When a phase hook throws,
- * plugin rollbacks run while the error unwinds, then every `finalize`
- * handler runs with the failure recorded on `context.outcome`. Each
- * `finalize` failure is logged as a warning after the report. A failing
- * `finalize` handler never changes the workflow outcome and never masks the
- * original workflow error.
+ * collects middleware failures, and rescues `finalize` errors so the
+ * remaining `finalize` middleware still runs. Outside `test` mode the
+ * interceptor logs every middleware's exclusive duration — its wall-clock
+ * time minus the time consumed by downstream middleware — on completion.
+ * When a phase hook throws, plugin rollbacks run while the error unwinds,
+ * then every `finalize` middleware runs with the failure recorded on
+ * `context.outcome`. Each `finalize` failure is logged as a warning after
+ * the report. A failing `finalize` middleware never changes the workflow
+ * outcome and never masks the original workflow error.
  *
  * @param context Release execution context containing runtime options and logger
  * @param plugins List of release plugins to execute
- * @returns Promise that resolves when all phases and `finalize` handlers
+ * @returns Promise that resolves when all phases and `finalize` middleware
  * complete
  * @throws If a lifecycle hook fails or the workflow is cancelled
  */
@@ -136,17 +136,17 @@ export async function executeReleaseWorkflow(
 
   const isSilent = import.meta.env.MODE === 'test'
 
-  const handlerFailures: HandlerFailure[] = []
+  const middlewareFailures: MiddlewareFailure[] = []
 
   const dispatcher = new HookDispatcher<
-    Record<ReleaseHookName, HookMiddleware<ReleaseContext>>,
+    Record<ReleaseHookName, Middleware<ReleaseContext>>,
     ReleasePlugin
   >(async (context, registration, next) => {
     const plugin = registration.meta
 
     if (!plugin) return next(context)
 
-    const hook = registration.name
+    const hook = registration.hook
     const label = hookLabel(hook, plugin.name)
 
     if (!isSilent) {
@@ -182,13 +182,17 @@ export async function executeReleaseWorkflow(
     }
 
     try {
-      const result = await registration.handler.call(plugin, context, runNext)
+      const result = await registration.middleware.call(
+        plugin,
+        context,
+        runNext
+      )
 
       finish(false)
 
       return result
     } catch (error) {
-      handlerFailures.push({ hook, plugin: plugin.name, error })
+      middlewareFailures.push({ hook, plugin: plugin.name, error })
 
       context.outcome ??= {
         status: 'failure',
@@ -210,7 +214,7 @@ export async function executeReleaseWorkflow(
 
       if (!definition) continue
 
-      dispatcher.on(hookName, definition.handler, {
+      dispatcher.on(hookName, definition.middleware, {
         priority: definition.priority,
         meta: plugin,
       })
@@ -258,7 +262,7 @@ export async function executeReleaseWorkflow(
   appendReleaseReportSummary(context.logger, context.env, report)
   printReleaseReportAnnotation(context.env, context.stdout, report)
 
-  for (const failure of handlerFailures) {
+  for (const failure of middlewareFailures) {
     if (failure.hook !== 'finalize') continue
     if (failure.error === context.outcome.error) continue
 

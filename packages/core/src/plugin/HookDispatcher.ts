@@ -3,162 +3,166 @@
 
 export type Next<Context> = (context: Context) => Promise<void>
 
-export type HookMiddleware<Context> = {
+export type Middleware<Context> = {
   bivariant(context: Context, next: Next<Context>): void | Promise<void>
 }['bivariant']
 
-export const HookPriority = {
+export const Priority = {
   High: 50,
   Normal: 0,
   Low: -50,
 } as const
 
 /**
- * Registration options for a hook handler.
+ * Registration options accepted by `on`.
  */
-interface HookOptions<Meta> {
+export interface RegistrationOptions<Meta> {
   priority?: number | undefined
   meta?: Meta | undefined
 }
 
-interface Tap<HookName, Context, Meta = undefined> {
-  name: HookName
+export interface Registration<HookName, Context, Meta = undefined> {
+  hook: HookName
   priority: number
-  handler: HookMiddleware<Context>
+  middleware: Middleware<Context>
   meta: Meta | undefined
 }
 
 /**
- * Intercept a registered handler during dispatch.
+ * Intercept a registered middleware during dispatch.
  *
- * Runs in place of every registered handler, receiving the shared `context`,
- * the `registration` being dispatched — including its `priority` and `meta` —
- * and the `next` function that continues with the following handler.
+ * Runs in place of every registered middleware, receiving the shared
+ * `context`, the `registration` being dispatched — including its `priority`
+ * and `meta` — and the `next` function that continues with the following
+ * middleware.
  */
 export type Interceptor<HookName, Context, Meta = undefined> = (
   context: Context,
-  registration: Tap<HookName, Context, Meta>,
+  registration: Registration<HookName, Context, Meta>,
   next: Next<Context>
 ) => void | Promise<void>
 
-type InferContext<Handler extends HookMiddleware<unknown>> =
-  Handler extends HookMiddleware<infer Context> ? Context : never
+type InferContext<Handler extends Middleware<unknown>> =
+  Handler extends Middleware<infer Context> ? Context : never
 
 /**
  * Dispatch registered hooks through asynchronous execution chains.
  *
- * Stores handlers in a prioritized registry and executes them sequentially in
- * priority order.
+ * Stores middleware in a prioritized registry and executes them sequentially
+ * in priority order.
  */
 export class HookDispatcher<
-  HookMap extends Record<keyof HookMap, HookMiddleware<unknown>>,
+  HookMap extends Record<keyof HookMap, Middleware<unknown>>,
   Meta = undefined,
 > {
   readonly #registry = new Map<
     keyof HookMap,
-    Tap<keyof HookMap, InferContext<HookMap[keyof HookMap]>, Meta>[]
+    Registration<keyof HookMap, InferContext<HookMap[keyof HookMap]>, Meta>[]
   >()
 
-  readonly #middleware:
+  readonly #interceptor:
     | Interceptor<keyof HookMap, InferContext<HookMap[keyof HookMap]>, Meta>
     | undefined
 
   /**
    * Create a hook dispatcher.
    *
-   * @param middleware Wrapper invoked in place of every registered handler
-   * during dispatch
+   * @param interceptor Wrapper invoked in place of every registered
+   * middleware during dispatch
    */
   constructor(
-    middleware?: Interceptor<
+    interceptor?: Interceptor<
       keyof HookMap,
       InferContext<HookMap[keyof HookMap]>,
       Meta
     >
   ) {
-    this.#middleware = middleware
+    this.#interceptor = interceptor
   }
 
   /**
-   * Register a handler function for a specific hook.
+   * Register middleware for a specific hook.
    *
-   * Adds the `handler` to the internal registry for `name` and sorts the list
-   * so higher-priority handlers run first. An omitted or `undefined`
-   * `options.priority` defaults to `HookPriority.Normal`; `options.meta` is
-   * carried on the registration for the constructor middleware.
+   * Adds the `middleware` to the internal registry for `hook` and sorts the
+   * list so higher-priority middleware runs first. An omitted or `undefined`
+   * `options.priority` defaults to `Priority.Normal`; `options.meta` is
+   * carried on the registration for the constructor interceptor.
    *
-   * @param name Name of the hook to register
-   * @param handler Callback function executed when the hook triggers
+   * @param hook Name of the hook to register
+   * @param middleware Function executed when the hook dispatches
    * @param options Registration options carrying the execution order rank and
-   * the metadata exposed to the constructor middleware
+   * the metadata exposed to the constructor interceptor
    */
   on<HookName extends keyof HookMap>(
-    name: HookName,
-    handler: HookMiddleware<InferContext<HookMap[HookName]>>,
-    options?: HookOptions<Meta>
+    hook: HookName,
+    middleware: Middleware<InferContext<HookMap[HookName]>>,
+    options?: RegistrationOptions<Meta>
   ): void {
-    const registrations = this.#registry.get(name) ?? []
+    const registrations = this.#registry.get(hook) ?? []
 
     registrations.push({
-      name,
-      handler,
-      priority: options?.priority ?? HookPriority.Normal,
+      hook,
+      middleware,
+      priority: options?.priority ?? Priority.Normal,
       meta: options?.meta,
     })
 
     registrations.sort((a, b) => b.priority - a.priority)
 
-    this.#registry.set(name, registrations)
+    this.#registry.set(hook, registrations)
   }
 
   /**
-   * Unregister a handler function from a specific hook.
+   * Unregister middleware from a specific hook.
    *
-   * Removes matching `handler` references from the internal registry for
-   * `name`. Takes no action if `name` has no registered handlers.
+   * Removes matching `middleware` references from the internal registry for
+   * `hook`. Takes no action if `hook` has no registered middleware.
    *
-   * @param name Name of the hook to unregister from
-   * @param handler Reference of the handler function to remove
+   * @param hook Name of the hook to unregister from
+   * @param middleware Reference of the middleware function to remove
    */
   off<HookName extends keyof HookMap>(
-    name: HookName,
-    handler: HookMiddleware<InferContext<HookMap[HookName]>>
+    hook: HookName,
+    middleware: Middleware<InferContext<HookMap[HookName]>>
   ): void {
-    const registrations = this.#registry.get(name)
+    const registrations = this.#registry.get(hook)
 
     if (!registrations) return
 
     this.#registry.set(
-      name,
-      registrations.filter((registration) => registration.handler !== handler)
+      hook,
+      registrations.filter(
+        (registration) => registration.middleware !== middleware
+      )
     )
   }
 
   /**
-   * Dispatch all handlers registered to a hook.
+   * Dispatch all middleware registered to a hook.
    *
-   * Passes `context` through the handler pipeline in descending priority order
-   * and dispatches each registration through the constructor middleware when
-   * one is provided. Enables handlers to control execution flow using `next`
-   * and executes `done` after the last handler completes.
+   * Passes `context` through the middleware pipeline in descending priority
+   * order and dispatches each registration through the constructor
+   * interceptor when one is provided. Enables middleware to control
+   * execution flow using `next` and executes `done` after the last
+   * middleware completes.
    *
-   * @param name Name of the hook to dispatch
-   * @param context Shared payload passed into each handler
+   * @param hook Name of the hook to dispatch
+   * @param context Shared payload passed into each middleware
    * @param done Optional final callback run after the pipeline completes
    * @returns Promise that resolves when execution completes
    */
   async dispatch<HookName extends keyof HookMap>(
-    name: HookName,
+    hook: HookName,
     context: InferContext<HookMap[HookName]>,
     done?: Next<InferContext<HookMap[HookName]>>
   ): Promise<void> {
     type Context = InferContext<HookMap[HookName]>
 
-    const registrations = this.#registry.get(name) ?? []
+    const registrations = this.#registry.get(hook) ?? []
 
-    const middleware = this.#middleware
+    const interceptor = this.#interceptor
 
-    const dispatch = async (index: number, context: Context): Promise<void> => {
+    const run = async (index: number, context: Context): Promise<void> => {
       const registration = registrations[index]
 
       if (!registration) {
@@ -170,16 +174,16 @@ export class HookDispatcher<
       const next: Next<Context> = async (context) => {
         if (isNextCalled) return
         isNextCalled = true
-        return await dispatch(index + 1, context)
+        return await run(index + 1, context)
       }
 
-      const handler: HookMiddleware<Context> = middleware
-        ? (context, next) => middleware(context, registration, next)
-        : registration.handler
+      const middleware: Middleware<Context> = interceptor
+        ? (context, next) => interceptor(context, registration, next)
+        : registration.middleware
 
-      return await handler(context, next)
+      return await middleware(context, next)
     }
 
-    return await dispatch(0, context)
+    return await run(0, context)
   }
 }
