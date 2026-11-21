@@ -17,16 +17,31 @@ import {
   printReleaseReportAnnotation,
 } from './report'
 
-interface woejwoejfowjefowje {
-  hook: ReleaseHookName
+/** Failure of a `finalize` handler, collected for the post-report warning. */
+interface FinalizeFailure {
   plugin: string
   error: unknown
 }
 
-function woeifwo(
+/**
+ * Resolve a plugin's hook entry into a normalized hook definition.
+ *
+ * Normalizes the plugin's hook entry — a bare handler function or a
+ * `{ priority, handler }` definition — and wraps the handler in shared timing
+ * and logging middleware. When the wrapped handler throws, the failure is
+ * attributed to the current hook and plugin on `context.outcome` before the
+ * error rethrows, except for `finalize` handlers whose failures never change
+ * the workflow outcome.
+ *
+ * @param hookName Name of the hook to resolve
+ * @param plugin Plugin owning the hook entry
+ * @returns Normalized hook definition, or `undefined` when the plugin does not
+ * implement the hook
+ */
+function resolvePluginHook(
   hookName: ReleaseHookName,
   plugin: ReleasePlugin
-): ReleaseHookDefinition | void {
+): ReleaseHookDefinition | undefined {
   let hook = plugin[hookName]
 
   if (typeof hook === 'function') {
@@ -75,10 +90,12 @@ function woeifwo(
       } catch (err) {
         hasError = true
 
-        context.outcome ??= {
-          status: 'failure',
-          error: err,
-          phase: current,
+        if (hookName !== 'finalize') {
+          context.outcome ??= {
+            status: 'failure',
+            error: err,
+            phase: current,
+          }
         }
 
         throw err
@@ -100,6 +117,33 @@ function woeifwo(
         }
       }
     },
+  }
+}
+
+/**
+ * Collect `finalize` handler failures for the post-report warning.
+ *
+ * Records a thrown error with the owning plugin and rethrows it, leaving the
+ * rescue to the hook manager middleware so the remaining `finalize` handlers
+ * still run.
+ *
+ * @param handler Finalize handler to wrap
+ * @param plugin Plugin owning the finalize handler
+ * @param failures Collected finalize failures
+ * @returns Wrapped finalize handler
+ */
+function collectFinalizeFailures(
+  handler: HookHandler<ReleaseContext>,
+  plugin: ReleasePlugin,
+  failures: FinalizeFailure[]
+): HookHandler<ReleaseContext> {
+  return async (context, next) => {
+    try {
+      return await handler(context, next)
+    } catch (error) {
+      failures.push({ plugin: plugin.name, error })
+      throw error
+    }
   }
 }
 
@@ -133,9 +177,10 @@ function throwIfCancelled(context: ReleaseContext): void {
  * send notifications and clean up: when a phase hook throws, plugin rollbacks
  * run while the error unwinds, then every `finalize` handler runs with the
  * failure recorded on `context.outcome`. When a `finalize` handler throws,
- * the remaining handlers still run and each failure is logged as a warning
- * after the report. A failing `finalize` handler never changes the workflow
- * outcome and never masks the original workflow error.
+ * the hook manager middleware rescues the error so the remaining handlers
+ * still run, and each failure is logged as a warning after the report. A
+ * failing `finalize` handler never changes the workflow outcome and never
+ * masks the original workflow error.
  *
  * @param context Release execution context containing runtime options and logger
  * @param plugins List of release plugins to execute
@@ -147,44 +192,44 @@ export async function executeReleaseWorkflow(
   context: ReleaseContext,
   plugins: readonly ReleasePlugin[]
 ): Promise<void> {
+  const phaseHookNames = RELEASE_HOOK_NAMES.filter(
+    (name) => name !== 'finalize'
+  )
+
   context.outcome = null
+
+  const finalizeFailures: FinalizeFailure[] = []
 
   const manager = new HookManager<
     Record<ReleaseHookName, HookHandler<ReleaseContext>>
-  >(async (context, { name, handler }, next) => {
-    if (name === 'finalize') {
-      try {
-        return await handler(context, next)
-      } catch (err) {
-        return next(context)
-      }
+  >(async (context, registration, next) => {
+    if (registration.name !== 'finalize') {
+      return registration.handler(context, next)
     }
 
-    return handler(context, next)
+    try {
+      return await registration.handler(context, next)
+    } catch {
+      return next(context)
+    }
   })
 
-  const weowfjowjoe: woejwoejfowjefowje[] = []
-
-  for (const hook of RELEASE_HOOK_NAMES) {
+  for (const hookName of RELEASE_HOOK_NAMES) {
     for (const plugin of plugins) {
-      const x = woeifwo(hook, plugin)
+      const definition = resolvePluginHook(hookName, plugin)
 
-      if (x) {
-        const { handler } = x
+      if (!definition) continue
 
-        manager.on(
-          hook,
-          async (context, next) => {
-            try {
-              return await handler(context, next)
-            } catch (err) {
-              weowfjowjoe.push({ hook, plugin: plugin.name, error: err })
-              throw err
-            }
-          },
-          x.priority
-        )
-      }
+      const handler =
+        hookName === 'finalize'
+          ? collectFinalizeFailures(
+              definition.handler,
+              plugin,
+              finalizeFailures
+            )
+          : definition.handler
+
+      manager.on(hookName, handler, definition.priority)
     }
   }
 
@@ -192,7 +237,7 @@ export async function executeReleaseWorkflow(
     index: number,
     context: ReleaseContext
   ): Promise<void> => {
-    const hook = RELEASE_HOOK_NAMES[index]
+    const hook = phaseHookNames[index]
 
     if (!hook) return
 
@@ -219,22 +264,24 @@ export async function executeReleaseWorkflow(
     }
   }
 
+  await manager.emit('finalize', context)
+
   const report = generateReleaseReport(context)
 
   printReleaseReport(context.logger, report)
   appendReleaseReportSummary(context.logger, context.env, report)
   printReleaseReportAnnotation(context.env, context.stdout, report)
 
-  for (const woejowjfo of weowfjowjoe) {
-    if (woejowjfo.hook === 'finalize') {
-      context.logger.warn(
-        `Plugin "${woejowjfo.plugin}" could not finalize: ${
-          woejowjfo.error instanceof Error
-            ? woejowjfo.error.message
-            : String(woejowjfo.error)
-        }`
-      )
-    }
+  for (const failure of finalizeFailures) {
+    if (failure.error === context.outcome.error) continue
+
+    context.logger.warn(
+      `Plugin "${failure.plugin}" could not finalize: ${
+        failure.error instanceof Error
+          ? failure.error.message
+          : String(failure.error)
+      }`
+    )
   }
 
   if (context.outcome.status === 'failure') {

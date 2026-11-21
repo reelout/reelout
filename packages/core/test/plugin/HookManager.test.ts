@@ -219,3 +219,66 @@ test('rethrows error when handler throws exception during execution', async () =
     'Handler execution failed'
   )
 })
+
+test('dispatches each registered handler through the constructor middleware in priority order', async () => {
+  const dispatched: string[] = []
+
+  manager = new HookManager<Record<string, HookHandler<TestContext>>>(
+    async (ctx, registration, next) => {
+      dispatched.push(`${registration.name}:${registration.priority}`)
+
+      return registration.handler(ctx, next)
+    }
+  )
+
+  manager.on(
+    'run',
+    (ctx, next) => {
+      ctx.steps.push('normal')
+      return next(ctx)
+    },
+    HookPriority.Normal
+  )
+
+  manager.on(
+    'run',
+    (ctx, next) => {
+      ctx.steps.push('high')
+      return next(ctx)
+    },
+    HookPriority.High
+  )
+
+  await manager.emit('run', context)
+
+  expect(dispatched).toEqual([
+    `run:${HookPriority.High}`,
+    `run:${HookPriority.Normal}`,
+  ])
+  expect(context.steps).toEqual(['high', 'normal'])
+})
+
+test('continues the remaining handlers when the middleware rescues a handler error', async () => {
+  manager = new HookManager<Record<string, HookHandler<TestContext>>>(
+    async (ctx, registration, next) => {
+      try {
+        return await registration.handler(ctx, next)
+      } catch {
+        return next(ctx)
+      }
+    }
+  )
+
+  manager.on('run', () => {
+    throw new Error('Rescued failure')
+  })
+
+  manager.on('run', (ctx, next) => {
+    ctx.steps.push('after-rescue')
+    return next(ctx)
+  })
+
+  await expect(manager.emit('run', context)).resolves.toBeUndefined()
+
+  expect(context.steps).toEqual(['after-rescue'])
+})

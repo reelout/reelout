@@ -19,6 +19,13 @@ interface HookRegistration<HookName, Context> {
   handler: HookHandler<Context>
 }
 
+/**
+ * Intercept a registered handler during emission.
+ *
+ * Runs in place of every registered handler, receiving the shared `context`,
+ * the `registration` being dispatched, and the `next` function that continues
+ * with the following handler.
+ */
 export type HandlerMiddleware<HookName, Context> = (
   context: Context,
   registration: HookRegistration<HookName, Context>,
@@ -46,6 +53,12 @@ export class HookManager<
     | HandlerMiddleware<keyof HookMap, InferContext<HookMap[keyof HookMap]>>
     | undefined
 
+  /**
+   * Create a hook manager.
+   *
+   * @param middleware Wrapper invoked in place of every registered handler
+   * during emission
+   */
   constructor(
     middleware?: HandlerMiddleware<
       keyof HookMap,
@@ -105,9 +118,10 @@ export class HookManager<
   /**
    * Trigger execution of all handlers registered to a hook.
    *
-   * Passes `context` through the handler pipeline in descending priority order.
-   * Enables handlers to control execution flow using `next` and executes `done`
-   * after the last handler completes.
+   * Passes `context` through the handler pipeline in descending priority order
+   * and dispatches each registration through the constructor middleware when
+   * one is provided. Enables handlers to control execution flow using `next`
+   * and executes `done` after the last handler completes.
    *
    * @param name Name of the hook to trigger
    * @param context Shared payload passed into each handler
@@ -140,11 +154,9 @@ export class HookManager<
         return await dispatch(index + 1, context)
       }
 
-      let handler: HookHandler<Context> = registration.handler
-
-      if (middleware) {
-        handler = (context, next) => middleware(context, registration, next)
-      }
+      const handler: HookHandler<Context> = middleware
+        ? (context, next) => middleware(context, registration, next)
+        : registration.handler
 
       return await handler(context, next)
     }
