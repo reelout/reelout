@@ -3,32 +3,39 @@
 
 import { Gitlab } from '@gitbeaker/rest'
 import type { GitRepository, ReleaseContext, ReleasePlan } from '@reelout/core'
-import { fetchRelease, type GitLabRelease } from './fetchRelease'
+import { deleteRelease } from './deleteRelease'
+import { fetchRelease } from './fetchRelease'
+import { restoreRelease } from './restoreRelease'
+
+/**
+ * Rollback callback returned after a release was created or overwritten.
+ */
+export type ReleaseRollback = () => Promise<void>
 
 /**
  * Create or overwrite a GitLab release for a package tag.
  *
  * Skips the write when the tag has no message. Fetches the release for the
  * tag first: an existing release is overwritten with the generated content
- * via the update endpoint — capturing its original name and description for
- * rollback — and a missing release is created.
+ * via the update endpoint, and a missing release is created. Returns a
+ * rollback callback that restores an overwritten release or deletes a
+ * release created by this call.
  *
  * @param context Release context containing commit and prerelease information
  * @param plan Release plan containing the tag to publish
  * @param token GitLab authentication token
  * @param repository Target repository
- * @returns Promise resolving to `{ original: GitLabRelease }` when an
- * existing release was overwritten, `{ original: null }` when the release was
- * created, or `null` when the write was skipped
+ * @returns Promise that resolves to a rollback callback for the release, or
+ * undefined when the write was skipped
  */
 export async function createRelease(
   context: ReleaseContext,
   plan: ReleasePlan,
   token: string,
   repository: GitRepository
-): Promise<{ original: GitLabRelease | null } | null> {
+): Promise<ReleaseRollback | void> {
   if (!plan.release?.tag?.message) {
-    return null
+    return
   }
 
   const api = new Gitlab({ token })
@@ -49,7 +56,7 @@ export async function createRelease(
       `An existing GitLab release for "${tagName}" was overwritten.`
     )
 
-    return { original: existing }
+    return () => restoreRelease(plan, existing, token, repository)
   }
 
   await api.ProjectReleases.create(projectId, {
@@ -59,5 +66,5 @@ export async function createRelease(
     ref: context.commit.hash,
   })
 
-  return { original: null }
+  return () => deleteRelease(plan, token, repository)
 }

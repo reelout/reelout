@@ -13,12 +13,15 @@ const editReleaseMock = vi.hoisted(() => vi.fn())
 
 const showReleaseMock = vi.hoisted(() => vi.fn())
 
+const removeReleaseMock = vi.hoisted(() => vi.fn())
+
 const Gitlab = vi.hoisted(() =>
   vi.fn(function () {
     return {
       ProjectReleases: {
         create: createReleaseMock,
         edit: editReleaseMock,
+        remove: removeReleaseMock,
         show: showReleaseMock,
       },
     }
@@ -27,12 +30,14 @@ const Gitlab = vi.hoisted(() =>
 
 vi.mock('@gitbeaker/rest', () => ({ Gitlab }))
 
+const projectId = encodeURIComponent('mock-owner/mock-repo')
+
 beforeEach(() => {
   vi.clearAllMocks()
   showReleaseMock.mockRejectedValue({ cause: { response: { status: 404 } } })
 })
 
-test('does not fetch or create a release without a message', async () => {
+test('returns no rollback without a tag message', async () => {
   const first = await createRelease(
     context,
     {
@@ -53,16 +58,16 @@ test('does not fetch or create a release without a message', async () => {
     createMockRepository('gitlab')
   )
 
-  expect(first).toBeNull()
-  expect(second).toBeNull()
+  expect(first).toBeUndefined()
+  expect(second).toBeUndefined()
   expect(Gitlab).not.toHaveBeenCalled()
   expect(showReleaseMock).not.toHaveBeenCalled()
   expect(editReleaseMock).not.toHaveBeenCalled()
   expect(createReleaseMock).not.toHaveBeenCalled()
 })
 
-test('creates a release when no release exists for the tag', async () => {
-  const result = await createRelease(
+test('creates a release and returns a rollback that deletes it', async () => {
+  const rollback = await createRelease(
     context,
     {
       package: { location: '.' },
@@ -79,40 +84,39 @@ test('creates a release when no release exists for the tag', async () => {
     createMockRepository('gitlab')
   )
 
+  if (!rollback) {
+    throw new Error('Expected createRelease to return a rollback.')
+  }
+
   expect(Gitlab).toHaveBeenCalledTimes(1)
   expect(Gitlab).toHaveBeenCalledWith(
     expect.objectContaining({ token: 'mock-token' })
   )
   expect(showReleaseMock).toHaveBeenCalledTimes(1)
-  expect(showReleaseMock).toHaveBeenCalledWith(
-    encodeURIComponent('mock-owner/mock-repo'),
-    'v1.2.3'
-  )
+  expect(showReleaseMock).toHaveBeenCalledWith(projectId, 'v1.2.3')
   expect(editReleaseMock).not.toHaveBeenCalled()
   expect(createReleaseMock).toHaveBeenCalledTimes(1)
-  expect(createReleaseMock).toHaveBeenCalledWith(
-    encodeURIComponent('mock-owner/mock-repo'),
-    {
-      name: 'v1.2.3',
-      tag_name: 'v1.2.3',
-      description: '## Bug Fixes\n\n- resolve an issue abc123\n',
-      ref: 'abc123',
-    }
-  )
-  expect(result).toMatchInlineSnapshot(`
-    {
-      "original": null,
-    }
-  `)
+  expect(createReleaseMock).toHaveBeenCalledWith(projectId, {
+    name: 'v1.2.3',
+    tag_name: 'v1.2.3',
+    description: '## Bug Fixes\n\n- resolve an issue abc123\n',
+    ref: 'abc123',
+  })
+  expect(removeReleaseMock).not.toHaveBeenCalled()
+
+  await rollback()
+
+  expect(removeReleaseMock).toHaveBeenCalledTimes(1)
+  expect(removeReleaseMock).toHaveBeenCalledWith(projectId, 'v1.2.3')
 })
 
-test('updates an existing release with the generated content instead of creating a new one', async () => {
+test('overwrites an existing release and returns a rollback that restores it', async () => {
   showReleaseMock.mockResolvedValueOnce({
     name: 'Old release name',
     description: 'Old release description',
   })
 
-  const result = await createRelease(
+  const rollback = await createRelease(
     context,
     {
       package: { location: '.' },
@@ -127,26 +131,26 @@ test('updates an existing release with the generated content instead of creating
     createMockRepository('gitlab')
   )
 
+  if (!rollback) {
+    throw new Error('Expected createRelease to return a rollback.')
+  }
+
   expect(showReleaseMock).toHaveBeenCalledTimes(1)
-  expect(showReleaseMock).toHaveBeenCalledWith(
-    encodeURIComponent('mock-owner/mock-repo'),
-    'v1.2.3'
-  )
+  expect(showReleaseMock).toHaveBeenCalledWith(projectId, 'v1.2.3')
   expect(editReleaseMock).toHaveBeenCalledTimes(1)
-  expect(editReleaseMock).toHaveBeenCalledWith(
-    encodeURIComponent('mock-owner/mock-repo'),
-    'v1.2.3',
-    { name: 'v1.2.3', description: 'Release notes' }
-  )
+  expect(editReleaseMock).toHaveBeenCalledWith(projectId, 'v1.2.3', {
+    name: 'v1.2.3',
+    description: 'Release notes',
+  })
   expect(createReleaseMock).not.toHaveBeenCalled()
-  expect(result).toMatchInlineSnapshot(`
-    {
-      "original": {
-        "description": "Old release description",
-        "name": "Old release name",
-      },
-    }
-  `)
+
+  await rollback()
+
+  expect(editReleaseMock).toHaveBeenCalledTimes(2)
+  expect(editReleaseMock).toHaveBeenNthCalledWith(2, projectId, 'v1.2.3', {
+    name: 'Old release name',
+    description: 'Old release description',
+  })
 })
 
 test('rethrows release fetch errors other than 404', async () => {

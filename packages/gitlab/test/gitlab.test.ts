@@ -320,9 +320,9 @@ test('rolls back published GitLab releases when a subsequent plugin fails', asyn
   expect(createReleaseMock).toHaveBeenCalledTimes(3)
   expect(removeReleaseMock).toHaveBeenCalledTimes(3)
   expect(removeReleaseMock.mock.calls.map((call) => call[1])).toEqual([
-    'v-root',
-    'v-a',
     'v-b',
+    'v-a',
+    'v-root',
   ])
 })
 
@@ -363,8 +363,8 @@ test('restores overwritten GitLab releases instead of deleting them during rollb
   })
   expect(removeReleaseMock).toHaveBeenCalledTimes(2)
   expect(removeReleaseMock.mock.calls.map((call) => call[1])).toEqual([
-    'v-root',
     'v-a',
+    'v-root',
   ])
   expect(logger.mock.calls).toContainEqual([
     'An existing GitLab release for "v-b" was overwritten.',
@@ -389,8 +389,8 @@ test('does not roll back GitLab releases that were not written during the run', 
   expect(createReleaseMock).toHaveBeenCalledTimes(2)
   expect(removeReleaseMock).toHaveBeenCalledTimes(2)
   expect(removeReleaseMock.mock.calls.map((call) => call[1])).toEqual([
-    'v-a',
     'v-b',
+    'v-a',
   ])
 })
 

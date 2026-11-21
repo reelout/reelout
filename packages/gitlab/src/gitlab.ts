@@ -1,18 +1,10 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
-import type { ReleaseContext, ReleasePlan, ReleasePlugin } from '@reelout/core'
+import type { ReleaseContext, ReleasePlugin } from '@reelout/core'
 import { version } from '../package.json'
-import { createRelease } from './createRelease'
-import { deleteRelease } from './deleteRelease'
-import type { GitLabRelease } from './fetchRelease'
-import { restoreRelease } from './restoreRelease'
+import { createRelease, type ReleaseRollback } from './createRelease'
 import { verifyToken } from './verifyToken'
-
-interface WrittenRelease {
-  plan: ReleasePlan
-  original: GitLabRelease | null
-}
 
 /**
  * Read the GitLab token from the release environment.
@@ -90,33 +82,23 @@ const gitlab = (): ReleasePlugin => ({
 
     const repository = context.repository
 
-    const written: WrittenRelease[] = []
+    const written: ReleaseRollback[] = []
 
     // Create releases in reverse order
     // so that the root package release is created last,
     // as it is often the most important one.
     for (const plan of plans.toReversed()) {
-      const result = await createRelease(context, plan, token, repository)
+      const rollback = await createRelease(context, plan, token, repository)
 
-      if (result) {
-        written.push({ plan, original: result.original })
+      if (rollback) {
+        written.push(rollback)
       }
     }
 
     try {
       return await next(context)
     } catch (err) {
-      // Roll back written releases in reverse creation order
-      // so that the root package release is removed first.
-      await Promise.allSettled(
-        written
-          .toReversed()
-          .map(({ plan, original }) =>
-            original
-              ? restoreRelease(plan, original, token, repository)
-              : deleteRelease(plan, token, repository)
-          )
-      )
+      await Promise.allSettled(written.map((rollback) => rollback()))
 
       throw err
     }
