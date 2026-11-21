@@ -41,7 +41,7 @@ export async function syncDistTag(
 
   if (distTags[tag] === version) {
     context.logger.debug(
-      `Dist-tag ${tag} already points at ${name}@${version}.`
+      `Dist-tag "${tag}" already points at "${name}@${version}".`
     )
 
     return
@@ -50,7 +50,9 @@ export async function syncDistTag(
   const target = `${name}@${version}`
 
   if (context.dryRun) {
-    context.logger.debug(`[DRY RUN] Would sync dist-tag ${tag} to ${target}.`)
+    context.logger.debug(
+      `[DRY RUN] Would sync dist-tag "${tag}" to "${target}".`
+    )
 
     return
   }
@@ -83,5 +85,5 @@ export async function syncDistTag(
     )
   }
 
-  context.logger.debug(`Synced dist-tag ${tag} to ${target}.`)
+  context.logger.debug(`Synced dist-tag "${tag}" to "${target}".`)
 }
