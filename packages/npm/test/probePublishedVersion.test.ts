@@ -48,3 +48,26 @@ test('drops non-string dist-tag values from the published probe result', async (
     distTags: { next: '2.0.0' },
   })
 })
+
+test('surfaces the recorded integrity value of the published version', async () => {
+  execCommand.mockImplementationOnce(async () =>
+    JSON.stringify({
+      name: 'a',
+      version: '1.2.3',
+      dist: {
+        tarball: 'https://registry.npmjs.org/a/-/a-1.2.3.tgz',
+        integrity: 'sha512-recorded-digest',
+      },
+      'dist-tags': { latest: '1.0.0' },
+    })
+  )
+
+  const probe = await probePublishedVersion(context, plan, packageManager)
+
+  expect(probe).toEqual({
+    status: 'published',
+    tarballUrl: 'https://registry.npmjs.org/a/-/a-1.2.3.tgz',
+    integrity: 'sha512-recorded-digest',
+    distTags: { latest: '1.0.0' },
+  })
+})

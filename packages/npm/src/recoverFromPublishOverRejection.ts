@@ -54,7 +54,8 @@ export async function recoverFromPublishOverRejection(
     context,
     plan,
     packageManager,
-    probe.tarballUrl
+    probe.tarballUrl,
+    probe.integrity
   )
 
   if (!identical) {

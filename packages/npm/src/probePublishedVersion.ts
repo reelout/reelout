@@ -14,13 +14,14 @@ import { resolvePublishRegistry } from './resolvePublishRegistry'
  *
  * - `absent`: the registry does not hold the target version.
  * - `published`: the registry holds the target version, along with its
- *   tarball URL and dist-tags.
+ *   tarball URL, integrity, and dist-tags.
  */
 export type PublishedVersionStatus =
   | { status: 'absent' }
   | {
       status: 'published'
       tarballUrl: string | undefined
+      integrity: string | undefined
       distTags: Record<string, string>
     }
 
@@ -41,7 +42,8 @@ const NOT_FOUND_PATTERN =
  * @param context Release context containing environment and working directory
  * @param plan Release plan whose package version is probed
  * @param packageManager Information about the active package manager
- * @returns The published version's tarball URL and dist-tags, or absent status
+ * @returns The published version's tarball URL, integrity, and dist-tags,
+ * or absent status
  * @throws If the probe command fails without reporting not found, or its
  * output cannot be parsed as registry metadata
  */
@@ -107,6 +109,7 @@ export async function probePublishedVersion(
   return {
     status: 'published',
     tarballUrl: readTarballUrl(metadata),
+    integrity: readIntegrity(metadata),
     distTags: readDistTags(metadata),
   }
 }
@@ -163,6 +166,22 @@ function readTarballUrl(metadata: Record<string, unknown>): string | undefined {
   }
 
   return typeof dist.tarball === 'string' ? dist.tarball : undefined
+}
+
+/**
+ * Read the recorded integrity value from a registry manifest.
+ *
+ * @param metadata The parsed registry manifest object
+ * @returns The integrity value, or undefined when the manifest omits it
+ */
+function readIntegrity(metadata: Record<string, unknown>): string | undefined {
+  const dist = metadata.dist
+
+  if (!isJsonObject(dist)) {
+    return undefined
+  }
+
+  return typeof dist.integrity === 'string' ? dist.integrity : undefined
 }
 
 /**

@@ -21,6 +21,7 @@ import type { downloadPublishedTarball } from '@reelout/npm/downloadPublishedTar
 import type { isPackageTarballIdentical } from '@reelout/npm/isPackageTarballIdentical'
 import type { prepareAuth as prepareAuthImpl } from '@reelout/npm/prepareAuth'
 import { vol } from 'memfs'
+import { createHash } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { temporaryDirectoryTask } from 'tempy'
@@ -202,13 +203,14 @@ async function writePackedTarball(
 }
 
 function publishedManifest(
-  distTags: Record<string, string> = { latest: '1.0.0' }
+  distTags: Record<string, string> = { latest: '1.0.0' },
+  integrity?: string
 ): string {
   return JSON.stringify({
     _id: 'a@1.2.3',
     name: 'a',
     version: '1.2.3',
-    dist: { tarball: `${NPMJS}a/-/a-1.2.3.tgz` },
+    dist: { tarball: `${NPMJS}a/-/a-1.2.3.tgz`, integrity },
     'dist-tags': distTags,
   })
 }
@@ -1984,6 +1986,64 @@ test('skips the publish of an identical version reported as a one-element array'
       message.includes('Skipping publish of "a@1.2.3"')
     )
   ).toHaveLength(1)
+})
+
+test('skips downloading the published tarball when its recorded integrity matches the packed tarball', async () => {
+  provideOIDCAuth()
+
+  mountPackageFixture()
+
+  context.plans = [createPublishablePlan()]
+
+  execCommand.mockImplementationOnce(async () =>
+    publishedManifest(
+      { latest: '1.0.0' },
+      `sha512-${createHash('sha512').update('packed-tarball').digest('base64')}`
+    )
+  )
+
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(downloadTarball).toHaveBeenCalledTimes(0)
+  expect(isIdentical).toHaveBeenCalledTimes(0)
+  expect(publishPackage).toHaveBeenCalledTimes(0)
+  expect(
+    warnCalls().filter((message) =>
+      message.includes('Skipping publish of "a@1.2.3"')
+    )
+  ).toHaveLength(1)
+  expect(context.outcome?.status).toBe('success')
+})
+
+test('compares content after download when the recorded integrity does not match the packed tarball', async () => {
+  provideOIDCAuth()
+
+  mountPackageFixture()
+
+  context.plans = [createPublishablePlan()]
+
+  execCommand.mockImplementationOnce(async () =>
+    publishedManifest(
+      { latest: '1.0.0' },
+      `sha512-${createHash('sha512').update('other-tarball').digest('base64')}`
+    )
+  )
+
+  downloadTarball.mockResolvedValue(Buffer.from('published-tarball'))
+
+  isIdentical.mockReturnValue(true)
+
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(downloadTarball).toHaveBeenCalledTimes(1)
+  expect(isIdentical).toHaveBeenCalledTimes(1)
+  expect(publishPackage).toHaveBeenCalledTimes(0)
+  expect(
+    warnCalls().filter((message) =>
+      message.includes('Skipping publish of "a@1.2.3"')
+    )
+  ).toHaveLength(1)
+  expect(context.outcome?.status).toBe('success')
 })
 
 test('rejects before any publish when the registry version content cannot be verified as identical', async () => {

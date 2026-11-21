@@ -39,7 +39,8 @@ export async function probePlan(
     context,
     plan,
     packageManager,
-    probe.tarballUrl
+    probe.tarballUrl,
+    probe.integrity
   )
 
   if (!identical) {

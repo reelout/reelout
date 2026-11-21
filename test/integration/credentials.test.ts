@@ -328,6 +328,7 @@ test('completes an already published npm plan with a synced dist-tag and no publ
       vi.mocked(probePublishedVersion).mockResolvedValue({
         status: 'published',
         tarballUrl: 'https://registry.npmjs.org/pkg/-/pkg-0.1.0.tgz',
+        integrity: undefined,
         distTags: {},
       })
 
