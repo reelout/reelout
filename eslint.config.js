@@ -6,26 +6,14 @@ import ts from 'typescript-eslint'
 
 export default defineConfig([
   {
-    ignores: [
-      '**/.next',
-      '**/coverage',
-      '**/dist',
-      '**/generated',
-      '**/playwright-report',
-      '**/storybook-static',
-      '**/test-results',
-    ],
+    ignores: ['**/coverage', '**/dist', '**/generated'],
   },
   {
     files: ['**/*.cjs'],
     languageOptions: { globals: globals.commonjs },
   },
   {
-    files: ['**/*.{js,cjs,mjs}'],
     languageOptions: { globals: globals.node },
-  },
-  {
-    languageOptions: { globals: globals.browser },
   },
 
   js.configs.recommended,
@@ -57,7 +45,7 @@ export default defineConfig([
         'error',
         {
           groups: [['builtin', 'external', 'internal']],
-          pathGroups: [{ pattern: '{#*,#*/**,@/**}', group: 'internal' }],
+          pathGroups: [{ pattern: '{#*,#*/**}', group: 'internal' }],
         },
       ],
     },

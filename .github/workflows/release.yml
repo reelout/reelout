@@ -28,9 +28,11 @@ on:
         description: 'Preview the release without writing files, creating commits or tags, or publishing packages or releases.'
         type: boolean
         default: false
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 permissions:
   contents: write
-  packages: write
   issues: write
   pull-requests: write
   id-token: write
@@ -52,9 +54,15 @@ jobs:
       - run: pnpm validate
       - run: |
           ARGS=()
-          [ -n "${{ inputs.type }}" ] && ARGS+=("--type" "${{ inputs.type }}")
-          [ -n "${{ inputs.qualifier }}" ] && ARGS+=("--qualifier" "${{ inputs.qualifier }}")
-          [ -n "${{ inputs.channel }}" ] && ARGS+=("--channel" "${{ inputs.channel }}")
-          [ "${{ inputs.allow-empty }}" = "true" ] && ARGS+=("--allow-empty")
-          [ "${{ inputs.dry-run }}" = "true" ] && ARGS+=("--dry-run")
+          [ -n "$RELEASE_TYPE" ] && ARGS+=("--type" "$RELEASE_TYPE")
+          [ -n "$RELEASE_QUALIFIER" ] && ARGS+=("--qualifier" "$RELEASE_QUALIFIER")
+          [ -n "$RELEASE_CHANNEL" ] && ARGS+=("--channel" "$RELEASE_CHANNEL")
+          [ "$RELEASE_ALLOW_EMPTY" = "true" ] && ARGS+=("--allow-empty")
+          [ "$RELEASE_DRY_RUN" = "true" ] && ARGS+=("--dry-run")
           node dist/cli.js "${ARGS[@]}"
+        env:
+          RELEASE_TYPE: ${{ inputs.type }}
+          RELEASE_QUALIFIER: ${{ inputs.qualifier }}
+          RELEASE_CHANNEL: ${{ inputs.channel }}
+          RELEASE_ALLOW_EMPTY: ${{ inputs.allow-empty }}
+          RELEASE_DRY_RUN: ${{ inputs.dry-run }}
