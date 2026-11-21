@@ -53,7 +53,7 @@ export async function createRelease(
     })
 
     context.logger.warn(
-      `An existing GitLab release for "${tagName}" was overwritten.`
+      `GitLab release for tag "${tagName}" already exists: its name and description were overwritten with the freshly generated content.`
     )
 
     return () => restoreRelease(plan, existing, token, repository)

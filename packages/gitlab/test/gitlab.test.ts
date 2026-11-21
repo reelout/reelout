@@ -361,7 +361,7 @@ test('restores overwritten GitLab releases instead of deleting them during rollb
     'v-root',
   ])
   expect(logger.mock.calls).toContainEqual([
-    'An existing GitLab release for "v-b" was overwritten.',
+    'GitLab release for tag "v-b" already exists: its name and description were overwritten with the freshly generated content.',
   ])
 })
 
@@ -410,7 +410,7 @@ test('updates an existing GitLab release with the generated content', async () =
   expect(createReleaseMock).not.toHaveBeenCalled()
   expect(removeReleaseMock).not.toHaveBeenCalled()
   expect(logger.mock.calls).toContainEqual([
-    'An existing GitLab release for "v1.0.0" was overwritten.',
+    'GitLab release for tag "v1.0.0" already exists: its name and description were overwritten with the freshly generated content.',
   ])
 })
 
