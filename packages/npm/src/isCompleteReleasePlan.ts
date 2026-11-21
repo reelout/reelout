@@ -5,20 +5,23 @@ import type { Package, Release, ReleasePlan } from '@reelout/core'
 import { PLUGIN_NAME } from './PLUGIN_NAME'
 
 /**
- * A release plan that is valid for publishing by the npm plugin.
+ * A release plan whose data is complete for an npm publish.
  */
-export type ValidReleasePlan = ReleasePlan & {
+export type CompleteReleasePlan = ReleasePlan & {
   package: Package & { name: string }
   release: Release & { version: string }
 }
 
 /**
- * Determine whether a plan is publishable by the npm plugin.
+ * Determine whether a release plan carries the complete data an npm
+ * publish requires.
  *
  * @param plan The release plan to inspect
  * @returns True when the plan is npm-provided, public, named, and versioned
  */
-export function isPublishablePlan(plan: ReleasePlan): plan is ValidReleasePlan {
+export function isCompleteReleasePlan(
+  plan: ReleasePlan
+): plan is CompleteReleasePlan {
   return (
     plan.package.provider === PLUGIN_NAME &&
     !plan.package.private &&

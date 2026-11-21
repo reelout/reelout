@@ -5,7 +5,7 @@ import type { ReleaseContext } from '@reelout/core'
 import { formatError } from '@reelout/core'
 import { colors } from 'consola/utils'
 import type { PackageManagerInfo } from './inspectPackageManager'
-import type { ValidReleasePlan } from './isPublishablePlan'
+import type { CompleteReleasePlan } from './isCompleteReleasePlan'
 import { probePublishedVersion } from './probePublishedVersion'
 import { proveSamePublication } from './proveSamePublication'
 import { syncDistTag } from './syncDistTag'
@@ -28,7 +28,7 @@ import { syncDistTag } from './syncDistTag'
  */
 export async function recoverFromPublishOverRejection(
   context: ReleaseContext,
-  plan: ValidReleasePlan,
+  plan: CompleteReleasePlan,
   packageManager: PackageManagerInfo,
   originalError: unknown
 ): Promise<void> {

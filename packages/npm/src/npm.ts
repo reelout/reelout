@@ -17,7 +17,7 @@ import { colors } from 'consola/utils'
 import { version } from '../package.json'
 import { bumpPackageDependencies } from './bumpPackageDependencies'
 import { inspectPackageManager } from './inspectPackageManager'
-import { isPublishablePlan } from './isPublishablePlan'
+import { isCompleteReleasePlan } from './isCompleteReleasePlan'
 import { isPublishOverRejection } from './isPublishOverRejection'
 import { isSameRepository } from './isSameRepository'
 import { loadPackages } from './loadPackages'
@@ -165,7 +165,7 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
         }
       } catch {}
 
-      const publishable = context.plans.filter(isPublishablePlan)
+      const publishable = context.plans.filter(isCompleteReleasePlan)
 
       const packageManager =
         publishable.length > 0
@@ -196,7 +196,7 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
         } catch (error) {
           if (
             packageManager === undefined ||
-            !isPublishablePlan(plan) ||
+            !isCompleteReleasePlan(plan) ||
             !isPublishOverRejection(error)
           ) {
             throw error
