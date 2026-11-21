@@ -3,30 +3,36 @@
 
 import { verifyToken } from '@reelout/github'
 import { beforeEach, expect, test, vi } from 'vitest'
+import { createMockRepository } from '../../../test/mock/context'
 
-const getAuthenticated = vi.hoisted(() => vi.fn())
+const getRepo = vi.hoisted(() => vi.fn())
 
 const Octokit = vi.hoisted(() =>
   vi.fn(function () {
-    return { rest: { users: { getAuthenticated } } }
+    return { rest: { repos: { get: getRepo } } }
   })
 )
 
 vi.mock('@octokit/rest', () => ({ Octokit }))
 
+const repository = createMockRepository('github')
+
 beforeEach(() => {
   vi.clearAllMocks()
 })
 
-test('resolves when GitHub accepts the token', async () => {
-  getAuthenticated.mockResolvedValueOnce({ data: { login: 'mock-user' } })
+test('resolves when GitHub accepts the token for the repository', async () => {
+  getRepo.mockResolvedValueOnce({ data: { full_name: 'mock-owner/mock-repo' } })
 
-  await expect(verifyToken('mock-token')).resolves.toBeUndefined()
+  await expect(verifyToken('mock-token', repository)).resolves.toBeUndefined()
 
   expect(Octokit).toHaveBeenCalledWith(
     expect.objectContaining({ auth: 'mock-token' })
   )
-  expect(getAuthenticated).toHaveBeenCalledTimes(1)
+  expect(getRepo).toHaveBeenCalledWith({
+    owner: 'mock-owner',
+    repo: 'mock-repo',
+  })
 })
 
 test('throws a wrapped error when GitHub rejects the token', async () => {
@@ -34,9 +40,11 @@ test('throws a wrapped error when GitHub rejects the token', async () => {
     status: 401,
   })
 
-  getAuthenticated.mockRejectedValueOnce(rejection)
+  getRepo.mockRejectedValueOnce(rejection)
 
-  const error = (await verifyToken('mock-token').catch((err) => err)) as Error
+  const error = (await verifyToken('mock-token', repository).catch(
+    (err) => err
+  )) as Error
 
   expect(error).toMatchInlineSnapshot(
     '[Error: The GITHUB_TOKEN environment variable could not be verified.]'

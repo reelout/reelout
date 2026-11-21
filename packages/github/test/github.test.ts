@@ -12,7 +12,7 @@ import plugin from '@reelout/github'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { context, logger, repository } from '../../../test/mock/context'
 
-const getAuthenticated = vi.hoisted(() => vi.fn())
+const getRepo = vi.hoisted(() => vi.fn())
 
 const getReleaseByTag = vi.hoisted(() => vi.fn())
 
@@ -26,8 +26,8 @@ const Octokit = vi.hoisted(() =>
   vi.fn(function () {
     return {
       rest: {
-        users: { getAuthenticated },
         repos: {
+          get: getRepo,
           getReleaseByTag,
           createRelease,
           updateRelease,
@@ -66,7 +66,7 @@ const plan = createReleasePlan('a', 'a', {
 
 beforeEach(() => {
   vi.resetAllMocks()
-  getAuthenticated.mockResolvedValue({ data: { login: 'mock-user' } })
+  getRepo.mockResolvedValue({ data: { full_name: 'mock-owner/mock-repo' } })
   getReleaseByTag.mockRejectedValue(notFound())
 })
 
@@ -142,7 +142,7 @@ test('fails workflow execution when the GitHub token is invalid', async () => {
 
   context.plans = [plan]
 
-  getAuthenticated.mockRejectedValueOnce(
+  getRepo.mockRejectedValueOnce(
     Object.assign(new Error('Bad credentials'), { status: 401 })
   )
 
@@ -165,7 +165,7 @@ test('fails workflow execution when the GitHub token is invalid during dry-run',
 
   context.plans = [plan]
 
-  getAuthenticated.mockRejectedValueOnce(
+  getRepo.mockRejectedValueOnce(
     Object.assign(new Error('Bad credentials'), { status: 401 })
   )
 
@@ -190,6 +190,7 @@ test('fails workflow execution when repository context is unavailable', async ()
   )
 
   expect(createRelease).not.toHaveBeenCalled()
+  expect(getRepo).not.toHaveBeenCalled()
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
       [
@@ -213,7 +214,7 @@ test('verifies the GitHub token during dry-run mode without creating releases', 
 
   await executeReleaseWorkflow(context, [plugin()])
 
-  expect(getAuthenticated).toHaveBeenCalledTimes(1)
+  expect(getRepo).toHaveBeenCalledTimes(1)
   expect(getReleaseByTag).not.toHaveBeenCalled()
   expect(createRelease).not.toHaveBeenCalled()
 })

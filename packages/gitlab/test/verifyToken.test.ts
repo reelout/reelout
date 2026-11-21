@@ -3,39 +3,46 @@
 
 import { verifyToken } from '@reelout/gitlab'
 import { beforeEach, expect, test, vi } from 'vitest'
+import { createMockRepository } from '../../../test/mock/context'
 
-const showCurrentUserMock = vi.hoisted(() => vi.fn())
+const showProjectMock = vi.hoisted(() => vi.fn())
 
 const Gitlab = vi.hoisted(() =>
   vi.fn(function () {
-    return { Users: { showCurrentUser: showCurrentUserMock } }
+    return { Projects: { show: showProjectMock } }
   })
 )
 
 vi.mock('@gitbeaker/rest', () => ({ Gitlab }))
 
+const repository = createMockRepository('gitlab')
+
 beforeEach(() => {
   vi.clearAllMocks()
 })
 
-test('verifies the token against the current-user endpoint', async () => {
-  showCurrentUserMock.mockResolvedValueOnce({ username: 'mock-user' })
+test('verifies the token against the release project', async () => {
+  showProjectMock.mockResolvedValueOnce({
+    path_with_namespace: 'mock-owner/mock-repo',
+  })
 
-  await verifyToken('mock-token')
+  await verifyToken('mock-token', repository)
 
   expect(Gitlab).toHaveBeenCalledTimes(1)
   expect(Gitlab).toHaveBeenCalledWith(
     expect.objectContaining({ token: 'mock-token' })
   )
-  expect(showCurrentUserMock).toHaveBeenCalledTimes(1)
+  expect(showProjectMock).toHaveBeenCalledWith('mock-owner%2Fmock-repo')
 })
 
-test('wraps current-user request failures with the verification error', async () => {
+test('wraps project request failures with the verification error', async () => {
   const requestError = new Error('401 Unauthorized')
 
-  showCurrentUserMock.mockRejectedValueOnce(requestError)
+  showProjectMock.mockRejectedValueOnce(requestError)
 
-  const error: unknown = await verifyToken('mock-token').catch((err) => err)
+  const error: unknown = await verifyToken('mock-token', repository).catch(
+    (err) => err
+  )
 
   expect(error).toMatchInlineSnapshot(
     `[Error: The GITLAB_TOKEN environment variable could not be verified.]`

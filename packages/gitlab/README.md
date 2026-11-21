@@ -45,7 +45,7 @@ a token GitLab rejects fails the release before any release is created.
 - `deleteRelease(...)` — delete a release by tag.
 - `isRepositoryPublic(...)` — check project visibility via the GitLab API.
 - `restoreRelease(...)` — restore an overwritten release to its original content.
-- `verifyToken(...)` — verify a GitLab token is accepted by GitLab.
+- `verifyToken(...)` — verify a GitLab token is accepted for the release project.
 
 ## Documentation
 

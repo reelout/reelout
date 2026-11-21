@@ -44,7 +44,7 @@ a token GitHub rejects fails the release before any release is created.
 - `createRelease(...)` — create or overwrite a GitHub release for a tag.
 - `deleteRelease(...)` — delete a release by tag.
 - `isRepositoryPublic(...)` — check repository visibility via the GitHub API.
-- `verifyToken(...)` — verify a GitHub token is accepted by GitHub.
+- `verifyToken(...)` — verify a GitHub token is accepted for the release repository.
 
 ## Documentation
 

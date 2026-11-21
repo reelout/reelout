@@ -2,18 +2,27 @@
 // Copyright (c) 2026 Fai
 
 import { Octokit } from '@octokit/rest'
+import type { GitRepository } from '@reelout/core'
 
 /**
- * Verify that a GitHub token is accepted by fetching the authenticated user.
+ * Verify that a GitHub token can access the repository it releases to.
  *
- * Performs the token-aliveness pre-flight for the GitHub plugin so a
- * provided-but-invalid token fails before any release is created.
+ * Performs the token pre-flight for the GitHub plugin by reading the target
+ * repository, so a provided-but-invalid token fails before any release is
+ * created. The repository is read instead of the authenticated user because
+ * the installation-scoped `GITHUB_TOKEN` provided by GitHub Actions is
+ * forbidden from reading the authenticated user while still being able to
+ * create releases for the repository.
  *
  * @param token GitHub authentication token
+ * @param repository Target repository
  * @returns A promise that resolves when GitHub accepts the token
- * @throws If GitHub rejects the token while fetching the authenticated user
+ * @throws If GitHub rejects the token while reading the repository
  */
-export async function verifyToken(token: string): Promise<void> {
+export async function verifyToken(
+  token: string,
+  repository: GitRepository
+): Promise<void> {
   /* istanbul ignore next */
   const octokit = new Octokit({
     auth: token,
@@ -21,7 +30,10 @@ export async function verifyToken(token: string): Promise<void> {
   })
 
   try {
-    await octokit.rest.users.getAuthenticated()
+    await octokit.rest.repos.get({
+      owner: repository.owner,
+      repo: repository.repo,
+    })
   } catch (err) {
     throw new Error(
       'The GITHUB_TOKEN environment variable could not be verified.',

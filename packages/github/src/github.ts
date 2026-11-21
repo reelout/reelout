@@ -25,9 +25,10 @@ const readGitHubToken = (env: ReleaseContext['env']): string | undefined => {
  *
  * @remarks
  * **Lifecycle Stages:**
- * - `configure`: Verifies the `GITHUB_TOKEN` environment variable is present and accepted by GitHub.
- *   In strict mode a missing token fails the run; otherwise the plugin's `publish` step is skipped
- *   and a warning is logged.
+ * - `configure`: Verifies the `GITHUB_TOKEN` environment variable is present and
+ *   able to access the release repository. Skips the pre-flight when repository
+ *   context is unavailable. In strict mode a missing token fails the run;
+ *   otherwise the plugin's `publish` step is skipped and a warning is logged.
  * - `publish`: Creates GitHub releases in reverse alphabetical package order (ensuring the root
  *   package release is created last). Overwrites the name and notes of an existing release for a
  *   planned tag. Automatically rolls back — restoring overwritten releases and deleting created
@@ -55,7 +56,9 @@ const github = (): ReleasePlugin => ({
       return next(context)
     }
 
-    await verifyToken(token)
+    if (context.repository) {
+      await verifyToken(token, context.repository)
+    }
 
     return next(context)
   },
