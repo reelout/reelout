@@ -37,9 +37,7 @@ test('verifies the token against the release project', async () => {
   expect(Gitlab).toHaveBeenCalledWith(
     expect.objectContaining({ token: 'mock-token' })
   )
-  expect(showProjectMock).toHaveBeenCalledWith(
-    encodeURIComponent('mock-owner/mock-repo')
-  )
+  expect(showProjectMock).toHaveBeenCalledWith('mock-owner%2Fmock-repo')
 })
 
 test('wraps project request failures with the verification error', async () => {
