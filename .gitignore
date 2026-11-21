@@ -6,16 +6,12 @@
 .codex
 .cursor
 .deveco
+.env
 .env.local
 .idea
-.next
 .workbuddy-ai
 .yarn
 coverage
 dist
 generated
-next-env.d.ts
 node_modules
-playwright-report
-storybook-static
-test-results
