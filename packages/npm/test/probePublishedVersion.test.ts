@@ -71,3 +71,38 @@ test('surfaces the recorded integrity value of the published version', async () 
     distTags: { latest: '1.0.0' },
   })
 })
+
+test('omits the tarball URL when the manifest has no dist object', async () => {
+  execCommand.mockImplementationOnce(async () =>
+    JSON.stringify({
+      name: 'a',
+      version: '1.2.3',
+      'dist-tags': { latest: '1.2.3' },
+    })
+  )
+
+  const probe = await probePublishedVersion(context, plan, packageManager)
+
+  expect(probe).toEqual({
+    status: 'published',
+    distTags: { latest: '1.2.3' },
+  })
+})
+
+test('omits the tarball URL when the dist entry has no string tarball', async () => {
+  execCommand.mockImplementationOnce(async () =>
+    JSON.stringify({
+      name: 'a',
+      version: '1.2.3',
+      dist: {},
+      'dist-tags': { latest: '1.2.3' },
+    })
+  )
+
+  const probe = await probePublishedVersion(context, plan, packageManager)
+
+  expect(probe).toEqual({
+    status: 'published',
+    distTags: { latest: '1.2.3' },
+  })
+})

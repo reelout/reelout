@@ -2185,25 +2185,6 @@ test('rejects when the probe output is not a manifest object', async () => {
   expect(publishPackage).toHaveBeenCalledTimes(0)
 })
 
-test('rejects before any publish when the published dist entry omits a tarball URL', async () => {
-  provideOIDCAuth()
-
-  mountPackageFixture()
-
-  context.plans = [createCompleteReleasePlan()]
-
-  execCommand.mockImplementationOnce(async () =>
-    JSON.stringify({ name: 'a', version: '1.2.3', dist: {} })
-  )
-
-  await expect(executeReleaseWorkflow(context, [plugin()])).rejects.toThrow(
-    'Version "a@1.2.3" was not published: the registry already has this version and its content could not be verified as identical.'
-  )
-
-  expect(downloadTarball).toHaveBeenCalledTimes(0)
-  expect(publishPackage).toHaveBeenCalledTimes(0)
-})
-
 test('previews identical-version skips in dry-run without publishing or syncing dist-tags', async () => {
   provideOIDCAuth()
 
