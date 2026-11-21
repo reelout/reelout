@@ -22,7 +22,7 @@ import { isPublishOverRejection } from './isPublishOverRejection'
 import { isSameRepository } from './isSameRepository'
 import { loadPackages } from './loadPackages'
 import { PLUGIN_NAME } from './PLUGIN_NAME'
-import { probePlan } from './probePlan'
+import { probeReleasePlan } from './probeReleasePlan'
 import { publishPackage } from './publishPackage'
 import { recoverFromPublishOverRejection } from './recoverFromPublishOverRejection'
 import { resolveGitRepositoryFromPackage } from './resolveGitRepositoryFromPackage'
@@ -176,7 +176,7 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
 
       if (packageManager) {
         for (const plan of publishable) {
-          await probePlan(context, plan, packageManager, skipped)
+          await probeReleasePlan(context, plan, packageManager, skipped)
         }
       }
 

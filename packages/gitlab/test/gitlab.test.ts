@@ -40,13 +40,13 @@ vi.mock('@gitbeaker/rest', () => ({ Gitlab }))
 
 const notFoundResponse = () => ({ cause: { response: { status: 404 } } })
 
-const createPlan = (location: string, tag: string): ReleasePlan =>
+const createReleasePlan = (location: string, tag: string): ReleasePlan =>
   ({
     package: { location },
     release: { tag: { name: tag, message: `Release notes for ${tag}` } },
   }) as ReleasePlan
 
-const createNamedPlan = (name: string, tag: string): ReleasePlan =>
+const createNamedReleasePlan = (name: string, tag: string): ReleasePlan =>
   ({
     package: { location: name, name },
     release: { tag: { name: tag, message: `Release notes for ${tag}` } },
@@ -273,9 +273,9 @@ test('creates GitLab releases for packages in reverse alphabetical order', async
   context.repository = createMockRepository('gitlab')
 
   context.plans = [
-    createPlan('.', 'v-root'),
-    createNamedPlan('a', 'v-a'),
-    createNamedPlan('b', 'v-b'),
+    createReleasePlan('.', 'v-root'),
+    createNamedReleasePlan('a', 'v-a'),
+    createNamedReleasePlan('b', 'v-b'),
   ]
 
   await executeReleaseWorkflow(context, [plugin()])
@@ -308,9 +308,9 @@ test('rolls back published GitLab releases when a subsequent plugin fails', asyn
   context.repository = createMockRepository('gitlab')
 
   context.plans = [
-    createPlan('.', 'v-root'),
-    createNamedPlan('a', 'v-a'),
-    createNamedPlan('b', 'v-b'),
+    createReleasePlan('.', 'v-root'),
+    createNamedReleasePlan('a', 'v-a'),
+    createNamedReleasePlan('b', 'v-b'),
   ]
 
   await expect(
@@ -332,9 +332,9 @@ test('restores overwritten GitLab releases instead of deleting them during rollb
   context.repository = createMockRepository('gitlab')
 
   context.plans = [
-    createPlan('.', 'v-root'),
-    createNamedPlan('a', 'v-a'),
-    createNamedPlan('b', 'v-b'),
+    createReleasePlan('.', 'v-root'),
+    createNamedReleasePlan('a', 'v-a'),
+    createNamedReleasePlan('b', 'v-b'),
   ]
 
   showReleaseMock.mockImplementation(
@@ -378,8 +378,8 @@ test('does not roll back GitLab releases that were not written during the run', 
 
   context.plans = [
     { package: { location: '.' }, release: null } as ReleasePlan,
-    createNamedPlan('a', 'v-a'),
-    createNamedPlan('b', 'v-b'),
+    createNamedReleasePlan('a', 'v-a'),
+    createNamedReleasePlan('b', 'v-b'),
   ]
 
   await expect(
@@ -399,7 +399,7 @@ test('updates an existing GitLab release with the generated content', async () =
 
   context.repository = createMockRepository('gitlab')
 
-  context.plans = [createPlan('pkg', 'v1.0.0')]
+  context.plans = [createReleasePlan('pkg', 'v1.0.0')]
 
   showReleaseMock.mockResolvedValueOnce(existingRelease)
 
@@ -425,7 +425,10 @@ test('restores overwritten releases and deletes created releases independently d
 
   context.repository = createMockRepository('gitlab')
 
-  context.plans = [createPlan('a', 'v1.0.0'), createPlan('b', 'v2.0.0')]
+  context.plans = [
+    createReleasePlan('a', 'v1.0.0'),
+    createReleasePlan('b', 'v2.0.0'),
+  ]
 
   showReleaseMock.mockImplementation(
     async (_projectId: string, tagName: string) => {

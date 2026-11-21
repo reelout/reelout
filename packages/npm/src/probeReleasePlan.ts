@@ -10,18 +10,18 @@ import { proveSamePublication } from './proveSamePublication'
 import { syncDistTag } from './syncDistTag'
 
 /**
- * Probe a publishable plan and mark it skipped when its version is already
- * published with identical content.
+ * Probe a complete release plan and mark it skipped when its version is
+ * already published with identical content.
  *
  * @param context Release context containing environment, plans, and logger
- * @param plan The publishable plan to probe
+ * @param plan The complete release plan to probe
  * @param packageManager Information about the active package manager
  * @param skipped Set collecting plans whose publish is skipped
  * @returns A promise that resolves when the plan's registry version is probed
  * @throws If the registry version holds content that cannot be verified as
  * identical to the local package
  */
-export async function probePlan(
+export async function probeReleasePlan(
   context: ReleaseContext,
   plan: CompleteReleasePlan,
   packageManager: PackageManagerInfo,

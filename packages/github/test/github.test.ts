@@ -42,7 +42,7 @@ vi.mock('@octokit/rest', () => ({ Octokit }))
 
 const notFound = () => Object.assign(new Error('Not Found'), { status: 404 })
 
-const createPlan = (
+const createReleasePlan = (
   location: string,
   name: string | undefined,
   tag?: Tag
@@ -59,7 +59,7 @@ const createPlan = (
   release: tag ? { type: 'patch', version: '1.0.0', tag } : null,
 })
 
-const plan = createPlan('a', 'a', {
+const plan = createReleasePlan('a', 'a', {
   name: 'a@1.0.0',
   message: 'Notes for a',
 })
@@ -252,9 +252,12 @@ test('creates GitHub releases for packages in reverse alphabetical order', async
   context.repository = repository
 
   context.plans = [
-    createPlan('b', 'b', { name: 'b@1.0.0', message: 'Notes for b' }),
-    createPlan('.', undefined, { name: 'v1.0.0', message: 'Notes for root' }),
-    createPlan('a', 'a', { name: 'a@1.0.0', message: 'Notes for a' }),
+    createReleasePlan('b', 'b', { name: 'b@1.0.0', message: 'Notes for b' }),
+    createReleasePlan('.', undefined, {
+      name: 'v1.0.0',
+      message: 'Notes for root',
+    }),
+    createReleasePlan('a', 'a', { name: 'a@1.0.0', message: 'Notes for a' }),
   ]
 
   await executeReleaseWorkflow(context, [plugin()])

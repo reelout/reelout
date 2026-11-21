@@ -135,7 +135,7 @@ const provideAmbientAuth = () =>
 
 const NPMJS = 'https://registry.npmjs.org/'
 
-interface CreatePlanOptions {
+interface CreateReleasePlanOptions {
   name?: string | undefined
   location: string
   releaseVersion?: string | null | undefined
@@ -143,7 +143,7 @@ interface CreatePlanOptions {
   provider?: string | undefined
 }
 
-function createPlan(options: CreatePlanOptions): ReleasePlan {
+function createReleasePlan(options: CreateReleasePlanOptions): ReleasePlan {
   return {
     package: {
       provider: options.provider ?? PLUGIN_NAME,
@@ -163,10 +163,10 @@ function createPlan(options: CreatePlanOptions): ReleasePlan {
   }
 }
 
-function createPublishablePlan(
-  options: Partial<CreatePlanOptions> = {}
+function createCompleteReleasePlan(
+  options: Partial<CreateReleasePlanOptions> = {}
 ): ReleasePlan {
-  return createPlan({
+  return createReleasePlan({
     name: 'a',
     location: 'a',
     releaseVersion: '1.2.3',
@@ -1821,8 +1821,8 @@ test('probes each publishable plan before publishing when the version is absent'
   mountPackageFixture()
 
   context.plans = [
-    createPublishablePlan(),
-    createPlan({ name: 'b', location: 'b', releaseVersion: '2.0.0' }),
+    createCompleteReleasePlan(),
+    createReleasePlan({ name: 'b', location: 'b', releaseVersion: '2.0.0' }),
   ]
 
   await executeReleaseWorkflow(context, [plugin()])
@@ -1858,7 +1858,7 @@ test('skips the publish and syncs the dist-tag when the registry already has an 
 
   mountPackageFixture()
 
-  context.plans = [createPublishablePlan()]
+  context.plans = [createCompleteReleasePlan()]
 
   execCommand.mockImplementationOnce(async () => publishedManifest())
 
@@ -1914,7 +1914,7 @@ test('does not run a dist-tag command when the channel tag already points at the
 
   mountPackageFixture()
 
-  context.plans = [createPublishablePlan()]
+  context.plans = [createCompleteReleasePlan()]
 
   execCommand.mockImplementationOnce(async () =>
     publishedManifest({ next: '1.2.3' })
@@ -1946,7 +1946,7 @@ test('syncs the default latest dist-tag when no release channel is set', async (
 
   mountPackageFixture()
 
-  context.plans = [createPublishablePlan()]
+  context.plans = [createCompleteReleasePlan()]
 
   execCommand.mockImplementationOnce(async () => publishedManifest())
 
@@ -1968,7 +1968,7 @@ test('skips the publish of an identical version reported as a one-element array'
 
   mountPackageFixture()
 
-  context.plans = [createPublishablePlan()]
+  context.plans = [createCompleteReleasePlan()]
 
   execCommand.mockImplementationOnce(async () =>
     JSON.stringify([JSON.parse(publishedManifest())])
@@ -1993,7 +1993,7 @@ test('skips downloading the published tarball when its recorded integrity matche
 
   mountPackageFixture()
 
-  context.plans = [createPublishablePlan()]
+  context.plans = [createCompleteReleasePlan()]
 
   execCommand.mockImplementationOnce(async () =>
     publishedManifest(
@@ -2020,7 +2020,7 @@ test('compares content after download when the recorded integrity does not match
 
   mountPackageFixture()
 
-  context.plans = [createPublishablePlan()]
+  context.plans = [createCompleteReleasePlan()]
 
   execCommand.mockImplementationOnce(async () =>
     publishedManifest(
@@ -2052,8 +2052,8 @@ test('rejects before any publish when the registry version content cannot be ver
   mountPackageFixture()
 
   context.plans = [
-    createPublishablePlan(),
-    createPlan({ name: 'b', location: 'b', releaseVersion: '2.0.0' }),
+    createCompleteReleasePlan(),
+    createReleasePlan({ name: 'b', location: 'b', releaseVersion: '2.0.0' }),
   ]
 
   execCommand.mockImplementationOnce(async () => publishedManifest())
@@ -2075,7 +2075,7 @@ test('rejects before any publish when the published manifest lacks a tarball URL
 
   mountPackageFixture()
 
-  context.plans = [createPublishablePlan()]
+  context.plans = [createCompleteReleasePlan()]
 
   execCommand.mockImplementationOnce(async () =>
     JSON.stringify({
@@ -2098,7 +2098,7 @@ test('rejects before any publish when the published tarball cannot be downloaded
 
   mountPackageFixture()
 
-  context.plans = [createPublishablePlan()]
+  context.plans = [createCompleteReleasePlan()]
 
   execCommand.mockImplementationOnce(async () => publishedManifest())
 
@@ -2116,7 +2116,7 @@ test('rejects before any publish when the local tarball cannot be packed', async
 
   mountPackageFixture()
 
-  context.plans = [createPublishablePlan()]
+  context.plans = [createCompleteReleasePlan()]
 
   execCommand
     .mockImplementationOnce(async () => publishedManifest())
@@ -2138,7 +2138,7 @@ test('rejects when the probe fails with an authentication error', async () => {
 
   mountPackageFixture()
 
-  context.plans = [createPublishablePlan()]
+  context.plans = [createCompleteReleasePlan()]
 
   execCommand.mockImplementationOnce(async () => {
     throw new Error(
@@ -2158,7 +2158,7 @@ test('rejects when the probe output cannot be parsed', async () => {
 
   mountPackageFixture()
 
-  context.plans = [createPublishablePlan()]
+  context.plans = [createCompleteReleasePlan()]
 
   execCommand.mockImplementationOnce(async () => 'not-json')
 
@@ -2174,7 +2174,7 @@ test('rejects when the probe output is not a manifest object', async () => {
 
   mountPackageFixture()
 
-  context.plans = [createPublishablePlan()]
+  context.plans = [createCompleteReleasePlan()]
 
   execCommand.mockImplementationOnce(async () => 'null')
 
@@ -2190,7 +2190,7 @@ test('rejects before any publish when the published dist entry omits a tarball U
 
   mountPackageFixture()
 
-  context.plans = [createPublishablePlan()]
+  context.plans = [createCompleteReleasePlan()]
 
   execCommand.mockImplementationOnce(async () =>
     JSON.stringify({ name: 'a', version: '1.2.3', dist: {} })
@@ -2212,7 +2212,7 @@ test('previews identical-version skips in dry-run without publishing or syncing 
 
   mountPackageFixture()
 
-  context.plans = [createPublishablePlan()]
+  context.plans = [createCompleteReleasePlan()]
 
   execCommand.mockImplementationOnce(async () => publishedManifest())
 
@@ -2250,7 +2250,7 @@ test('treats a mid-publish publish-over rejection with identical content as publ
 
   mountPackageFixture()
 
-  context.plans = [createPublishablePlan()]
+  context.plans = [createCompleteReleasePlan()]
 
   execCommand
     .mockImplementationOnce(async () => {
@@ -2302,7 +2302,7 @@ test('rethrows the original publish error when the mid-publish race published di
 
   mountPackageFixture()
 
-  context.plans = [createPublishablePlan()]
+  context.plans = [createCompleteReleasePlan()]
 
   execCommand
     .mockImplementationOnce(async () => {
@@ -2326,7 +2326,7 @@ test('rethrows the original publish error when the version is still absent after
 
   mountPackageFixture()
 
-  context.plans = [createPublishablePlan()]
+  context.plans = [createCompleteReleasePlan()]
 
   execCommand.mockImplementationOnce(async () => {
     throw notFoundError()
@@ -2344,7 +2344,7 @@ test('rethrows the original publish error when the version cannot be re-probed a
 
   mountPackageFixture()
 
-  context.plans = [createPublishablePlan()]
+  context.plans = [createCompleteReleasePlan()]
 
   execCommand
     .mockImplementationOnce(async () => {
@@ -2372,7 +2372,7 @@ test('rethrows non-race publish failures without re-probing', async () => {
 
   mountPackageFixture()
 
-  context.plans = [createPublishablePlan()]
+  context.plans = [createCompleteReleasePlan()]
 
   publishPackage.mockRejectedValueOnce(
     new Error("Command 'npm publish' failed (exit code 1) network unreachable")
@@ -2391,15 +2391,15 @@ test('does not probe private, unnamed, unversioned, or foreign-provider plans', 
   mountPackageFixture()
 
   context.plans = [
-    createPlan({
+    createReleasePlan({
       name: 'a',
       location: 'a',
       releaseVersion: '1.2.3',
       private: true,
     }),
-    createPlan({ location: 'b', releaseVersion: '2.0.0' }),
-    createPlan({ name: 'c', location: 'c', releaseVersion: null }),
-    createPlan({
+    createReleasePlan({ location: 'b', releaseVersion: '2.0.0' }),
+    createReleasePlan({ name: 'c', location: 'c', releaseVersion: null }),
+    createReleasePlan({
       name: 'd',
       location: 'd',
       releaseVersion: '3.0.0',
@@ -2427,7 +2427,7 @@ test('probes with pnpm view and syncs the dist-tag when the workspace uses pnpm'
 
   mountPackageFixture()
 
-  context.plans = [createPublishablePlan()]
+  context.plans = [createCompleteReleasePlan()]
 
   execCommand.mockImplementationOnce(async () => publishedManifest({}))
 
@@ -2463,7 +2463,7 @@ test('publishes when pnpm reports the version as missing', async () => {
 
   mountPackageFixture()
 
-  context.plans = [createPublishablePlan()]
+  context.plans = [createCompleteReleasePlan()]
 
   execCommand.mockImplementationOnce(async () => {
     throw new Error(
@@ -2492,7 +2492,7 @@ test('probes with yarn npm info and syncs with yarn npm tag when the workspace u
 
   mountPackageFixture()
 
-  context.plans = [createPublishablePlan()]
+  context.plans = [createCompleteReleasePlan()]
 
   execCommand.mockImplementationOnce(async () => publishedManifest({}))
 
@@ -2517,7 +2517,7 @@ test('treats yarn berry fallback metadata for a missing version as absent', asyn
 
   mountPackageFixture()
 
-  context.plans = [createPublishablePlan()]
+  context.plans = [createCompleteReleasePlan()]
 
   execCommand.mockImplementationOnce(async () =>
     JSON.stringify({
@@ -2545,7 +2545,7 @@ test('probes with npm view and packs with yarn pack when the workspace uses yarn
 
   mountPackageFixture()
 
-  context.plans = [createPublishablePlan()]
+  context.plans = [createCompleteReleasePlan()]
 
   execCommand.mockImplementationOnce(async () => publishedManifest({}))
 
@@ -2575,7 +2575,7 @@ test('probes with injected NPM_TOKEN credentials and publishes when the version 
 
   mountPackageFixture()
 
-  context.plans = [createPublishablePlan()]
+  context.plans = [createCompleteReleasePlan()]
 
   await executeReleaseWorkflow(context, [plugin()])
 
@@ -2615,7 +2615,7 @@ test('skips the publish after comparing real fixture tarballs end to end', async
 
   mountPackageFixture()
 
-  context.plans = [createPublishablePlan()]
+  context.plans = [createCompleteReleasePlan()]
 
   const publishedTarball = await packFixtureTarball(fixtureFiles, {
     prefix: 'package',
@@ -2653,7 +2653,7 @@ test('rejects before any publish when real fixture tarball content differs', asy
 
   mountPackageFixture()
 
-  context.plans = [createPublishablePlan()]
+  context.plans = [createCompleteReleasePlan()]
 
   const publishedTarball = await packFixtureTarball(fixtureFiles, {
     prefix: 'package',
