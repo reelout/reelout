@@ -40,7 +40,7 @@ export async function recoverFromPublishOverRejection(
     packageManager
   ).catch((error: unknown) => {
     context.logger.debug(
-      `Version ${target} could not be re-probed after a publish conflict: ${formatError(error)}`
+      `Version "${target}" could not be re-probed after a publish conflict: ${formatError(error)}`
     )
 
     return null
