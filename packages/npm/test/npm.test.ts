@@ -1815,7 +1815,7 @@ test('publishes without a whoami pre-flight when GitHub Actions OIDC tokens are 
   expect(publishPackage).toHaveBeenCalledTimes(1)
 })
 
-test('probes each publishable plan before publishing when the version is absent', async () => {
+test('probes each complete release plan before publishing when the version is absent', async () => {
   provideOIDCAuth()
 
   mountPackageFixture()
