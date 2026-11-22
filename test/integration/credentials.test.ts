@@ -15,7 +15,6 @@ import {
   type ReleaseContext,
   type ReleasePlugin,
 } from '@reelout/core'
-import type * as execCommandModule from '@reelout/core/util/execCommand'
 import { createRelease } from '@reelout/github/createRelease'
 import { writePackageJson } from '@reelout/npm'
 import { probePublishedVersion } from '@reelout/npm/probePublishedVersion'
@@ -35,7 +34,7 @@ import {
 const execCommand = vi.hoisted(() => vi.fn())
 
 vi.mock(import('@reelout/core/util/execCommand'), async (importActual) => {
-  const actual = await importActual<typeof execCommandModule>()
+  const actual = await importActual()
 
   return {
     execCommand: ((
@@ -68,9 +67,14 @@ vi.mock(import('@reelout/github/isRepositoryPublic'), () => ({
   isRepositoryPublic: vi.fn(async () => true),
 }))
 
-vi.mock(import('@reelout/npm/probePublishedVersion'), () => ({
-  probePublishedVersion: vi.fn(),
-}))
+vi.mock(import('@reelout/npm/probePublishedVersion'), async (importActual) => {
+  const actual = await importActual()
+
+  return {
+    ...actual,
+    probePublishedVersion: vi.fn(),
+  }
+})
 
 vi.mock(import('@reelout/npm/proveSamePublication'), () => ({
   proveSamePublication: vi.fn(),
@@ -366,6 +370,9 @@ test('completes an already published npm plan with a synced dist-tag and no publ
       `)
       expect(logger.mock.calls).toMatchInlineSnapshot(`
         [
+          [
+            "[33mCould not verify publish permission for "pkg@0.1.0": the registry will reject the publish if access is missing.[39m",
+          ],
           [
             "[33mSkipping publish of "pkg@0.1.0": already published with identical content.[39m",
           ],

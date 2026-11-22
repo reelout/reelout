@@ -12,6 +12,12 @@ import { prepareAuth, type Env } from './prepareAuth'
 import { resolvePublishRegistry } from './resolvePublishRegistry'
 
 /**
+ * Report that the registry credentials are invalid or expired.
+ */
+export const INVALID_CREDENTIALS_MESSAGE =
+  'NPM_TOKEN or ambient registry credentials are invalid or expired.'
+
+/**
  * The kind of registry authentication detected for a release.
  *
  * - `none`: no registry credentials are configured.
@@ -108,9 +114,6 @@ async function assertRegistryAuth(
       }
     )
   } catch (error) {
-    throw new Error(
-      'NPM_TOKEN or ambient registry credentials are invalid or expired.',
-      { cause: error }
-    )
+    throw new Error(INVALID_CREDENTIALS_MESSAGE, { cause: error })
   }
 }

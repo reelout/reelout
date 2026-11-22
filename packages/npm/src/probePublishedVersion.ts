@@ -5,6 +5,7 @@ import type { ReleaseContext, ReleasePlan } from '@reelout/core'
 import { execCommand, formatError } from '@reelout/core'
 import path from 'node:path'
 import type { PackageManagerInfo } from './inspectPackageManager'
+import { isJsonObject } from './isJsonObject'
 import { prepareAuth } from './prepareAuth'
 import { resolvePublishRegistry } from './resolvePublishRegistry'
 
@@ -25,7 +26,10 @@ export type PublishedVersionStatus =
       distTags: Record<string, string>
     }
 
-const NOT_FOUND_PATTERN =
+/**
+ * Match a registry's response for a missing package.
+ */
+export const NOT_FOUND_PATTERN =
   /E404|ERR_PNPM_PACKAGE_NOT_FOUND|Response Code: 404|Not Found - 404/i
 
 /**
@@ -208,14 +212,4 @@ function readDistTags(
   }
 
   return result
-}
-
-/**
- * Determine whether a value is a plain JSON object.
- *
- * @param value The value to inspect
- * @returns True when the value is a non-array, non-null object
- */
-function isJsonObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
