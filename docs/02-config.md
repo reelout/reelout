@@ -100,8 +100,8 @@ rules: [
 
 A string is shorthand for a rule whose pattern, qualifier, and channel use that
 string; its qualifier and channel are sanitized for use as a SemVer prerelease
-identifier and release channel. Use an object to define a glob pattern or when the
-qualifier or channel should differ from the pattern:
+identifier and release channel. Use an object to define a glob pattern or
+when the qualifier or channel should differ from the pattern:
 
 ```ts
 rules: [{ pattern: 'release/*', qualifier: 'rc', channel: 'candidate' }]
