@@ -15,11 +15,9 @@ import {
   type ReleaseContext,
   type ReleasePlugin,
 } from '@reelout/core'
-import type * as execCommandModule from '@reelout/core/util/execCommand'
 import { createRelease } from '@reelout/github/createRelease'
 import { writePackageJson } from '@reelout/npm'
 import { probePublishedVersion } from '@reelout/npm/probePublishedVersion'
-import type * as probePublishedVersionModule from '@reelout/npm/probePublishedVersion'
 import { proveSamePublication } from '@reelout/npm/proveSamePublication'
 import { publishPackage } from '@reelout/npm/publishPackage'
 import { readFile, writeFile } from 'node:fs/promises'
@@ -36,7 +34,7 @@ import {
 const execCommand = vi.hoisted(() => vi.fn())
 
 vi.mock(import('@reelout/core/util/execCommand'), async (importActual) => {
-  const actual = await importActual<typeof execCommandModule>()
+  const actual = await importActual()
 
   return {
     execCommand: ((
@@ -70,7 +68,7 @@ vi.mock(import('@reelout/github/isRepositoryPublic'), () => ({
 }))
 
 vi.mock(import('@reelout/npm/probePublishedVersion'), async (importActual) => {
-  const actual = await importActual<typeof probePublishedVersionModule>()
+  const actual = await importActual()
 
   return {
     ...actual,
