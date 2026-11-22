@@ -100,7 +100,7 @@ rules: [
 
 A string is shorthand for a rule whose pattern, qualifier, and channel use that
 string; its qualifier and channel are sanitized for use as a SemVer prerelease
-identifier and npm dist-tag. Use an object to define a glob pattern or when the
+identifier and release channel. Use an object to define a glob pattern or when the
 qualifier or channel should differ from the pattern:
 
 ```ts
@@ -121,7 +121,8 @@ their prerelease qualifier and npm channel.
 
 An ordered list of plugins to run during the release. By default, ReelOut runs
 the analyzer, builder, and changelog plugins, followed by npm publishing, Git
-operations, and GitHub releases.
+operations, and GitHub releases. Add `'@reelout/cargo'` to the list to publish
+Cargo workspace crates to crates.io in addition to npm packages.
 
 Entries can be module specifiers, plugin factories or objects, or tuples that
 pass options to a plugin factory:

@@ -89,6 +89,24 @@ The check is best-effort and cannot cover every registry behavior:
   restricted existing package can pass the pre-flight as new and `allowed`;
   the registry still rejects the publish.
 
+## Cargo publishing caveats
+
+The Cargo plugin verifies crates.io publish access before publishing, but
+crates.io offers no official API for it, so the check runs on heuristics with
+accepted limitations:
+
+- Crates owned by a team cannot be resolved to the authenticated user; access
+  is treated as unknown and the real publish decides.
+- A crate missing from the sparse index is treated as new and allowed, so a
+  reserved name or a policy rejection can pass the pre-flight and surface only
+  at publish time.
+- The unofficial `/api/v1/me` and `/api/v1/crates/<name>/owners` endpoints may
+  change; parse failures degrade to unknown access.
+- The identical-content check compares the registry checksum against a locally
+  packed crate. Non-reproducible packaging, such as differing `include` or
+  `exclude` rules, reports a mismatch and fails the release; confirm the
+  difference manually and publish a new version instead.
+
 ## A plugin could not be resolved
 
 If ReelOut cannot resolve a plugin's string specifier, the release fails with a

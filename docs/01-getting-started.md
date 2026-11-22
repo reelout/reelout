@@ -94,7 +94,8 @@ is identical, and syncs the release-channel dist-tag.
 ## Prereleases and channels
 
 On a branch named `alpha`, `beta`, or `next`, ReelOut creates a prerelease
-(for example, `1.2.0-beta.1`) and publishes it under the matching npm dist-tag.
+(for example, `1.2.0-beta.1`) and publishes it under the matching release
+channel (the npm dist-tag for npm packages).
 Override these values with `--qualifier` and `--channel`, or define custom
 branch rules (see [Configuration](./02-config.md#rules)):
 
