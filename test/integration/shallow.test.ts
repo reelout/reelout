@@ -191,12 +191,6 @@ test('releases packages in shallow clone across varying manifests', async () => 
             "[33mPackage could not be loaded: JSON file at "[1m<cwd>/packages/pkg5/package.json[22m" could not be parsed.[39m",
           ],
           [
-            "[33mCould not verify publish permission for "@scope/pkg2@2.1.0": the registry will reject the publish if access is missing.[39m",
-          ],
-          [
-            "[33mCould not verify publish permission for "@scope/pkg1@1.1.0": the registry will reject the publish if access is missing.[39m",
-          ],
-          [
             "Status: [32mSUCCESS[39m",
           ],
           [
@@ -343,12 +337,6 @@ test('releases packages in shallow clone across varying manifests', async () => 
           ],
           [
             "[33mPackage could not be loaded: JSON file at "[1m<cwd>/packages/pkg5/package.json[22m" could not be parsed.[39m",
-          ],
-          [
-            "[33mCould not verify publish permission for "@scope/pkg2@2.1.1": the registry will reject the publish if access is missing.[39m",
-          ],
-          [
-            "[33mCould not verify publish permission for "@scope/pkg1@1.1.1": the registry will reject the publish if access is missing.[39m",
           ],
           [
             "Status: [32mSUCCESS[39m",
@@ -515,9 +503,6 @@ test('releases packages in shallow clone across varying manifests', async () => 
           ],
           [
             "[33mPackage could not be loaded: JSON file at "[1m<cwd>/packages/pkg5/package.json[22m" could not be parsed.[39m",
-          ],
-          [
-            "[33mCould not verify publish permission for "@scope/pkg1@1.1.2": the registry will reject the publish if access is missing.[39m",
           ],
           [
             "Status: [32mSUCCESS[39m",
@@ -694,12 +679,6 @@ test('releases packages in shallow clone across varying manifests', async () => 
           ],
           [
             "[33mPackage could not be loaded: JSON file at "[1m<cwd>/packages/pkg5/package.json[22m" could not be parsed.[39m",
-          ],
-          [
-            "[33mCould not verify publish permission for "@scope/pkg2@2.1.2": the registry will reject the publish if access is missing.[39m",
-          ],
-          [
-            "[33mCould not verify publish permission for "@scope/pkg1@1.1.3": the registry will reject the publish if access is missing.[39m",
           ],
           [
             "Status: [32mSUCCESS[39m",

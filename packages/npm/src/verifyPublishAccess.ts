@@ -28,6 +28,9 @@ import { INVALID_CREDENTIALS_MESSAGE } from './verifyAuth'
  */
 export type PublishAccessVerdict = 'allowed' | 'denied' | 'unknown'
 
+/**
+ * Match registry lookup errors that report rejected credentials.
+ */
 const AUTH_REJECTED_PATTERN =
   /E401|ENEEDAUTH|401 Unauthorized|Response Code: 401|Unable to authenticate|not logged in/i
 
@@ -45,7 +48,7 @@ function assertCredentialsAccepted(error: unknown): void {
 }
 
 /**
- * Shared state for the per-plan publish permission checks.
+ * State shared across the per-plan publish permission checks.
  */
 interface AccessCheck {
   context: ReleaseContext
@@ -141,10 +144,10 @@ export async function verifyPublishAccess(
 /**
  * Determine a single plan's publish access verdict on its resolved registry.
  *
- * Treats credentials as unusable when they do not exist for the plan's
+ * Skips with an unknown verdict when no credentials exist for the plan's
  * registry, fetches the registry's package metadata, and applies the layered
  * permission checks: maintainer membership, scoped collaborator and team
- * access, and org or personal-scope membership for new packages.
+ * access, and organization or personal-scope membership for new packages.
  *
  * @param check Shared verification state for the release
  * @param plan The release plan to verify

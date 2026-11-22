@@ -143,9 +143,6 @@ test('simulates mainline release workflows under manual promotion', async () => 
       expect(logger.mock.calls).toMatchInlineSnapshot(`
         [
           [
-            "[33mCould not verify publish permission for "@scope/pkg1@0.1.0": the registry will reject the publish if access is missing.[39m",
-          ],
-          [
             "Status: [32mSUCCESS[39m",
           ],
           [
@@ -205,9 +202,6 @@ test('simulates mainline release workflows under manual promotion', async () => 
       expect(logger.mock.calls).toMatchInlineSnapshot(`
         [
           [
-            "[33mCould not verify publish permission for "@scope/pkg2@0.1.0": the registry will reject the publish if access is missing.[39m",
-          ],
-          [
             "Status: [32mSUCCESS[39m",
           ],
           [
@@ -253,12 +247,6 @@ test('simulates mainline release workflows under manual promotion', async () => 
 
       expect(logger.mock.calls).toMatchInlineSnapshot(`
         [
-          [
-            "[33mCould not verify publish permission for "@scope/pkg1@1.0.0": the registry will reject the publish if access is missing.[39m",
-          ],
-          [
-            "[33mCould not verify publish permission for "@scope/pkg2@1.0.0": the registry will reject the publish if access is missing.[39m",
-          ],
           [
             "Status: [32mSUCCESS[39m",
           ],
@@ -325,12 +313,6 @@ test('simulates mainline release workflows under manual promotion', async () => 
 
       expect(logger.mock.calls).toMatchInlineSnapshot(`
         [
-          [
-            "[33mCould not verify publish permission for "@scope/pkg1@1.1.0": the registry will reject the publish if access is missing.[39m",
-          ],
-          [
-            "[33mCould not verify publish permission for "@scope/pkg2@1.1.0": the registry will reject the publish if access is missing.[39m",
-          ],
           [
             "Status: [32mSUCCESS[39m",
           ],
@@ -402,9 +384,6 @@ test('simulates mainline release workflows under manual promotion', async () => 
 
       expect(logger.mock.calls).toMatchInlineSnapshot(`
         [
-          [
-            "[33mCould not verify publish permission for "@scope/pkg1@1.1.1": the registry will reject the publish if access is missing.[39m",
-          ],
           [
             "Status: [32mSUCCESS[39m",
           ],

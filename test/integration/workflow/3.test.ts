@@ -152,9 +152,6 @@ test('continues the dev release channel after a fast-forward merge of a release 
     expect(branchLogger.mock.calls).toMatchInlineSnapshot(`
       [
         [
-          "[33mCould not verify publish permission for "app@1.2.0": the registry will reject the publish if access is missing.[39m",
-        ],
-        [
           "Status: [32mSUCCESS[39m",
         ],
         [
@@ -200,9 +197,6 @@ test('continues the dev release channel after a fast-forward merge of a release 
 
       expect(logger.mock.calls).toMatchInlineSnapshot(`
         [
-          [
-            "[33mCould not verify publish permission for "app@1.3.0-dev.1": the registry will reject the publish if access is missing.[39m",
-          ],
           [
             "Status: [32mSUCCESS[39m",
           ],
@@ -318,9 +312,6 @@ test('continues the dev release channel on main while the release branch stays u
 
       expect(logger.mock.calls).toMatchInlineSnapshot(`
         [
-          [
-            "[33mCould not verify publish permission for "app@1.3.0-dev.1": the registry will reject the publish if access is missing.[39m",
-          ],
           [
             "Status: [32mSUCCESS[39m",
           ],
@@ -454,9 +445,6 @@ test('continues the dev release channel after merging a diverged release branch 
 
       expect(logger.mock.calls).toMatchInlineSnapshot(`
         [
-          [
-            "[33mCould not verify publish permission for "app@1.3.0-dev.1": the registry will reject the publish if access is missing.[39m",
-          ],
           [
             "Status: [32mSUCCESS[39m",
           ],

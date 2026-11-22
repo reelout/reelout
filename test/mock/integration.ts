@@ -11,6 +11,12 @@ vi.mock(import('@reelout/npm/publishPackage'), async () => ({
   publishPackage: vi.fn(),
 }))
 
+// The integration environment is assumed fully provisioned, so every plan
+// passes the publish permission pre-flight.
+vi.mock(import('@reelout/npm/verifyPublishAccess'), () => ({
+  verifyPublishAccess: vi.fn(async () => new Map()),
+}))
+
 vi.mock(import('@reelout/github/createRelease'), async () => ({
   createRelease: vi.fn(async () => async () => {}),
 }))

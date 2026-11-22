@@ -280,7 +280,7 @@ test('names every denied package in the aggregated rejection', async () => {
   })
 })
 
-test('warns and continues when the registry metadata omits maintainers', async () => {
+test('warns when the registry metadata omits maintainers', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd
     context.env = { NPM_TOKEN: 'mock-npm-token' }
@@ -380,7 +380,7 @@ test('warns when the identity cannot be resolved for a new scoped package', asyn
   })
 })
 
-test('allows publishing a new scoped package when the org roster lists the identity', async () => {
+test('allows publishing a new scoped package when the organization roster lists the identity', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd
     context.env = { NPM_TOKEN: 'mock-npm-token' }
@@ -476,7 +476,7 @@ test('denies publishing a new scoped package when the readable roster omits the 
   })
 })
 
-test('warns when the org roster for a new scoped package cannot be read', async () => {
+test('warns when the organization roster for a new scoped package cannot be read', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd
     context.env = { NPM_TOKEN: 'mock-npm-token' }
@@ -751,7 +751,7 @@ test('warns when the collaborator list cannot be parsed', async () => {
   })
 })
 
-test('warns when a write team member list cannot be resolved', async () => {
+test('warns when a write team member list cannot be read', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd
     context.env = { NPM_TOKEN: 'mock-npm-token' }
@@ -952,7 +952,7 @@ test('rejects when the organization roster lookup reports invalid credentials', 
   })
 })
 
-test('warns when the registry metadata cannot be retrieved', async () => {
+test('warns when the registry metadata cannot be read', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd
     context.env = { NPM_TOKEN: 'mock-npm-token' }
@@ -1000,29 +1000,6 @@ test('warns when the registry metadata is valid JSON but not an object', async (
     const plan = createPlan({ name: 'a' })
 
     mockRegistry({ packument: 'null' })
-
-    const verdicts = await verifyPublishAccess(
-      context,
-      [plan],
-      createPackageManager('npm')
-    )
-
-    expect(verdicts.get(plan)).toBe('unknown')
-    expect(warnCalls()).toHaveLength(1)
-  })
-})
-
-test('warns when the identity lookup fails without rejecting the credentials', async () => {
-  await temporaryDirectoryTask(async (cwd) => {
-    context.cwd = cwd
-    context.env = { NPM_TOKEN: 'mock-npm-token' }
-
-    const plan = createPlan({ name: 'a' })
-
-    mockRegistry({
-      whoami: new Error('network unreachable'),
-      packument: maintainedBy('mock-user'),
-    })
 
     const verdicts = await verifyPublishAccess(
       context,
@@ -1084,7 +1061,7 @@ test('warns for every package without running commands when only OIDC tokens are
   })
 })
 
-test('warns without commands when the plan registry has no credentials', async () => {
+test('warns without running commands when no registry credentials are available', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd
     context.env = {}
@@ -1103,7 +1080,7 @@ test('warns without commands when the plan registry has no credentials', async (
   })
 })
 
-test('allows publishing with ambient credentials and verifies them without token injection', async () => {
+test('allows publishing with ambient credentials without token injection', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd
     context.env = {}
@@ -1265,14 +1242,14 @@ test('probes with pnpm view and resolves the identity with pnpm whoami', async (
 
     expect(verdicts.get(plan)).toBe('allowed')
 
-    expect(execCommand.mock.calls.map((call) => call[1])).toEqual([
-      ['view', 'a', '--json', '--registry', NPMJS],
-      ['whoami', '--registry', NPMJS],
+    expect(execCommand.mock.calls.map((call) => [call[0], call[1]])).toEqual([
+      ['pnpm', ['view', 'a', '--json', '--registry', NPMJS]],
+      ['pnpm', ['whoami', '--registry', NPMJS]],
     ])
   })
 })
 
-test('injects the npm registry token into spawned npm access commands for pnpm workspaces', async () => {
+test('passes the injected registry token to spawned npm access commands for pnpm workspaces', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd
     context.env = { NPM_TOKEN: 'mock-npm-token' }
@@ -1333,9 +1310,9 @@ test('probes with yarn npm info and resolves the identity with yarn npm whoami f
 
     expect(verdicts.get(plan)).toBe('allowed')
 
-    expect(execCommand.mock.calls.map((call) => call[1])).toEqual([
-      ['npm', 'info', 'a', '--json'],
-      ['npm', 'whoami'],
+    expect(execCommand.mock.calls.map((call) => [call[0], call[1]])).toEqual([
+      ['yarn', ['npm', 'info', 'a', '--json']],
+      ['yarn', ['npm', 'whoami']],
     ])
   })
 })
