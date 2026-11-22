@@ -136,6 +136,16 @@ test('rejects records without the expected fields', async () => {
   )
 })
 
+test('rejects records that are not JSON objects', async () => {
+  indexResponse(['123'])
+
+  const client = createSparseIndexClient()
+
+  await expect(client.getRecords('a')).rejects.toThrow(
+    'The sparse index could not be read for crate "a": unexpected record format.'
+  )
+})
+
 test('forwards the abort signal to the index fetch', async () => {
   const controller = new AbortController()
 

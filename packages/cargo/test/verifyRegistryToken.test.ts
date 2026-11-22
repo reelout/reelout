@@ -78,6 +78,26 @@ test('wraps unparseable accounts', async () => {
   )
 })
 
+test('wraps non-object account bodies', async () => {
+  fetchMock.mockResolvedValueOnce({
+    ok: true,
+    status: 200,
+    json: async () => null,
+  })
+
+  const error: unknown = await verifyRegistryToken(
+    context,
+    'mock-registry-token'
+  ).catch((err) => err)
+
+  expect(error).toMatchInlineSnapshot(
+    `[Error: CARGO_REGISTRY_TOKEN or stored registry credentials could not be verified.]`
+  )
+  expect((error as Error).cause).toMatchInlineSnapshot(
+    `[Error: The registry account could not be read.]`
+  )
+})
+
 test('wraps request failures', async () => {
   const failure = new Error('mock network failure')
 

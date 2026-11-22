@@ -110,6 +110,19 @@ test('checks the owners of existing crates with a new version', async () => {
   expect(warnCalls()).toEqual([])
 })
 
+test('skips owner entries without a usable login', async () => {
+  getRecords.mockResolvedValue({
+    status: 'found',
+    records: [{ vers: '0.1.0', cksum: 'checksum-old', yanked: false }],
+  })
+
+  ownersResponse(['mock-owner-name', { kind: 'user' }, { login: 'mock-login' }])
+
+  await verify([plan])
+
+  expect(warnCalls()).toEqual([])
+})
+
 test('warns and proceeds for team-owned crates', async () => {
   getRecords.mockResolvedValue({
     status: 'found',
@@ -208,6 +221,48 @@ test('warns when the ownership response cannot be parsed', async () => {
     status: 200,
     json: async () => ({}),
   })
+
+  await verify([plan])
+
+  expect(
+    warnCalls().some((message) =>
+      message.includes(
+        'Publish access could not be verified for "a@1.2.3": publishing will proceed and fail if access is missing.'
+      )
+    )
+  ).toBe(true)
+})
+
+test('warns when the ownership body is not an object', async () => {
+  getRecords.mockResolvedValue({
+    status: 'found',
+    records: [{ vers: '0.1.0', cksum: 'checksum-old', yanked: false }],
+  })
+
+  fetchMock.mockResolvedValueOnce({
+    ok: true,
+    status: 200,
+    json: async () => null,
+  })
+
+  await verify([plan])
+
+  expect(
+    warnCalls().some((message) =>
+      message.includes(
+        'Publish access could not be verified for "a@1.2.3": publishing will proceed and fail if access is missing.'
+      )
+    )
+  ).toBe(true)
+})
+
+test('warns when the crate reports no owners', async () => {
+  getRecords.mockResolvedValue({
+    status: 'found',
+    records: [{ vers: '0.1.0', cksum: 'checksum-old', yanked: false }],
+  })
+
+  ownersResponse([])
 
   await verify([plan])
 

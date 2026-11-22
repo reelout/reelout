@@ -244,6 +244,7 @@ function updateDependencyRequirements(
 
     const lastSegment = sectionPath[sectionPath.length - 1]
 
+    /* istanbul ignore if -- a non-empty section path always has a last segment */
     if (lastSegment === undefined) {
       continue
     }
@@ -261,6 +262,7 @@ function updateDependencyRequirements(
     ) {
       const newVersion = versionMap.get(lastSegment)
 
+      /* istanbul ignore if -- versionMap.has(lastSegment) guarantees a version */
       if (newVersion === undefined) {
         continue
       }
@@ -320,6 +322,7 @@ function updateInlineDependencyLine(
         `${prefix}${withPreservedPrefix(oldRequirement, newVersion)}${suffix}`
     )
 
+    /* istanbul ignore if -- a matched inline table always has a tail */
     if (rest === undefined) {
       return line
     }

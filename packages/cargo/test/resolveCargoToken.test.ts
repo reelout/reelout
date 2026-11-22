@@ -8,6 +8,14 @@ import { temporaryDirectoryTask } from 'tempy'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { context } from '../../../test/mock/context'
 
+const osHome = vi.hoisted(() => ({ dir: '' }))
+
+vi.mock('node:os', async (importOriginal) => {
+  const os = await importOriginal<Record<string, unknown>>()
+
+  return { ...os, homedir: () => osHome.dir }
+})
+
 const writeCredentials = async (home: string, credentials: string) => {
   await mkdir(path.join(home, '.cargo'), { recursive: true })
   await writeFile(
@@ -33,6 +41,28 @@ test('falls back to the cargo credentials file', async () => {
     await writeCredentials(home, '[registry]\ntoken = "credentials-token"')
 
     await expect(resolveCargoToken(context)).resolves.toBe('credentials-token')
+  })
+})
+
+test('falls back to the system home directory', async () => {
+  await temporaryDirectoryTask(async (mockHome) => {
+    osHome.dir = mockHome
+
+    context.env = {}
+
+    await writeCredentials(mockHome, '[registry]\ntoken = "credentials-token"')
+
+    await expect(resolveCargoToken(context)).resolves.toBe('credentials-token')
+  })
+})
+
+test('returns undefined when the credentials file has no registry table', async () => {
+  await temporaryDirectoryTask(async (home) => {
+    context.env = { HOME: home }
+
+    await writeCredentials(home, '[other]\nkey = "value"')
+
+    await expect(resolveCargoToken(context)).resolves.toBe(undefined)
   })
 })
 

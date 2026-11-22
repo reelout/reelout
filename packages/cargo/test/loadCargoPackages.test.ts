@@ -85,6 +85,33 @@ test('loads a single-crate manifest as one crate owning every file', async () =>
   })
 })
 
+test('ignores target entries that are not tables', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    await writeManifest(cwd, [
+      '[package]',
+      'name = "a"',
+      'version = "1.2.3"',
+      '',
+      '[target]',
+      'cfg = "unix"',
+    ])
+
+    const results = await loadCargoPackages(cwd)
+
+    expect(results).toHaveLength(1)
+    expect(fulfilledPackage(results[0])).toEqual({
+      name: 'a',
+      version: '1.2.3',
+      private: false,
+      root: true,
+      entry: true,
+      dependencies: [],
+      location: '.',
+      files: '**/*',
+    })
+  })
+})
+
 test('loads the root crate and the workspace members in directory order', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     await writeManifest(cwd, [
@@ -264,6 +291,19 @@ test('loads crates without a name', async () => {
       name: undefined,
       version: '1.2.3',
     })
+  })
+})
+
+test('rejects crates without a version', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    await writeManifest(cwd, ['[package]', 'name = "a"'])
+
+    const results = await loadCargoPackages(cwd)
+
+    expect(results).toHaveLength(1)
+    expect(rejectionMessage(results[0])).toBe(
+      'Package version "undefined" in "." is not a valid semantic version.'
+    )
   })
 })
 

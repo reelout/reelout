@@ -51,10 +51,7 @@ export async function resolveCargoToken(
     return undefined
   }
 
-  const registry =
-    typeof data === 'object' && data !== null
-      ? (data as { registry?: unknown }).registry
-      : undefined
+  const registry = (data as { registry?: unknown }).registry
 
   const token =
     typeof registry === 'object' && registry !== null

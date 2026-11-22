@@ -9,7 +9,7 @@ import { temporaryDirectoryTask } from 'tempy'
 import { expect, test } from 'vitest'
 
 interface CreatePlanOptions {
-  name: string
+  name: string | undefined
   location: string
   releaseVersion: string | null
 }
@@ -317,6 +317,7 @@ test('updates inline tables, workspace dependencies, and dependency sub-tables',
       '',
       '[dependencies]',
       'child = { version = "=0.2.0" }',
+      'external = { version = "=9.9.9" }',
       '',
       '[dev-dependencies.child]',
       'version = "~0.2.0"',
@@ -363,6 +364,7 @@ test('updates inline tables, workspace dependencies, and dependency sub-tables',
         '',
         '[dependencies]',
         'child = { version = "=0.3.0" }',
+        'external = { version = "=9.9.9" }',
         '',
         '[dev-dependencies.child]',
         'version = "~0.3.0"',
@@ -399,6 +401,7 @@ test('updates inline tables, workspace dependencies, and dependency sub-tables',
 test('preserves comments while bumping versions', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     await writeManifest(cwd, [
+      '# manifest header comment',
       '[package]',
       '# the crate version',
       'name = "a"',
@@ -413,12 +416,56 @@ test('preserves comments while bumping versions', async () => {
 
     expect(await readManifest(cwd)).toBe(
       [
+        '# manifest header comment',
         '[package]',
         '# the crate version',
         'name = "a"',
         'version = "1.2.3" # trailing comment',
         '',
       ].join('\n')
+    )
+  })
+})
+
+test('bumps the workspace version shared with a nameless crate', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    await writeManifest(cwd, [
+      '[package]',
+      'name = "root"',
+      'version = "0.2.0"',
+      '',
+      '[workspace]',
+      'members = ["crates/child"]',
+      '',
+      '[workspace.package]',
+      'version = "0.2.0"',
+    ])
+    await writeManifest(path.join(cwd, 'crates/child'), [
+      '[package]',
+      'version.workspace = true',
+    ])
+
+    await expect(
+      bumpCargoManifests(cwd, [
+        createPlan({
+          name: 'root',
+          location: '.',
+          releaseVersion: '0.3.0',
+        }),
+        createPlan({
+          name: undefined,
+          location: 'crates/child',
+          releaseVersion: '0.3.0',
+        }),
+      ])
+    ).resolves.toBe(true)
+
+    expect(await readManifest(cwd)).toContain(
+      '[workspace.package]\nversion = "0.3.0"'
+    )
+
+    expect(await readManifest(path.join(cwd, 'crates/child'))).toBe(
+      '[package]\nversion.workspace = true\n'
     )
   })
 })
