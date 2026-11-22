@@ -17,6 +17,12 @@ vi.mock(import('@reelout/npm/verifyPublishAccess'), () => ({
   verifyPublishAccess: vi.fn(async () => new Map()),
 }))
 
+// The integration environment is assumed fully provisioned, so trusted
+// publishing is verified without the registry's token exchange.
+vi.mock(import('@reelout/npm/verifyTrustedPublishing'), () => ({
+  verifyTrustedPublishing: vi.fn(async () => {}),
+}))
+
 vi.mock(import('@reelout/github/createRelease'), async () => ({
   createRelease: vi.fn(async () => async () => {}),
 }))
