@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.10.0](https://github.com/reelout/reelout/compare/%40reelout%2Fnpm%400.9.0...%40reelout%2Fnpm%400.10.0) (2026-11-22)
+
+### Features
+
+- **npm:** verify OIDC trusted publishing before publishing ([#31](https://github.com/reelout/reelout/issues/31)) ([d15fee8](https://github.com/reelout/reelout/commit/d15fee893f4b03c639c8dd842f32d08c69e5f81e))
+
 ## [0.9.0](https://github.com/reelout/reelout/compare/%40reelout%2Fnpm%400.8.0...%40reelout%2Fnpm%400.9.0) (2026-11-22)
 
 ### Features

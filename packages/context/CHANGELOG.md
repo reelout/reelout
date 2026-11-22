@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.7.2](https://github.com/reelout/reelout/compare/%40reelout%2Fcontext%400.7.1...%40reelout%2Fcontext%400.7.2) (2026-11-22)
+
+### Features
+
+- **npm:** verify OIDC trusted publishing before publishing ([#31](https://github.com/reelout/reelout/issues/31)) ([d15fee8](https://github.com/reelout/reelout/commit/d15fee893f4b03c639c8dd842f32d08c69e5f81e))
+
 ## [0.7.1](https://github.com/reelout/reelout/compare/%40reelout%2Fcontext%400.7.0...%40reelout%2Fcontext%400.7.1) (2026-11-22)
 
 ### Features
