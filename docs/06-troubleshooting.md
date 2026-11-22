@@ -15,6 +15,9 @@ logging automatically when `RUNNER_DEBUG` or `ACTIONS_STEP_DEBUG` is truthy.
 | `NPM_TOKEN is required for NPM authentication in strict mode.`                                                                            | npm publishing needs registry credentials in strict mode                                                                | Set `NPM_TOKEN`, or drop `--strict` to skip npm publishing instead                                                             |
 | `NPM_TOKEN or ambient registry credentials are invalid or expired.`                                                                       | The `whoami` or publish access pre-flight against the publish registry failed                                           | Refresh the token or ambient `.npmrc` credentials, then retry                                                                  |
 | `Missing publish permission for "<name>@<version>" (<registry>).`                                                                         | The publish access pre-flight found no publish permission for the listed packages                                       | Grant the publishing identity maintainer or write access, or fix the credentials, then retry                                   |
+| `Trusted publishing could not be verified for "<name>@<version>" (<reason>).`                                                             | The npm registry rejected the trusted-publishing token exchange for the listed packages, or the exchange request failed | Configure the package for trusted publishing on npmjs.com, check the network, or publish with `NPM_TOKEN` instead              |
+| `OIDC identity token is not available.`                                                                                                   | No usable OIDC identity token is configured                                                                             | Set a valid `NPM_ID_TOKEN`, or grant the workflow `id-token: write` and retry                                                  |
+| `OIDC identity token could not be retrieved from GitHub Actions: <reason>`                                                                | The request for the CI platform's OIDC identity token failed                                                            | Grant the workflow `id-token: write` and retry                                                                                 |
 | `The GITHUB_TOKEN environment variable could not be verified.`                                                                            | The GitHub token pre-flight check could not read the release repository                                                 | Refresh `GITHUB_TOKEN` or grant it access to the repository, then retry                                                        |
 | `The GITLAB_TOKEN environment variable could not be verified.`                                                                            | The GitLab token pre-flight check could not read the release project                                                    | Refresh `GITLAB_TOKEN` or grant it access to the project, then retry                                                           |
 | `Version "<name>@<version>" was not published: the registry already has this version and its content could not be verified as identical.` | The registry already holds this version, but its content is not identical to the local package or could not be verified | Revert to the published content, or publish a new version; check `--debug` output for verification failures                    |
@@ -55,9 +58,14 @@ before anything is published.
 
 The check is best-effort and cannot cover every registry behavior:
 
-- OIDC trusted publishing (`NPM_ID_TOKEN`) cannot be probed locally. Those
-  publishes proceed with a warning and rely on the registry's own rejection,
-  which can surface mid-run after earlier packages were already published.
+- OIDC trusted publishing (`NPM_ID_TOKEN`) cannot be probed with registry
+  lookups. ReelOut verifies it beforehand through the registry's
+  trusted-publishing token exchange for npm and pnpm releases to the public
+  npm registry, failing before anything is published when the exchange is
+  rejected; the publish permission warning still fires for those releases
+  because the registry's access endpoints do not accept OIDC tokens. Yarn
+  releases are not verified and rely on the registry's own rejection, which
+  can surface mid-run after earlier packages were already published.
 - Two-factor authentication is enforced by the registry at publish time, not
   by this check.
 - Registries without npm's access endpoints, such as GitHub Packages or
