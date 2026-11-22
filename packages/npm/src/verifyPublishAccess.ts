@@ -50,7 +50,7 @@ function assertCredentialsAccepted(error: unknown): void {
 /**
  * State shared across the per-plan publish permission checks.
  */
-interface AccessCheck {
+interface AccessCheckState {
   context: ReleaseContext
   packageManager: PackageManagerInfo
   identities: Map<string, string | undefined>
@@ -110,7 +110,7 @@ export async function verifyPublishAccess(
 
   const oidcOnly = !injectToken && hasOIDCAuth(context.env)
 
-  const check: AccessCheck = {
+  const check: AccessCheckState = {
     context,
     packageManager,
     identities: new Map<string, string | undefined>(),
@@ -169,7 +169,7 @@ export async function verifyPublishAccess(
  * @returns The plan's publish access verdict
  */
 async function checkPlan(
-  check: AccessCheck,
+  check: AccessCheckState,
   plan: CompleteReleasePlan,
   registry: string,
   injectToken: boolean
@@ -270,7 +270,7 @@ async function checkPlan(
  * metadata could not be retrieved or parsed
  */
 async function fetchPackument(
-  check: AccessCheck,
+  check: AccessCheckState,
   plan: CompleteReleasePlan,
   registry: string,
   packageDir: string,
@@ -347,7 +347,7 @@ async function fetchPackument(
  * @returns The registry username, or undefined when it cannot be determined
  */
 async function resolveIdentity(
-  check: AccessCheck,
+  check: AccessCheckState,
   registry: string,
   env: Env | undefined
 ): Promise<string | undefined> {
@@ -410,7 +410,7 @@ async function resolveIdentity(
  * @returns The parsed JSON response, or undefined when the query failed
  */
 async function queryNpmCli(
-  check: AccessCheck,
+  check: AccessCheckState,
   args: readonly string[],
   cwd: string,
   npmEnv: NodeJS.ProcessEnv
@@ -459,7 +459,7 @@ async function queryNpmCli(
  * @returns The plan's publish access verdict
  */
 async function checkCollaborators(
-  check: AccessCheck,
+  check: AccessCheckState,
   plan: CompleteReleasePlan,
   identity: string,
   registry: string,
@@ -549,7 +549,7 @@ async function checkCollaborators(
  * member list could not be retrieved or parsed
  */
 async function checkTeamMembership(
-  check: AccessCheck,
+  check: AccessCheckState,
   team: string,
   identity: string,
   registry: string,
@@ -595,7 +595,7 @@ async function checkTeamMembership(
  * @returns The plan's publish access verdict
  */
 async function checkOrgRoster(
-  check: AccessCheck,
+  check: AccessCheckState,
   scope: string,
   identity: string,
   registry: string,
@@ -634,7 +634,7 @@ async function checkOrgRoster(
  * @returns The environment for the spawned npm CLI
  */
 function buildNpmEnv(
-  check: AccessCheck,
+  check: AccessCheckState,
   registry: string,
   env: Env | undefined
 ): NodeJS.ProcessEnv {
