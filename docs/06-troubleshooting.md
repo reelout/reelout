@@ -65,7 +65,9 @@ The check is best-effort and cannot cover every registry behavior:
   stay inconclusive and only warn.
 - Yarn Berry keeps ambient registry credentials in `.yarnrc.yml`, which the
   npm CLI cannot read, so its collaborator, team, and organization lookups
-  stay inconclusive and only warn; an injected `NPM_TOKEN` is still verified.
+  stay inconclusive and only warn; an injected `NPM_TOKEN` is still verified,
+  unless ambient credentials take precedence over the token, in which case
+  those lookups stay inconclusive too.
 - Organization membership does not always imply publish rights; the registry
   remains the final authority and rejects unauthorized publishes.
 - Some registries report a restricted package like a missing one (404), so a
