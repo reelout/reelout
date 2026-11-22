@@ -229,7 +229,7 @@ test('fails the release when the exchange rejection carries no message', async (
     context.cwd = cwd
     context.env = { NPM_ID_TOKEN: 'mock-id-token' }
 
-    mockExchange(500, undefined)
+    mockExchange(500, {})
 
     await expect(
       verifyTrustedPublishing(
