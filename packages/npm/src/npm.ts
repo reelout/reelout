@@ -30,6 +30,7 @@ import { resolveWorkspaceMembers } from './resolveWorkspaceMembers'
 import type { PublishAccess } from './types'
 import { verifyPublishAccess } from './verifyPublishAccess'
 import { verifyAuth } from './verifyAuth'
+import { verifyTrustedPublishing } from './verifyTrustedPublishing'
 
 export { PLUGIN_NAME }
 
@@ -49,16 +50,19 @@ export interface PluginOptions {
  *   registry authentication, failing in strict mode or skipping the publish phase when no credentials exist.
  * - `discover`: Discovers workspace member packages, filters them against the `filter` patterns, and loads package metadata into context.
  * - `write`: Bumps internal workspace dependency versions in `package.json` files (skipped in dry-run).
- * - `publish`: Verifies each publishable package's publish permission against
- *   its resolved registry before anything is published, failing when access is
- *   definitively missing and warning when it cannot be confirmed. Then
- *   authenticates and probes each publishable package version before
- *   publishing, skipping versions the registry already holds with identical
- *   content (syncing their dist-tags) and failing on different or
- *   unverifiable content. Publishes non-private packages to NPM, enabling
- *   provenance when the manifest repository is valid, matches the context
- *   repository, and is public. Skips entirely when configure-stage
- *   verification found no registry authentication.
+ * - `publish`: For OIDC-authenticated npm or pnpm releases targeting the
+ *   public npm registry, verifies trusted publishing through the registry's
+ *   token exchange before anything is published, failing when the registry
+ *   rejects it. Verifies each publishable package's publish permission
+ *   against its resolved registry, failing when access is definitively
+ *   missing and warning when it cannot be confirmed. Then authenticates and
+ *   probes each publishable package version before publishing, skipping
+ *   versions the registry already holds with identical content (syncing
+ *   their dist-tags) and failing on different or unverifiable content.
+ *   Publishes non-private packages to NPM, enabling provenance when the
+ *   manifest repository is valid, matches the context repository, and is
+ *   public. Skips entirely when configure-stage verification found no
+ *   registry authentication.
  *
  * @param options Configuration options for NPM workspace discovery and publishing behavior.
  * @returns A release plugin configured for NPM workspace management and package publication.
@@ -180,6 +184,8 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
       const skipped = new Set<ReleasePlan>()
 
       if (packageManager) {
+        await verifyTrustedPublishing(context, publishable, packageManager)
+
         await verifyPublishAccess(context, publishable, packageManager)
 
         for (const plan of publishable) {

@@ -58,6 +58,8 @@ const resolvePackageManager = vi.hoisted(() => vi.fn())
 
 const getPackageManagerVersion = vi.hoisted(() => vi.fn())
 
+const verifyTrustedPublishing = vi.hoisted(() => vi.fn())
+
 vi.mock(import('@reelout/core/util/execCommand'), () => ({
   execCommand: (command, args, options) => execCommand(command, args, options),
 }))
@@ -117,6 +119,10 @@ vi.mock(import('@reelout/npm/publishPackage'), () => ({
 
 vi.mock(import('@reelout/npm/resolvePackageManager'), () => ({
   resolvePackageManager,
+}))
+
+vi.mock(import('@reelout/npm/verifyTrustedPublishing'), () => ({
+  verifyTrustedPublishing,
 }))
 
 vi.mock(import('@reelout/github/isRepositoryPublic'), () => ({
@@ -1759,6 +1765,29 @@ test('publishes without a whoami pre-flight when NPM_ID_TOKEN is available', asy
 
   expect(execCommand).toHaveBeenCalledTimes(0)
   expect(publishPackage).toHaveBeenCalledTimes(1)
+})
+
+test('verifies trusted publishing before probing publishable plans', async () => {
+  provideOIDCAuth()
+
+  mountPackageFixture()
+
+  context.plans = [
+    createCompleteReleasePlan(),
+    createReleasePlan({ name: 'b', location: 'b', releaseVersion: '2.0.0' }),
+  ]
+
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(verifyTrustedPublishing).toHaveBeenCalledTimes(1)
+
+  expect(verifyTrustedPublishing).toHaveBeenCalledBefore(execCommand)
+
+  expect(verifyTrustedPublishing).toHaveBeenCalledWith(
+    context,
+    context.plans,
+    expect.objectContaining({ name: 'npm', isNpm: true })
+  )
 })
 
 test('previews the authentication skip identically in dry-run mode', async () => {
