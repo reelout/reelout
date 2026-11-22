@@ -13,8 +13,8 @@ publish packages through an extensible plugin system.
 - Calculates independent release plans for workspace packages.
 - Uses Conventional Commits to determine `major`, `minor`, and `patch` releases.
 - Supports prerelease branches and configurable release channels.
-- Extends the workflow with plugins for changelogs, npm publishing, Git tags,
-  and GitHub or GitLab releases.
+- Extends the workflow with plugins for changelogs, npm and crates.io
+  publishing, Git tags, and GitHub or GitLab releases.
 - Provides a dry run so you can inspect a release before publishing.
 
 ## Installation

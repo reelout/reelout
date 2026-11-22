@@ -29,6 +29,7 @@ plugin instead of GitHub when needed:
 | Package           | Purpose                                                               |
 | ----------------- | --------------------------------------------------------------------- |
 | `@reelout/npm`    | Resolves the workspace, updates manifests, and publishes npm packages |
+| `@reelout/cargo`  | Resolves the Cargo workspace, updates manifests, and publishes crates |
 | `@reelout/git`    | Creates the release commit and pushes tags                            |
 | `@reelout/github` | Creates GitHub releases                                               |
 | `@reelout/gitlab` | Creates GitLab releases                                               |

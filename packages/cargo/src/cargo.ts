@@ -1,0 +1,244 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Fai
+
+import {
+  filterPackages,
+  formatError,
+  sortPackages,
+  type Package,
+  type ReleasePlan,
+  type ReleasePlugin,
+} from '@reelout/core'
+import { colors } from 'consola/utils'
+import { version } from '../package.json'
+import { bumpCargoManifests } from './bumpCargoManifests'
+import { hasCargoCommand } from './hasCargoCommand'
+import { isCompleteReleasePlan } from './isCompleteReleasePlan'
+import { isPublishOverRejection } from './isPublishOverRejection'
+import { loadCargoPackages } from './loadCargoPackages'
+import { hasCargoManifest } from './parseCargoToml'
+import { PLUGIN_NAME } from './PLUGIN_NAME'
+import { probeCrateReleasePlan } from './probePublishedCrate'
+import { publishCrate } from './publishCrate'
+import { recoverFromCratePublishOverRejection } from './recoverFromPublishOverRejection'
+import { refreshCargoLock } from './refreshCargoLock'
+import { resolveCargoRepository } from './resolveCargoRepository'
+import { createSparseIndexClient } from './sparseIndex'
+import type { PluginOptions } from './types'
+import { resolveCargoToken, verifyRegistryToken } from './verifyAuth'
+import { verifyPublishAccess } from './verifyPublishAccess'
+
+export { PLUGIN_NAME }
+
+/** The verified registry credentials of a release. */
+interface RegistryAuth {
+  token: string
+  login: string
+}
+
+/**
+ * Built-in plugin that discovers Cargo workspaces, updates crate
+ * manifests, refreshes the lockfile, and publishes crates to crates.io.
+ *
+ * @remarks
+ * **Lifecycle Stages:**
+ * - `configure`: Resolves and attaches Git repository metadata from the
+ *   root Cargo manifest, verifies the crates.io registry token, and checks
+ *   the `cargo` command, failing in strict mode or skipping the publish
+ *   phase when credentials or the command are missing. Repositories
+ *   without a root `Cargo.toml` leave the plugin inactive.
+ * - `discover`: Discovers the crates of the Cargo workspace, filters them
+ *   against the `filter` patterns, and loads crate metadata into context.
+ * - `write`: Bumps crate versions and internal dependency requirements in
+ *   `Cargo.toml` files (skipped in dry-run) and refreshes `Cargo.lock`
+ *   with `cargo update --workspace` when a manifest changed.
+ * - `publish`: Verifies the authenticated registry user may publish each
+ *   planned crate, probes the sparse index for already published versions
+ *   (skipping identical content and failing on different or unverifiable
+ *   content), and publishes the remaining crates with `cargo publish`,
+ *   recovering when an identical version was published concurrently.
+ *   Skips entirely when configure-stage verification found no registry
+ *   authentication.
+ *
+ * @param options Configuration options for Cargo workspace discovery and
+ * publishing behavior.
+ * @returns A release plugin configured for Cargo workspace management and
+ * crate publication.
+ */
+const cargo = (options: PluginOptions = {}): ReleasePlugin => {
+  let publishSkipped = false
+
+  let registryAuth: RegistryAuth | undefined
+
+  let active = false
+
+  return {
+    name: PLUGIN_NAME,
+    version,
+    configure: async (context, next) => {
+      if (!(await hasCargoManifest(context.cwd))) {
+        context.logger.debug(
+          `Cargo workspace could not be found at "${context.cwd}".`
+        )
+
+        return next(context)
+      }
+
+      active = true
+
+      const repo = await resolveCargoRepository(context.cwd)
+
+      context.repository = repo ?? context.repository
+
+      const token = await resolveCargoToken(context)
+
+      if (token) {
+        const login = await verifyRegistryToken(context, token)
+
+        registryAuth = { token, login }
+      } else {
+        if (context.strict) {
+          throw new Error(
+            'The CARGO_REGISTRY_TOKEN environment variable is required in strict mode.'
+          )
+        }
+
+        publishSkipped = true
+
+        context.logger.warn(
+          colors.yellow(
+            'Crates will not be published: CARGO_REGISTRY_TOKEN is not set.'
+          )
+        )
+      }
+
+      if (!(await hasCargoCommand(context))) {
+        if (context.strict) {
+          throw new Error(
+            'The cargo command is required for Cargo releases in strict mode.'
+          )
+        }
+
+        publishSkipped = true
+
+        context.logger.warn(
+          colors.yellow(
+            'Crates will not be published: the cargo command is not available.'
+          )
+        )
+      }
+
+      return next(context)
+    },
+    discover: async (context, next) => {
+      if (!active) {
+        return next(context)
+      }
+
+      const packages: Package[] = []
+
+      for (const result of await loadCargoPackages(context.cwd)) {
+        if (result.status === 'fulfilled') {
+          packages.push({
+            ...result.value,
+            provider: PLUGIN_NAME,
+          })
+        } else {
+          context.logger.warn(
+            colors.yellow(
+              `Package could not be loaded: ${formatError(result.reason)}`
+            )
+          )
+        }
+      }
+
+      context.packages = sortPackages(
+        filterPackages(context.packages.concat(packages), context.filter)
+      )
+
+      return next(context)
+    },
+    write: async (context, next) => {
+      if (context.dryRun) {
+        context.logger.debug('[DRY RUN] Cargo manifests will not be updated.')
+      } else {
+        const changed = await bumpCargoManifests(
+          context.cwd,
+          context.plans.filter((plan) => plan.package.provider === PLUGIN_NAME)
+        )
+
+        if (changed) {
+          await refreshCargoLock(context)
+        }
+      }
+
+      return next(context)
+    },
+    publish: async (context, next) => {
+      if (publishSkipped) {
+        context.logger.debug(
+          'Cargo publishing was skipped during configuration.'
+        )
+
+        return next(context)
+      }
+
+      const auth = registryAuth
+
+      if (!auth) {
+        context.logger.debug(
+          'Cargo publishing was skipped: no registry authentication was found.'
+        )
+
+        return next(context)
+      }
+
+      const index = createSparseIndexClient({ signal: context.signal })
+
+      const publishable = context.plans.filter(isCompleteReleasePlan)
+
+      const skipped = new Set<ReleasePlan>()
+
+      if (publishable.length > 0) {
+        await verifyPublishAccess(context, publishable, {
+          token: auth.token,
+          login: auth.login,
+          index,
+        })
+
+        for (const plan of publishable) {
+          await probeCrateReleasePlan(context, plan, index, skipped)
+        }
+      }
+
+      for (const plan of context.plans) {
+        if (plan.package.provider !== PLUGIN_NAME || skipped.has(plan)) {
+          continue
+        }
+
+        try {
+          await publishCrate(context, plan, {
+            dryRun: context.dryRun,
+            allowDirty: options.allowDirty,
+            noVerify: options.noVerify,
+          })
+        } catch (error) {
+          if (!isCompleteReleasePlan(plan) || !isPublishOverRejection(error)) {
+            throw error
+          }
+
+          await recoverFromCratePublishOverRejection(
+            context,
+            plan,
+            index,
+            error
+          )
+        }
+      }
+
+      return next(context)
+    },
+  }
+}
+
+export default cargo

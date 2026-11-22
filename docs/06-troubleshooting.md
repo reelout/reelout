@@ -18,6 +18,11 @@ logging automatically when `RUNNER_DEBUG` or `ACTIONS_STEP_DEBUG` is truthy.
 | `Trusted publishing could not be verified for "<name>@<version>" (<reason>).`                                                             | The npm registry rejected the trusted-publishing token exchange for the listed packages, or the exchange request failed | Configure the package for trusted publishing on npmjs.com, check the network, or publish with `NPM_TOKEN` instead              |
 | `OIDC identity token is not available.`                                                                                                   | No usable OIDC identity token is configured                                                                             | Set a valid `NPM_ID_TOKEN`, or grant the workflow `id-token: write` and retry                                                  |
 | `OIDC identity token could not be retrieved from GitHub Actions: <reason>`                                                                | The request for the CI platform's OIDC identity token failed                                                            | Grant the workflow `id-token: write` and retry                                                                                 |
+| `The CARGO_REGISTRY_TOKEN environment variable is required in strict mode.`                                                               | The Cargo plugin needs a registry token in strict mode                                                                  | Set `CARGO_REGISTRY_TOKEN`, or drop `--strict` to skip crate publishing instead                                                |
+| `The CARGO_REGISTRY_TOKEN environment variable could not be verified.`                                                                    | The crates.io token pre-flight check failed                                                                             | Refresh `CARGO_REGISTRY_TOKEN`, then retry                                                                                     |
+| `The cargo command is required for Cargo releases in strict mode.`                                                                        | The `cargo` executable was not found in strict mode                                                                     | Install Rust, or drop `--strict` to skip crate publishing instead                                                              |
+| `Crates will not be published: the authenticated registry user is not an owner of "<targets>".`                                            | The verified crates.io account does not own the crates                                                                  | Ask an existing owner to add your account on crates.io, then retry                                                             |
+| `Cargo.lock could not be refreshed: 'cargo update --workspace' failed.`                                                                   | The lockfile refresh after manifest updates failed                                                                      | Check the `cargo update` output, fix the workspace, then retry                                                                 |
 | `The GITHUB_TOKEN environment variable could not be verified.`                                                                            | The GitHub token pre-flight check could not read the release repository                                                 | Refresh `GITHUB_TOKEN` or grant it access to the repository, then retry                                                        |
 | `The GITLAB_TOKEN environment variable could not be verified.`                                                                            | The GitLab token pre-flight check could not read the release project                                                    | Refresh `GITLAB_TOKEN` or grant it access to the project, then retry                                                           |
 | `Version "<name>@<version>" was not published: the registry already has this version and its content could not be verified as identical.` | The registry already holds this version, but its content is not identical to the local package or could not be verified | Revert to the published content, or publish a new version; check `--debug` output for verification failures                    |
@@ -37,6 +42,8 @@ step that needs it, logs a warning, and continues:
 
 - No registry credentials (`NPM_TOKEN`, ambient `.npmrc` authentication, or
   OIDC): packages are not published.
+- No `CARGO_REGISTRY_TOKEN` or ambient `~/.cargo/credentials.toml`: crates are
+  not published.
 - No `GITHUB_TOKEN` or `GITLAB_TOKEN`: the matching hosting releases are not
   created.
 
@@ -85,8 +92,9 @@ The check is best-effort and cannot cover every registry behavior:
 ## A plugin could not be resolved
 
 If ReelOut cannot resolve a plugin's string specifier, the release fails with a
-module-not-found error. The integration plugins—`@reelout/npm`, `@reelout/git`,
-`@reelout/github`, and `@reelout/gitlab`—resolve through `@reelout/config`. For
+module-not-found error. The integration plugins—`@reelout/npm`, `@reelout/cargo`,
+`@reelout/git`, `@reelout/github`, and `@reelout/gitlab`—resolve through
+`@reelout/config`. For
 an unresolved third-party plugin, install the package or remove its entry from
 [`plugins`](./02-config.md#plugins).
 
@@ -139,6 +147,10 @@ These warnings are non-fatal but usually worth investigating:
 - `Tag could not be determined for package at ...` — no previous tag resolved for a package.
 - `Changelog could not be generated for package at ...` — changelog generation failed for a package.
 - `Packages will not be published: NPM_TOKEN is required for NPM authentication.` — npm publishing was skipped for missing registry credentials.
+- `Crates will not be published: CARGO_REGISTRY_TOKEN is not set.` — crate publishing was skipped for missing registry credentials.
+- `Crates will not be published: the cargo command is not available.` — crate publishing was skipped because `cargo` is not installed.
+- `Cargo.lock will not be refreshed: the cargo command is not available.` — the lockfile refresh was skipped because `cargo` is not installed.
+- `Publish access could not be verified for "<name>@<version>": publishing will proceed and fail if access is missing.` — crates.io ownership could not be determined for the crate; the publish attempt decides.
 - `GitHub releases will not be created: GITHUB_TOKEN is not set.` — GitHub releases were skipped for a missing token.
 - `GitLab releases will not be created: GITLAB_TOKEN is not set.` — GitLab releases were skipped for a missing token.
 - `Skipping publish of "<name>@<version>": already published with identical content.` — the registry already holds this exact version; the dist-tag was synced instead.

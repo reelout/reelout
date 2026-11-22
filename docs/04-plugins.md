@@ -167,15 +167,16 @@ The skill source lives at [`.agents/skills/create-reelout-plugin/SKILL.md`](http
 
 ## Built-in plugins
 
-| Plugin    | Package                   | What it does                                                                                                                                        |
-| --------- | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| analyzer  | `@reelout/core/analyzer`  | Classifies commits, plans package releases, and propagates dependency updates                                                                       |
-| builder   | `@reelout/core/builder`   | Computes versions, tag names, and release notes                                                                                                     |
-| changelog | `@reelout/core/changelog` | Resolves package tags and generates changelogs                                                                                                      |
-| npm       | `@reelout/npm`            | Resolves the workspace, updates manifests and dependency ranges, and publishes packages, skipping versions already published with identical content |
-| git       | `@reelout/git`            | Creates the release commit, pushes tags, and rolls back tags on failure                                                                             |
-| github    | `@reelout/github`         | Creates GitHub releases, overwriting existing ones, and restores or removes them if a later step fails                                              |
-| gitlab    | `@reelout/gitlab`         | Creates GitLab releases, overwriting existing ones, and restores or removes them if a later step fails                                              |
+| Plugin    | Package                   | What it does                                                                                                                                                                    |
+| --------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| analyzer  | `@reelout/core/analyzer`  | Classifies commits, plans package releases, and propagates dependency updates                                                                                                   |
+| builder   | `@reelout/core/builder`   | Computes versions, tag names, and release notes                                                                                                                                 |
+| changelog | `@reelout/core/changelog` | Resolves package tags and generates changelogs                                                                                                                                  |
+| npm       | `@reelout/npm`            | Resolves the workspace, updates manifests and dependency ranges, and publishes packages, skipping versions already published with identical content                             |
+| cargo     | `@reelout/cargo`          | Resolves the Cargo workspace, updates manifests and dependency ranges, refreshes `Cargo.lock`, and publishes crates, skipping versions already published with identical content |
+| git       | `@reelout/git`            | Creates the release commit, pushes tags, and rolls back tags on failure                                                                                                         |
+| github    | `@reelout/github`         | Creates GitHub releases, overwriting existing ones, and restores or removes them if a later step fails                                                                          |
+| gitlab    | `@reelout/gitlab`         | Creates GitLab releases, overwriting existing ones, and restores or removes them if a later step fails                                                                          |
 
 ## Programmatic utilities
 

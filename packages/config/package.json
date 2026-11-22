@@ -36,6 +36,7 @@
     "dev": "vite build --ssr --watch"
   },
   "dependencies": {
+    "@reelout/cargo": "workspace:^",
     "@reelout/core": "workspace:^",
     "@reelout/git": "workspace:^",
     "@reelout/github": "workspace:^",
