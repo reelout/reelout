@@ -224,6 +224,25 @@ test('fails the release when the token exchange is rejected', async () => {
   })
 })
 
+test('fails the release when the exchange rejection carries no message', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_ID_TOKEN: 'mock-id-token' }
+
+    mockExchange(500, undefined)
+
+    await expect(
+      verifyTrustedPublishing(
+        context,
+        [createPlan({ name: 'a', version: '1.2.3' })],
+        createPackageManager('npm')
+      )
+    ).rejects.toThrow(
+      'Trusted publishing could not be verified for "a@1.2.3" (HTTP 500).'
+    )
+  })
+})
+
 test('aggregates rejected exchanges across packages', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd
