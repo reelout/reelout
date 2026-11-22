@@ -60,11 +60,5 @@ export async function readCargoToml(dir: string): Promise<CargoToml> {
     )
   }
 
-  if (typeof manifest !== 'object' || manifest === null) {
-    throw new Error(
-      `TOML file at "${colors.bold(filePath)}" does not contain a valid object.`
-    )
-  }
-
   return manifest as CargoToml
 }

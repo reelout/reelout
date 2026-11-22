@@ -31,9 +31,7 @@ export interface CargoTargetTables {
   'build-dependencies'?: Record<string, unknown> | undefined
 }
 
-/**
- * The subset of a parsed Cargo manifest ReelOut reads.
- */
+/** The subset of a parsed Cargo manifest ReelOut reads. */
 export interface CargoToml {
   package?: CargoPackageTable | undefined
   workspace?: CargoWorkspaceTable | undefined

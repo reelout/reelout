@@ -119,7 +119,8 @@ const mountManifest = (): void => {
   })
 }
 
-const publishOverError = () => new Error('crate version `1.2.3` already exists')
+const publishOverError = () =>
+  new Error('crate version `1.2.3` is already uploaded')
 
 const warnCalls = (): string[] =>
   logger.mock.calls.flatMap(([message]) =>
