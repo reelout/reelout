@@ -489,7 +489,7 @@ test('denies publishing a new scoped package when the readable roster omits the 
   })
 })
 
-test('warns when the organization roster is valid JSON but not an object', async () => {
+test('warns when the organization roster is valid JSON but neither an array nor an object', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd
     context.env = { NPM_TOKEN: 'mock-npm-token' }
