@@ -114,7 +114,7 @@ export async function verifyPublishAccess(
     context,
     packageManager,
     identities: new Map<string, string | undefined>(),
-    npmCliSharesCredentials: injectToken || !packageManager.isYarnBerry,
+    npmCliSharesCredentials: false,
   }
 
   const denied: string[] = []
@@ -159,9 +159,8 @@ export async function verifyPublishAccess(
  * registry, fetches the registry's package metadata, and applies the layered
  * permission checks: maintainer membership, scoped collaborator and team
  * access, and organization or personal-scope membership for new packages.
- * Also refreshes whether the spawned npm CLI shares the credentials the
- * plan publishes with, since ambient credentials can shadow an injected
- * token.
+ * Refreshes whether the spawned npm CLI shares the credentials the plan
+ * publishes with, since ambient credentials can shadow an injected token.
  *
  * @param check Shared verification state for the release
  * @param plan The release plan to verify
