@@ -133,6 +133,94 @@ test('bumps the workspace version from a member manifest', async () => {
   })
 })
 
+test('rejects inheriting crates planned at different versions', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    await writeManifest(cwd, [
+      '[workspace]',
+      'members = ["crates/a", "crates/b"]',
+      '',
+      '[workspace.package]',
+      'version = "1.2.2"',
+    ])
+    await writeManifest(path.join(cwd, 'crates/a'), [
+      '[package]',
+      'name = "a"',
+      'version.workspace = true',
+    ])
+    await writeManifest(path.join(cwd, 'crates/b'), [
+      '[package]',
+      'name = "b"',
+      'version.workspace = true',
+    ])
+
+    await expect(
+      bumpCargoManifests(cwd, [
+        createPlan({
+          name: 'a',
+          location: 'crates/a',
+          releaseVersion: '1.2.3',
+        }),
+        createPlan({
+          name: 'b',
+          location: 'crates/b',
+          releaseVersion: '1.3.0',
+        }),
+      ])
+    ).rejects.toThrow(
+      'Crates "a" and "b" inherit the workspace version but were planned at different versions ("1.2.3" and "1.3.0").'
+    )
+
+    expect(await readManifest(cwd)).toContain('version = "1.2.2"')
+  })
+})
+
+test('bumps the shared workspace version once for inheriting crates planned at the same version', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    await writeManifest(cwd, [
+      '[workspace]',
+      'members = ["crates/a", "crates/b"]',
+      '',
+      '[workspace.package]',
+      'version = "1.2.2"',
+    ])
+    await writeManifest(path.join(cwd, 'crates/a'), [
+      '[package]',
+      'name = "a"',
+      'version.workspace = true',
+    ])
+    await writeManifest(path.join(cwd, 'crates/b'), [
+      '[package]',
+      'name = "b"',
+      'version.workspace = true',
+    ])
+
+    await expect(
+      bumpCargoManifests(cwd, [
+        createPlan({
+          name: 'a',
+          location: 'crates/a',
+          releaseVersion: '1.3.0',
+        }),
+        createPlan({
+          name: 'b',
+          location: 'crates/b',
+          releaseVersion: '1.3.0',
+        }),
+      ])
+    ).resolves.toBe(true)
+
+    expect(await readManifest(cwd)).toContain(
+      '[workspace.package]\nversion = "1.3.0"'
+    )
+    expect(await readManifest(path.join(cwd, 'crates/a'))).toBe(
+      '[package]\nname = "a"\nversion.workspace = true\n'
+    )
+    expect(await readManifest(path.join(cwd, 'crates/b'))).toBe(
+      '[package]\nname = "b"\nversion.workspace = true\n'
+    )
+  })
+})
+
 test('updates dependency requirements while preserving prefixes', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     await writeManifest(cwd, [

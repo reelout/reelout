@@ -4,13 +4,9 @@
 import type { ReleasePlan } from '@reelout/core'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { CARGO_MANIFEST_FILE } from './readCargoToml'
+import { CARGO_DEPENDENCY_TABLES, CARGO_MANIFEST_FILE } from './readCargoToml'
 
-const DEPENDENCY_TABLE_NAMES = new Set([
-  'dependencies',
-  'dev-dependencies',
-  'build-dependencies',
-])
+const DEPENDENCY_TABLE_NAMES: Set<string> = new Set(CARGO_DEPENDENCY_TABLES)
 
 const HEADER_PATTERN = /^\s*\[+([^\]]+)\]/
 
@@ -52,9 +48,15 @@ interface SectionVersionEdit {
  *
  * Only manifests that actually changed are written back to disk.
  *
+ * Crates inheriting the workspace version share the single root
+ * `[workspace.package]` version, so they must be planned at the same
+ * version; divergent plans fail before any manifest is written.
+ *
  * @param cwd Absolute path to the workspace root
  * @param plans Release plans containing crate metadata and target versions
  * @returns True when at least one manifest was modified
+ * @throws If crates inheriting the workspace version were planned at
+ * different versions
  */
 export async function bumpCargoManifests(
   cwd: string,
@@ -103,6 +105,8 @@ export async function bumpCargoManifests(
     versionMap
   )
 
+  let sharedVersionPlan: { name: string; version: string } | undefined
+
   for (const plan of plans) {
     const crateDir = path.join(cwd, plan.package.location)
 
@@ -118,6 +122,19 @@ export async function bumpCargoManifests(
       if (edit.replaced) {
         manifest.text = edit.text
       } else {
+        const planName = plan.package.name ?? plan.package.location
+
+        if (
+          sharedVersionPlan !== undefined &&
+          sharedVersionPlan.version !== plan.release.version
+        ) {
+          throw new Error(
+            `Crates "${sharedVersionPlan.name}" and "${planName}" inherit the workspace version but were planned at different versions ("${sharedVersionPlan.version}" and "${plan.release.version}").`
+          )
+        }
+
+        sharedVersionPlan = { name: planName, version: plan.release.version }
+
         const rootEdit = setSectionVersion(
           rootManifest.text,
           'workspace.package',
