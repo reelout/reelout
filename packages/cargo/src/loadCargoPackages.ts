@@ -177,17 +177,16 @@ function buildMemberFilePattern(memberDir: string): string[] {
  * Build the file pattern for a crate defined by the workspace root
  * manifest.
  *
- * Excludes the member directories and the lockfile, which belong to the
- * member crates, so only the root crate's own files remain.
+ * Excludes the member directories, which belong to the member crates, so
+ * the root crate's own files, including the shared lockfile, remain.
  *
  * @param memberDirs Member directories relative to the repository root
  * @returns Negated glob pattern matching everything but the members
  */
 function buildWorkspaceRootFilePattern(memberDirs: readonly string[]): string {
-  const excluded = [
-    CARGO_LOCK_FILE,
-    ...memberDirs.map((dir) => path.posix.join(dir, ALL_FILES)),
-  ].join(',')
+  const excluded = memberDirs
+    .map((dir) => path.posix.join(dir, ALL_FILES))
+    .join(',')
 
   return `!{${excluded}}`
 }

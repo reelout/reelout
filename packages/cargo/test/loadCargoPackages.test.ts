@@ -165,7 +165,7 @@ test('loads the root crate and the workspace members in directory order', async 
       dependencies: ['child'],
       location: '.',
       files:
-        '!{Cargo.lock,crates/bad-version/**/*,crates/child/**/*,crates/no-package/**/*,crates/zzz/**/*}',
+        '!{crates/bad-version/**/*,crates/child/**/*,crates/no-package/**/*,crates/zzz/**/*}',
     })
 
     expect(results[1]?.status).toBe('rejected')
