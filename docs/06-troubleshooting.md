@@ -47,8 +47,8 @@ step that needs it, logs a warning, and continues:
 
 - No registry credentials (`NPM_TOKEN`, ambient `.npmrc` authentication, or
   OIDC): packages are not published.
-- No `CARGO_REGISTRY_TOKEN`, ambient `~/.cargo/credentials.toml`, or trusted
-  publishing: crates are not published.
+- No `CARGO_REGISTRY_TOKEN`, ambient `~/.cargo/credentials.toml` (honoring
+  `CARGO_HOME`), or trusted publishing: crates are not published.
 - No `GITHUB_TOKEN` or `GITLAB_TOKEN`: the matching hosting releases are not
   created.
 
@@ -115,6 +115,17 @@ with accepted limitations:
   packed crate. Non-reproducible packaging, such as differing `include` or
   `exclude` rules, causes a mismatch that fails the release; confirm the
   difference manually and publish a new version instead.
+
+## Cargo manifest bumping
+
+Manifest edits are targeted text edits that preserve comments and
+formatting, with two limits:
+
+- A renamed dependency, one that targets a released crate through
+  `package = "…"`, keeps its current requirement.
+- Only a single leading `^`, `~`, or `=` is preserved, so compound
+  requirements such as `^1.0, <2.0` are rewritten to the leading comparator
+  alone.
 
 ## A plugin could not be resolved
 
