@@ -1473,3 +1473,28 @@ Response Code: 404`
     ).toHaveLength(1)
   })
 })
+
+test('rejects when Yarn Berry injected credentials cannot authenticate the collaborator lookup', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_TOKEN: 'mock-npm-token' }
+
+    const plan = createPlan({ name: '@scope/pkg' })
+
+    mockRegistry({
+      whoami: 'mock-user',
+      packument: maintainedBy('other-user'),
+      collaborators: unauthorizedError('ls-collaborators @scope/pkg'),
+    })
+
+    const error: unknown = await verifyPublishAccess(
+      context,
+      [plan],
+      createPackageManager('yarn', true)
+    ).catch((err: unknown) => err)
+
+    expect(error).toMatchInlineSnapshot(
+      `[Error: NPM_TOKEN or ambient registry credentials are invalid or expired.]`
+    )
+  })
+})
