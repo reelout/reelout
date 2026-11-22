@@ -3,7 +3,7 @@
 
 import type { GitRepository } from '@reelout/core'
 import GitHost from 'hosted-git-info'
-import { readCargoToml } from './parseCargoToml'
+import { readCargoToml } from './readCargoToml'
 
 /**
  * Resolve Git repository metadata from the root Cargo manifest.

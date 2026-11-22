@@ -54,10 +54,16 @@ vi.mock(import('@reelout/cargo/verifyPublishAccess'), () => ({
   verifyPublishAccess,
 }))
 
-vi.mock(import('@reelout/cargo/probePublishedCrate'), () => ({
-  probeCrateReleasePlan,
-  probePublishedCrate,
+vi.mock(import('@reelout/cargo/isPublishedCrateIdentical'), () => ({
   isPublishedCrateIdentical: isIdentical,
+}))
+
+vi.mock(import('@reelout/cargo/probeCrateReleasePlan'), () => ({
+  probeCrateReleasePlan,
+}))
+
+vi.mock(import('@reelout/cargo/probePublishedCrate'), () => ({
+  probePublishedCrate,
 }))
 
 vi.mock(import('@reelout/cargo/publishCrate'), () => ({
@@ -413,7 +419,7 @@ test('skips the lockfile refresh for plans without a release', async () => {
   expect(await readFile('/repo/Cargo.toml', 'utf-8')).toBe(manifest)
 })
 
-test('leaves other providers alone', async () => {
+test('does not modify or publish plans from other providers', async () => {
   const other = '{"name": "x", "version": "9.9.9"}'
 
   vol.fromJSON({

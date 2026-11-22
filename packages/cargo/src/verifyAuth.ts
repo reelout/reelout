@@ -79,13 +79,13 @@ export async function resolveCargoToken(
  * published. The resolved login is cached by the caller and reused for
  * publish-access checks.
  *
- * @param context Release context containing environment and abort signal
+ * @param context Release context containing the abort signal
  * @param token The crates.io registry token to verify
  * @returns The login name of the authenticated registry user
  * @throws If the token is rejected or the account could not be read
  */
 export async function verifyRegistryToken(
-  context: Pick<ReleaseContext, 'env' | 'signal'>,
+  context: Pick<ReleaseContext, 'signal'>,
   token: string
 ): Promise<string> {
   try {

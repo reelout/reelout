@@ -11,7 +11,7 @@ import {
   hasCargoManifest,
   readCargoToml,
   type CargoToml,
-} from './parseCargoToml'
+} from './readCargoToml'
 
 /** Inputs for building metadata for one crate of a Cargo workspace. */
 interface BuildCargoPackageOptions {

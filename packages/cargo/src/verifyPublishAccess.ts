@@ -31,7 +31,7 @@ interface CrateOwner {
  * the sparse index are left to the published-version probe, and existing
  * crates with an absent target version are checked against their owners.
  * Denied plans fail the release together, and unverifiable plans warn and
- * proceed, so a real publish surfaces any access the check could not see.
+ * proceed, because crates.io rejects unauthorized publishes on its own.
  *
  * @param context Release context containing environment, plans, and logger
  * @param plans The complete release plans to verify

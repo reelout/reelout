@@ -12,10 +12,12 @@ const probePublishedCrate = vi.hoisted(() => vi.fn())
 
 const isIdentical = vi.hoisted(() => vi.fn())
 
-vi.mock(import('@reelout/cargo/probePublishedCrate'), () => ({
-  probeCrateReleasePlan: vi.fn(),
-  probePublishedCrate,
+vi.mock(import('@reelout/cargo/isPublishedCrateIdentical'), () => ({
   isPublishedCrateIdentical: isIdentical,
+}))
+
+vi.mock(import('@reelout/cargo/probePublishedCrate'), () => ({
+  probePublishedCrate,
 }))
 
 const plan: CompleteCargoReleasePlan = {

@@ -7,7 +7,7 @@ import { colors } from 'consola/utils'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { hasCargoCommand } from './hasCargoCommand'
-import { CARGO_LOCK_FILE } from './parseCargoToml'
+import { CARGO_LOCK_FILE } from './readCargoToml'
 
 /**
  * Refresh the Cargo lockfile after crate manifests changed.

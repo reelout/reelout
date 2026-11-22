@@ -4,7 +4,7 @@
 import type { ReleasePlan } from '@reelout/core'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { CARGO_MANIFEST_FILE } from './parseCargoToml'
+import { CARGO_MANIFEST_FILE } from './readCargoToml'
 
 const DEPENDENCY_TABLE_NAMES = new Set([
   'dependencies',

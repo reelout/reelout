@@ -5,10 +5,8 @@ import type { ReleaseContext } from '@reelout/core'
 import { formatError } from '@reelout/core'
 import { colors } from 'consola/utils'
 import type { CompleteCargoReleasePlan } from './isCompleteReleasePlan'
-import {
-  isPublishedCrateIdentical,
-  probePublishedCrate,
-} from './probePublishedCrate'
+import { isPublishedCrateIdentical } from './isPublishedCrateIdentical'
+import { probePublishedCrate } from './probePublishedCrate'
 import type { SparseIndexClient } from './sparseIndex'
 
 /**
