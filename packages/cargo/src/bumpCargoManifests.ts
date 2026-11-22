@@ -10,14 +10,14 @@ const DEPENDENCY_TABLE_NAMES: Set<string> = new Set(CARGO_DEPENDENCY_TABLES)
 
 const HEADER_PATTERN = /^\s*\[+([^\]]+)\]/
 
-const VERSION_LINE_PATTERN = /^(\s*version\s*=\s*")([^"]*)(".*)$/
+const VERSION_LINE_PATTERN = /^(\s*version\s*=\s*)(["'])([^"']*)\2(.*)$/
 
 const INLINE_REQUIREMENT_PATTERN =
-  /^(\s*)([A-Za-z0-9_-]+)(\s*=\s*)"([^"]*)"(.*)$/
+  /^(\s*)([A-Za-z0-9_-]+)(\s*=\s*)(["'])([^"']*)\4(.*)$/
 
 const INLINE_TABLE_PATTERN = /^(\s*)([A-Za-z0-9_-]+)(\s*=\s*)(\{.*)$/
 
-const INLINE_TABLE_VERSION_PATTERN = /([{,]\s*version\s*=\s*")([^"]*)(")/
+const INLINE_TABLE_VERSION_PATTERN = /([{,]\s*version\s*=\s*)(["'])([^"']*)\2/
 
 /** A Cargo manifest text held in memory while its edits are applied. */
 interface ManifestFile {
@@ -165,8 +165,8 @@ export async function bumpCargoManifests(
  * Replace the `version` value inside one manifest section.
  *
  * Walks the manifest lines, tracking the current section header, and
- * replaces the first `version = "…"` assignment inside the target section
- * while leaving every other line byte-identical.
+ * replaces the first single- or double-quoted `version` assignment inside
+ * the target section while leaving every other line byte-identical.
  *
  * @param text The manifest text to edit
  * @param section The dotted section path to edit, such as `package` or
@@ -197,8 +197,8 @@ function setSectionVersion(
 
     const match = VERSION_LINE_PATTERN.exec(line)
 
-    if (match) {
-      lines[index] = `${match[1]}${newVersion}${match[3]}`
+    if (match?.[3] !== undefined) {
+      lines[index] = `${match[1]}${match[2]}${newVersion}${match[2]}${match[4]}`
 
       return { text: lines.join('\n'), replaced: true }
     }
@@ -215,8 +215,9 @@ function setSectionVersion(
  * dependency whose name is being released: string requirements
  * (`name = "1.2.3"`), inline table versions
  * (`name = { version = "1.2.3" }`), and `[…dependencies.name]` sub-table
- * version assignments. Prefixes are preserved and workspace-inherited
- * references are skipped, so only literal requirements change.
+ * version assignments, in either single- or double-quoted form. Prefixes
+ * are preserved and workspace-inherited references are skipped, so only
+ * literal requirements change.
  *
  * @param text The manifest text to edit
  * @param versionMap Map of released crate names to their new versions
@@ -269,9 +270,9 @@ function updateDependencyRequirements(
 
       const match = VERSION_LINE_PATTERN.exec(line)
 
-      if (match?.[2] !== undefined) {
+      if (match?.[3] !== undefined) {
         lines[index] =
-          `${match[1]}${withPreservedPrefix(match[2], newVersion)}${match[3]}`
+          `${match[1]}${match[2]}${withPreservedPrefix(match[3], newVersion)}${match[2]}${match[4]}`
       }
     }
   }
@@ -300,8 +301,8 @@ function updateInlineDependencyLine(
   if (requirement?.[2] !== undefined) {
     const newVersion = versionMap.get(requirement[2])
 
-    if (newVersion !== undefined && requirement[4] !== undefined) {
-      return `${requirement[1]}${requirement[2]}${requirement[3]}"${withPreservedPrefix(requirement[4], newVersion)}"${requirement[5]}`
+    if (newVersion !== undefined && requirement[5] !== undefined) {
+      return `${requirement[1]}${requirement[2]}${requirement[3]}${requirement[4]}${withPreservedPrefix(requirement[5], newVersion)}${requirement[4]}${requirement[6]}`
     }
 
     return line
@@ -318,8 +319,8 @@ function updateInlineDependencyLine(
 
     const rest = table[4]?.replace(
       INLINE_TABLE_VERSION_PATTERN,
-      (_match, prefix: string, oldRequirement: string, suffix: string) =>
-        `${prefix}${withPreservedPrefix(oldRequirement, newVersion)}${suffix}`
+      (_match, prefix: string, quote: string, oldRequirement: string) =>
+        `${prefix}${quote}${withPreservedPrefix(oldRequirement, newVersion)}${quote}`
     )
 
     /* istanbul ignore if -- a matched inline table always has a tail */

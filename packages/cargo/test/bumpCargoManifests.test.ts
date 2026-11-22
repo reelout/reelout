@@ -306,6 +306,65 @@ test('updates dependency requirements while preserving prefixes', async () => {
   })
 })
 
+test('bumps single-quoted versions and requirements', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    await writeManifest(cwd, [
+      '[package]',
+      "name = 'a'",
+      "version = '1.2.2'",
+      '',
+      '[dependencies]',
+      "b = '~1.2.2'",
+      "c = { version = '=1.2.2' }",
+    ])
+    await writeManifest(path.join(cwd, 'crates/b'), [
+      '[package]',
+      "name = 'b'",
+      "version = '1.2.2'",
+    ])
+    await writeManifest(path.join(cwd, 'crates/c'), [
+      '[package]',
+      "name = 'c'",
+      "version = '1.2.2'",
+    ])
+
+    await expect(
+      bumpCargoManifests(cwd, [
+        createPlan({ name: 'a', location: '.', releaseVersion: '1.2.3' }),
+        createPlan({
+          name: 'b',
+          location: 'crates/b',
+          releaseVersion: '1.2.3',
+        }),
+        createPlan({
+          name: 'c',
+          location: 'crates/c',
+          releaseVersion: '1.2.3',
+        }),
+      ])
+    ).resolves.toBe(true)
+
+    expect(await readManifest(cwd)).toBe(
+      [
+        '[package]',
+        "name = 'a'",
+        "version = '1.2.3'",
+        '',
+        '[dependencies]',
+        "b = '~1.2.3'",
+        "c = { version = '=1.2.3' }",
+        '',
+      ].join('\n')
+    )
+
+    for (const member of ['b', 'c']) {
+      expect(await readManifest(path.join(cwd, `crates/${member}`))).toBe(
+        `[package]\nname = '${member}'\nversion = '1.2.3'\n`
+      )
+    }
+  })
+})
+
 test('updates inline tables, workspace dependencies, and dependency sub-tables', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     await writeManifest(cwd, [
