@@ -19,6 +19,7 @@ import type * as execCommandModule from '@reelout/core/util/execCommand'
 import { createRelease } from '@reelout/github/createRelease'
 import { writePackageJson } from '@reelout/npm'
 import { probePublishedVersion } from '@reelout/npm/probePublishedVersion'
+import type * as probePublishedVersionModule from '@reelout/npm/probePublishedVersion'
 import { proveSamePublication } from '@reelout/npm/proveSamePublication'
 import { publishPackage } from '@reelout/npm/publishPackage'
 import { readFile, writeFile } from 'node:fs/promises'
@@ -68,9 +69,14 @@ vi.mock(import('@reelout/github/isRepositoryPublic'), () => ({
   isRepositoryPublic: vi.fn(async () => true),
 }))
 
-vi.mock(import('@reelout/npm/probePublishedVersion'), () => ({
-  probePublishedVersion: vi.fn(),
-}))
+vi.mock(import('@reelout/npm/probePublishedVersion'), async (importActual) => {
+  const actual = await importActual<typeof probePublishedVersionModule>()
+
+  return {
+    ...actual,
+    probePublishedVersion: vi.fn(),
+  }
+})
 
 vi.mock(import('@reelout/npm/proveSamePublication'), () => ({
   proveSamePublication: vi.fn(),
