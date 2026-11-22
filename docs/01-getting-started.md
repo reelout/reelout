@@ -80,6 +80,8 @@ warning, and still exits `0`:
 
 - No registry credentials (`NPM_TOKEN`, ambient `.npmrc` authentication, or
   OIDC)? Packages are not published.
+- No `CARGO_REGISTRY_TOKEN`, ambient `~/.cargo/credentials.toml`, or trusted
+  publishing? Crates are not published.
 - No `GITHUB_TOKEN` or `GITLAB_TOKEN`? The matching hosting releases are not
   created.
 
@@ -89,7 +91,8 @@ everything.
 
 Versions the registry already holds are skipped too: ReelOut compares the
 published tarball with the local package, skips the publish when the content
-is identical, and syncs the release-channel dist-tag.
+is identical, and syncs the release-channel dist-tag for npm packages; for
+crates, it compares the packed crate checksum against the sparse index.
 
 ## Prereleases and channels
 

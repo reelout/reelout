@@ -54,9 +54,10 @@ step that needs it, logs a warning, and continues:
 Skips never change the exit code. Pass `--strict` to fail the run instead
 when a credential is missing.
 
-Versions already published with identical content are skipped too: ReelOut
-verifies the registry tarball against the local package and syncs the
-release-channel dist-tag, so re-running a release is safe.
+Versions already published with identical content are skipped too, so
+re-running a release is safe: for npm packages ReelOut verifies the registry
+tarball against the local package and syncs the release-channel dist-tag; for
+crates it compares the sparse-index checksum against a locally packed crate.
 
 ## Publish permission pre-flight
 
@@ -107,7 +108,8 @@ with accepted limitations:
   reserved name or a policy rejection can pass the pre-flight and surface only
   at publish time.
 - The unofficial `/api/v1/me` and `/api/v1/crates/<name>/owners` endpoints may
-  change; parse failures degrade to unknown access.
+  change; ownership parse failures degrade to unknown access, while account
+  parse failures fail the registry token verification.
 - The identical-content check compares the registry checksum against a locally
   packed crate. Non-reproducible packaging, such as differing `include` or
   `exclude` rules, causes a mismatch that fails the release; confirm the
@@ -177,5 +179,5 @@ These warnings are non-fatal but usually worth investigating:
 - `Publish access could not be verified for "<name>@<version>": publishing will proceed and fail if access is missing.` — crates.io ownership could not be determined for the crate; the publish attempt decides.
 - `GitHub releases will not be created: GITHUB_TOKEN is not set.` — GitHub releases were skipped for a missing token.
 - `GitLab releases will not be created: GITLAB_TOKEN is not set.` — GitLab releases were skipped for a missing token.
-- `Skipping publish of "<name>@<version>": already published with identical content.` — the registry already holds this exact version; the dist-tag was synced instead.
+- `Skipping publish of "<name>@<version>": already published with identical content.` — the registry already holds this exact version; npm also syncs the release-channel dist-tag.
 - `Could not verify publish permission for "<name>@<version>": the registry will reject the publish if access is missing.` — publish permission could not be determined; the publish itself still runs.
