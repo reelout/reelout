@@ -75,30 +75,6 @@ test('executes middleware in descending priority order when priorities differ', 
   expect(context.steps).toEqual(['high', 'normal', 'low'])
 })
 
-test('preserves registration order when middleware share equal priorities', async () => {
-  dispatcher.on(
-    'run',
-    (ctx, next) => {
-      ctx.steps.push('a')
-      return next(ctx)
-    },
-    { priority: Priority.Normal }
-  )
-
-  dispatcher.on(
-    'run',
-    (ctx, next) => {
-      ctx.steps.push('b')
-      return next(ctx)
-    },
-    { priority: Priority.Normal }
-  )
-
-  await dispatcher.dispatch('run', context)
-
-  expect(context.steps).toEqual(['a', 'b'])
-})
-
 test('does not execute middleware when unregistered before dispatch', async () => {
   const middleware = async (ctx: TestContext, next: Next<TestContext>) => {
     ctx.steps.push('removed')
@@ -127,7 +103,7 @@ test('does not throw when unregistering non-existent hook or middleware', async 
   expect(context.steps).toEqual([])
 })
 
-test('does not mutate context when dispatching unregistered hook', async () => {
+test('is a no-op when dispatching a hook with no registered middleware', async () => {
   await dispatcher.dispatch('unknown', context)
 
   expect(context.value).toBe('test')

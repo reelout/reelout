@@ -143,7 +143,11 @@ export async function executeReleaseWorkflow(
   >(async (context, registration, next) => {
     const plugin = registration.meta
 
-    if (!plugin) return next(context)
+    if (!plugin) {
+      throw new Error(
+        `Registration for hook "${registration.hook}" is missing plugin metadata.`
+      )
+    }
 
     const hook = registration.hook
     const label = hookLabel(hook, plugin.name)
