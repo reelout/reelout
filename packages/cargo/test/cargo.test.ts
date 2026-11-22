@@ -22,6 +22,10 @@ const resolveCargoToken = vi.hoisted(() => vi.fn())
 
 const verifyRegistryToken = vi.hoisted(() => vi.fn())
 
+const hasTrustedPublishingAuth = vi.hoisted(() => vi.fn())
+
+const verifyTrustedPublishing = vi.hoisted(() => vi.fn())
+
 const refreshCargoLock = vi.hoisted(() => vi.fn())
 
 const verifyPublishAccess = vi.hoisted(() => vi.fn())
@@ -72,6 +76,11 @@ vi.mock(import('@reelout/cargo/resolveCargoToken'), () => ({
 
 vi.mock(import('@reelout/cargo/verifyRegistryToken'), () => ({
   verifyRegistryToken,
+}))
+
+vi.mock(import('@reelout/cargo/verifyTrustedPublishing'), () => ({
+  hasTrustedPublishingAuth,
+  verifyTrustedPublishing,
 }))
 
 interface CreatePlanOptions {
@@ -133,6 +142,8 @@ beforeEach(() => {
   loadCargoPackages.mockResolvedValue([])
   resolveCargoToken.mockResolvedValue('mock-registry-token')
   verifyRegistryToken.mockResolvedValue('mock-login')
+  hasTrustedPublishingAuth.mockReturnValue(false)
+  verifyTrustedPublishing.mockResolvedValue('mock-publish-token')
   probePublishedCrate.mockResolvedValue({ status: 'absent' })
   isIdentical.mockResolvedValue(true)
 })
@@ -300,6 +311,98 @@ test('rejects in strict mode when the registry token is missing', async () => {
   )
 })
 
+test('publishes through trusted publishing when no registry token exists', async () => {
+  mountManifest()
+
+  resolveCargoToken.mockResolvedValue(undefined)
+
+  hasTrustedPublishingAuth.mockReturnValue(true)
+
+  const plan = createCompletePlan()
+
+  context.plans = [plan]
+
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(
+    warnCalls().some((message) =>
+      message.includes(
+        'Crates will not be published: a crates.io registry token is required.'
+      )
+    )
+  ).toBe(false)
+
+  expect(verifyRegistryToken).not.toHaveBeenCalled()
+  expect(verifyPublishAccess).not.toHaveBeenCalled()
+  expect(verifyTrustedPublishing).toHaveBeenCalledTimes(1)
+  expect(verifyTrustedPublishing.mock.calls[0]).toEqual([context])
+  expect(publishCrate).toHaveBeenCalledTimes(1)
+  expect(publishCrate.mock.calls[0]).toEqual([
+    context,
+    plan,
+    {
+      dryRun: false,
+      allowDirty: undefined,
+      noVerify: undefined,
+      registryToken: 'mock-publish-token',
+    },
+  ])
+  expect(context.outcome?.status).toBe('success')
+})
+
+test('prefers the registry token over trusted publishing', async () => {
+  mountManifest()
+
+  hasTrustedPublishingAuth.mockReturnValue(true)
+
+  context.plans = [createCompletePlan()]
+
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(verifyRegistryToken).toHaveBeenCalledTimes(1)
+  expect(verifyTrustedPublishing).not.toHaveBeenCalled()
+  expect(publishCrate.mock.calls[0]?.[2]).toMatchObject({
+    registryToken: undefined,
+  })
+})
+
+test('fails the release when the trusted-publishing exchange is rejected', async () => {
+  mountManifest()
+
+  resolveCargoToken.mockResolvedValue(undefined)
+
+  hasTrustedPublishingAuth.mockReturnValue(true)
+
+  verifyTrustedPublishing.mockRejectedValueOnce(
+    new Error('Trusted publishing could not be verified: HTTP 404.')
+  )
+
+  context.plans = [createCompletePlan()]
+
+  await expect(executeReleaseWorkflow(context, [plugin()])).rejects.toThrow(
+    'Trusted publishing could not be verified: HTTP 404.'
+  )
+
+  expect(probeCrateReleasePlan).not.toHaveBeenCalled()
+  expect(publishCrate).not.toHaveBeenCalled()
+})
+
+test('skips the trusted-publishing exchange when no plan is publishable', async () => {
+  mountManifest()
+
+  resolveCargoToken.mockResolvedValue(undefined)
+
+  hasTrustedPublishingAuth.mockReturnValue(true)
+
+  context.plans = [createCompletePlan({ private: true })]
+
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(verifyTrustedPublishing).not.toHaveBeenCalled()
+  expect(verifyPublishAccess).not.toHaveBeenCalled()
+  expect(context.outcome?.status).toBe('success')
+})
+
 test('warns and skips publishing when the cargo command is not available', async () => {
   mountManifest()
 
@@ -458,7 +561,12 @@ test('verifies access, probes, and publishes each plan', async () => {
   expect(publishCrate.mock.calls[0]).toEqual([
     context,
     plan,
-    { dryRun: false, allowDirty: undefined, noVerify: undefined },
+    {
+      dryRun: false,
+      allowDirty: undefined,
+      noVerify: undefined,
+      registryToken: undefined,
+    },
   ])
 })
 
@@ -475,6 +583,7 @@ test('forwards the allow-dirty and no-verify options to the publish', async () =
     dryRun: false,
     allowDirty: true,
     noVerify: true,
+    registryToken: undefined,
   })
 })
 

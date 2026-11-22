@@ -100,6 +100,27 @@ test('forwards the dry-run, allow-dirty, and no-verify flags', async () => {
   ])
 })
 
+test('injects the trusted-publishing registry token into the environment', async () => {
+  context.env = { CARGO_HOME: '/cargo-home' }
+
+  await publishCrate(
+    context,
+    createPlan({ name: 'a', releaseVersion: '1.2.3' }),
+    { registryToken: 'mock-publish-token' }
+  )
+
+  expect(execCommand.mock.calls[0]?.[2]).toEqual({
+    cwd: '/repo',
+    env: {
+      CARGO_HOME: '/cargo-home',
+      CARGO_REGISTRY_TOKEN: 'mock-publish-token',
+    },
+    signal: undefined,
+    stdout: undefined,
+    stderr: undefined,
+  })
+})
+
 test('forwards output streams in loud environments', async () => {
   context.env = { CI: 'true' }
 

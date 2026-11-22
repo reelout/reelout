@@ -24,6 +24,9 @@ logging automatically when `RUNNER_DEBUG` or `ACTIONS_STEP_DEBUG` is truthy.
 | `Crates will not be published: the authenticated registry user is not an owner of "<targets>".`                                            | The verified crates.io account does not own the crates                                                                  | Ask an existing owner to add your account on crates.io, then retry                                                             |
 | `Cargo.lock could not be refreshed: 'cargo update --workspace' failed.`                                                                   | The lockfile refresh after manifest updates failed                                                                      | Check the `cargo update` output, fix the workspace, then retry                                                                 |
 | `Crates "a" and "b" inherit the workspace version but were planned at different versions ("1.2.3" and "1.3.0").`                          | Crates sharing the [workspace.package] version were planned to different versions                                       | Align the plans, for example with `--type`, or release the crates separately                                                   |
+| `Trusted publishing could not be verified: <reason>`                                                                                      | The crates.io trusted-publishing token exchange failed                                                                  | Configure the crates for trusted publishing on crates.io, check the network, or publish with `CARGO_REGISTRY_TOKEN` instead    |
+| `OIDC identity token is not available.`                                                                                                   | No usable OIDC identity token is configured                                                                             | Set a valid `CARGO_ID_TOKEN`, or grant the workflow `id-token: write` and retry                                                |
+| `OIDC identity token could not be retrieved from GitHub Actions: <reason>`                                                                | The request for the CI platform's OIDC identity token failed                                                            | Grant the workflow `id-token: write` and retry                                                                                 |
 | `The GITHUB_TOKEN environment variable could not be verified.`                                                                            | The GitHub token pre-flight check could not read the release repository                                                 | Refresh `GITHUB_TOKEN` or grant it access to the repository, then retry                                                        |
 | `The GITLAB_TOKEN environment variable could not be verified.`                                                                            | The GitLab token pre-flight check could not read the release project                                                    | Refresh `GITLAB_TOKEN` or grant it access to the project, then retry                                                           |
 | `Version "<name>@<version>" was not published: the registry already has this version and its content could not be verified as identical.` | The registry already holds this version, but its content is not identical to the local package or could not be verified | Revert to the published content, or publish a new version; check `--debug` output for verification failures                    |
@@ -43,8 +46,8 @@ step that needs it, logs a warning, and continues:
 
 - No registry credentials (`NPM_TOKEN`, ambient `.npmrc` authentication, or
   OIDC): packages are not published.
-- No `CARGO_REGISTRY_TOKEN` or ambient `~/.cargo/credentials.toml`: crates are
-  not published.
+- No `CARGO_REGISTRY_TOKEN`, ambient `~/.cargo/credentials.toml`, or trusted
+  publishing: crates are not published.
 - No `GITHUB_TOKEN` or `GITLAB_TOKEN`: the matching hosting releases are not
   created.
 
@@ -98,6 +101,8 @@ with accepted limitations:
 
 - Crates owned by a team cannot be resolved to the authenticated user; access
   is treated as unknown and the publish attempt decides.
+- Publishes through trusted publishing skip the ownership check: the
+  exchanged token carries no user identity, so the publish attempt decides.
 - A crate missing from the sparse index is treated as new and allowed, so a
   reserved name or a policy rejection can pass the pre-flight and surface only
   at publish time.

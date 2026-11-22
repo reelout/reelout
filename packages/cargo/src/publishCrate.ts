@@ -9,6 +9,7 @@ export interface PublishCrateOptions {
   dryRun?: boolean | undefined
   allowDirty?: boolean | undefined
   noVerify?: boolean | undefined
+  registryToken?: string | undefined
 }
 
 /**
@@ -18,7 +19,8 @@ export interface PublishCrateOptions {
  * dry-run, allow-dirty, and no-verify flags when they are enabled. Skips
  * execution if the crate is private, unversioned, or missing a name. The
  * environment is passed through untouched, so `cargo` reads
- * `CARGO_REGISTRY_TOKEN` itself.
+ * `CARGO_REGISTRY_TOKEN` itself, unless a trusted-publishing
+ * `registryToken` is provided and injected as `CARGO_REGISTRY_TOKEN`.
  *
  * @param context Release context containing environment, streams, and
  * working directory
@@ -58,7 +60,9 @@ export async function publishCrate(
 
   await execCommand('cargo', commandArgs, {
     cwd: context.cwd,
-    env: { ...context.env },
+    env: options.registryToken
+      ? { ...context.env, CARGO_REGISTRY_TOKEN: options.registryToken }
+      : { ...context.env },
     signal: context.signal,
     stdout: quiet ? undefined : context.stdout,
     stderr: quiet ? undefined : context.stderr,

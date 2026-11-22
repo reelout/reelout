@@ -27,6 +27,10 @@ import { resolveGitRepositoryFromCargoManifest } from './resolveGitRepositoryFro
 import { createSparseIndexClient } from './sparseIndex'
 import { verifyRegistryToken } from './verifyRegistryToken'
 import { verifyPublishAccess } from './verifyPublishAccess'
+import {
+  hasTrustedPublishingAuth,
+  verifyTrustedPublishing,
+} from './verifyTrustedPublishing'
 
 export { PLUGIN_NAME }
 
@@ -62,8 +66,10 @@ export interface PluginOptions {
  * - `configure`: Resolves and attaches Git repository metadata from the
  *   root Cargo manifest, verifies the crates.io registry token, and checks
  *   the `cargo` command, failing in strict mode or skipping the publish
- *   phase when credentials or the command are missing. Repositories
- *   without a root `Cargo.toml` leave the plugin inactive.
+ *   phase when credentials or the command are missing. Falls back to OIDC
+ *   trusted publishing when no registry token exists but `CARGO_ID_TOKEN`
+ *   or GitHub Actions OIDC tokens are configured. Repositories without a
+ *   root `Cargo.toml` leave the plugin inactive.
  * - `discover`: Discovers the crates of the Cargo workspace, filters them
  *   against the `filter` patterns, and loads crate metadata into context.
  * - `write`: Bumps crate versions and internal dependency requirements in
@@ -74,8 +80,11 @@ export interface PluginOptions {
  *   (skipping identical content and failing on different or unverifiable
  *   content), and publishes the remaining crates with `cargo publish`,
  *   recovering when an identical version was published concurrently.
- *   Skips entirely when configure-stage verification found no registry
- *   authentication.
+ *   For trusted-publishing releases, exchanges the GitHub Actions OIDC
+ *   identity token for a short-lived crates.io publish token and injects
+ *   it into `cargo publish`, skipping the registry-user checks because
+ *   trusted-publishing tokens carry no user. Skips entirely when
+ *   configure-stage verification found no registry authentication.
  *
  * @param options Configuration options for Cargo workspace discovery and
  * publishing behavior.
@@ -86,6 +95,8 @@ const cargo = (options: PluginOptions = {}): ReleasePlugin => {
   let publishSkipped = false
 
   let registryAuth: RegistryAuth | undefined
+
+  let trustedPublishing = false
 
   let active = false
 
@@ -113,6 +124,8 @@ const cargo = (options: PluginOptions = {}): ReleasePlugin => {
         const login = await verifyRegistryToken(context, token)
 
         registryAuth = { token, login }
+      } else if (hasTrustedPublishingAuth(context.env)) {
+        trustedPublishing = true
       } else {
         if (context.strict) {
           throw new Error(
@@ -202,7 +215,7 @@ const cargo = (options: PluginOptions = {}): ReleasePlugin => {
 
       const auth = registryAuth
 
-      if (!auth) {
+      if (!auth && !trustedPublishing) {
         context.logger.debug(
           'Cargo publishing was skipped: no registry authentication was found.'
         )
@@ -216,12 +229,18 @@ const cargo = (options: PluginOptions = {}): ReleasePlugin => {
 
       const skipped = new Set<ReleasePlan>()
 
+      let publishToken: string | undefined
+
       if (publishable.length > 0) {
-        await verifyPublishAccess(context, publishable, {
-          token: auth.token,
-          login: auth.login,
-          index,
-        })
+        if (auth) {
+          await verifyPublishAccess(context, publishable, {
+            token: auth.token,
+            login: auth.login,
+            index,
+          })
+        } else {
+          publishToken = await verifyTrustedPublishing(context)
+        }
 
         for (const plan of publishable) {
           await probeCrateReleasePlan(context, plan, index, skipped)
@@ -238,6 +257,7 @@ const cargo = (options: PluginOptions = {}): ReleasePlugin => {
             dryRun: context.dryRun,
             allowDirty: options.allowDirty,
             noVerify: options.noVerify,
+            registryToken: publishToken,
           })
         } catch (error) {
           if (!isCompleteReleasePlan(plan) || !isPublishOverRejection(error)) {

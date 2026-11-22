@@ -39,7 +39,10 @@ The plugin accepts `allowDirty` and `noVerify` options.
 
 Crates are published with the token from the `CARGO_REGISTRY_TOKEN`
 environment variable or `~/.cargo/credentials.toml`, verified against
-crates.io before anything is published. Versions the registry already holds
+crates.io before anything is published. On GitHub Actions without a registry
+token, crates.io trusted publishing exchanges the workflow's OIDC identity
+token for a short-lived publish token; outside GitHub Actions, the same flow
+runs when `CARGO_ID_TOKEN` is set. Versions the registry already holds
 are skipped when a local pack matches the published checksum, and a publish
 that races a concurrent publication of identical content completes without
 failing.
@@ -52,7 +55,7 @@ Key exports include:
 - **Publishing** — `publishCrate`, `packLocalCrate`, `probeCrateReleasePlan`, and `recoverFromCratePublishOverRejection`.
 - **Manifests** — `readCargoToml`, `bumpCargoManifests`, and `loadCargoPackages`.
 - **Lockfile** — `refreshCargoLock`.
-- **Registry** — `resolveCargoToken`, `verifyRegistryToken`, `verifyPublishAccess`, and `createSparseIndexClient`.
+- **Registry** — `resolveCargoToken`, `verifyRegistryToken`, `verifyTrustedPublishing`, `verifyPublishAccess`, and `createSparseIndexClient`.
 
 ## Documentation
 
