@@ -99,10 +99,11 @@ test('wraps read failures with the manifest path', async () => {
     const error: unknown = await readCargoToml(cwd).catch((err) => err)
 
     expect(error).toBeInstanceOf(Error)
+    expect((error as Error).message).toContain('TOML file at "')
     expect((error as Error).message).toContain(
-      `TOML file at "${path.join(cwd, CARGO_MANIFEST_FILE)}"`
+      path.join(cwd, CARGO_MANIFEST_FILE)
     )
-    expect((error as Error).message).toContain('could not be read.')
+    expect((error as Error).message).toContain('" could not be read.')
     expect((error as Error).cause).toBeInstanceOf(Error)
   })
 })
@@ -114,10 +115,11 @@ test('wraps parse failures with the manifest path', async () => {
     const error: unknown = await readCargoToml(cwd).catch((err) => err)
 
     expect(error).toBeInstanceOf(Error)
+    expect((error as Error).message).toContain('TOML file at "')
     expect((error as Error).message).toContain(
-      `TOML file at "${path.join(cwd, CARGO_MANIFEST_FILE)}"`
+      path.join(cwd, CARGO_MANIFEST_FILE)
     )
-    expect((error as Error).message).toContain('could not be parsed.')
+    expect((error as Error).message).toContain('" could not be parsed.')
     expect((error as Error).cause).toBeInstanceOf(Error)
   })
 })
