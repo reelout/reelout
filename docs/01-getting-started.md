@@ -9,6 +9,7 @@ Install ReelOut, preview the proposed changes, then publish when you're ready.
 - Commits that follow the [Conventional Commits](https://conventionalcommits.org) specification (for example `feat: ...` or `fix: ...`).
 - A **GitHub** or **GitLab** remote — the Git plugin pushes tags, and the matching hosting plugin creates releases.
 - An **npm account and token** if you publish packages to npm.
+- A **crates.io account and token** if you publish crates to crates.io.
 
 ## Installation
 

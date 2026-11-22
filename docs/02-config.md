@@ -87,9 +87,9 @@ are.
 
 ### `rules`
 
-Rules match the current branch and set the prerelease qualifier and npm channel.
-ReelOut checks them in order and uses the first match. A rule's `pattern` is a
-glob; `type` is optional and defaults to `branch`.
+Rules match the current branch and set the prerelease qualifier and release
+channel. ReelOut checks them in order and uses the first match. A rule's
+`pattern` is a glob; `type` is optional and defaults to `branch`.
 
 ```ts
 rules: [
@@ -115,7 +115,7 @@ example, `alpha-{date}`. Rules without a `pattern`, as well as `false`, `null`,
 and `undefined` entries, are ignored.
 
 By default, the `alpha`, `beta`, and `next` branches each use the same label for
-their prerelease qualifier and npm channel.
+their prerelease qualifier and release channel.
 
 ### `plugins`
 
@@ -167,7 +167,7 @@ CLI options override the corresponding release settings for a run:
 | `--filter <pattern>`                 | Release only packages whose names match the glob patterns; repeatable, `!` excludes matches  |
 | `--type <auto\|major\|minor\|patch>` | Choose a release type; `auto` derives it from commits                                        |
 | `--qualifier <id\|true\|false>`      | Set the SemVer prerelease identifier, use the matching branch rule, or disable the qualifier |
-| `--channel <name\|true\|false>`      | Set the npm dist-tag, use the matching branch rule, or disable the channel                   |
+| `--channel <name\|true\|false>`      | Set the release channel, use the matching branch rule, or disable the channel                |
 | `--allow-empty`                      | Run the workflow even when no releasable changes are detected                                |
 | `--dry-run`                          | Preview the release without writing files or creating or publishing release assets           |
 | `--strict`                           | Turn missing-credential skipping into errors, for pipelines that must publish everything     |

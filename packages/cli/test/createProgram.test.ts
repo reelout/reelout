@@ -96,9 +96,10 @@ test('renders formatted help output when options are configured', async () => {
       --qualifier <boolean or string>  Set the SemVer prerelease identifier (for
                                        example, \`beta\`); use \`false\` to disable it
                                        or \`true\` to follow branch rules.
-      --channel <boolean or string>    Set the npm dist-tag (for example, \`beta\`);
-                                       use \`false\` to disable it or \`true\` to follow
-                                       branch rules.
+      --channel <boolean or string>    Set the release channel, applied as the npm
+                                       dist-tag (for example, \`beta\`); use \`false\`
+                                       to disable it or \`true\` to follow branch
+                                       rules.
       --allow-empty                    Run the release workflow even when no
                                        releasable changes are detected.
       --dry-run                        Preview the release without writing files,
@@ -149,7 +150,7 @@ test('registers default release options when program is created', async () => {
       ],
       [
         "--channel <boolean or string>",
-        "Set the npm dist-tag (for example, \`beta\`); use \`false\` to disable it or \`true\` to follow branch rules.",
+        "Set the release channel, applied as the npm dist-tag (for example, \`beta\`); use \`false\` to disable it or \`true\` to follow branch rules.",
         undefined,
       ],
       [
