@@ -583,7 +583,8 @@ async function checkTeamMembership(
  * does not include the identity. Credential rejections fail the release
  * only when the npm CLI shares the release's credentials (an injected token
  * or non-Yarn-Berry ambient credentials); Yarn Berry ambient credential
- * rejections degrade to an unknown verdict, as does an unreadable roster.
+ * rejections degrade to an unknown verdict, as does an unreadable or
+ * malformed roster.
  *
  * @param check Shared verification state for the release
  * @param scope The package's scope name, without the `@` prefix
@@ -610,7 +611,10 @@ async function checkOrgRoster(
     npmEnv
   )
 
-  if (roster === undefined) {
+  if (
+    roster === undefined ||
+    (!Array.isArray(roster) && !isJsonObject(roster))
+  ) {
     return 'unknown'
   }
 

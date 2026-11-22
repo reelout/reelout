@@ -489,6 +489,30 @@ test('denies publishing a new scoped package when the readable roster omits the 
   })
 })
 
+test('warns when the organization roster is valid JSON but not an object', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_TOKEN: 'mock-npm-token' }
+
+    const plan = createPlan({ name: '@scope/new' })
+
+    mockRegistry({
+      whoami: 'mock-user',
+      packument: notFoundError('@scope/new'),
+      org: 'null',
+    })
+
+    const verdicts = await verifyPublishAccess(
+      context,
+      [plan],
+      createPackageManager('npm')
+    )
+
+    expect(verdicts.get(plan)).toBe('unknown')
+    expect(warnCalls()).toHaveLength(1)
+  })
+})
+
 test('warns when the organization roster cannot be read', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd
