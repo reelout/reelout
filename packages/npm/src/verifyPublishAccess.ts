@@ -56,11 +56,12 @@ interface AccessCheck {
   identities: Map<string, string | undefined>
 
   /**
-   * Whether the spawned npm CLI commands authenticate with the release's
-   * registry credentials.
+   * Whether the spawned npm CLI commands authenticate with the credentials
+   * the current plan publishes with, refreshed per plan.
    *
-   * Ambient Yarn Berry credentials live in `.yarnrc.yml`, which the npm
-   * CLI cannot read, so its rejections are inconclusive rather than final.
+   * Ambient Yarn Berry credentials live in `.yarnrc.yml`, which the npm CLI
+   * cannot read, and a token that ambient credentials shadow is never
+   * injected, so the npm CLI's rejections stay inconclusive in both cases.
    */
   npmCliSharesCredentials: boolean
 }
@@ -158,6 +159,9 @@ export async function verifyPublishAccess(
  * registry, fetches the registry's package metadata, and applies the layered
  * permission checks: maintainer membership, scoped collaborator and team
  * access, and organization or personal-scope membership for new packages.
+ * Also refreshes whether the spawned npm CLI shares the credentials the
+ * plan publishes with, since ambient credentials can shadow an injected
+ * token.
  *
  * @param check Shared verification state for the release
  * @param plan The release plan to verify
@@ -180,6 +184,9 @@ async function checkPlan(
   await using env = injectToken
     ? await prepareAuth(context, plan.package, packageManager)
     : undefined
+
+  check.npmCliSharesCredentials =
+    env !== undefined || !packageManager.isYarnBerry
 
   const packageDir = path.resolve(context.cwd, plan.package.location)
 

@@ -1498,3 +1498,36 @@ test('rejects when Yarn Berry injected credentials cannot authenticate the colla
     )
   })
 })
+
+test('warns when Yarn Berry ambient credentials take precedence over an injected token in the collaborator lookup', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_TOKEN: 'mock-npm-token' }
+
+    await writeYarnBerryAmbientCredentials(cwd)
+
+    const plan = createPlan({ name: '@scope/pkg' })
+
+    mockRegistry({
+      whoami: 'mock-user',
+      packument: maintainedBy('other-user'),
+      collaborators: unauthorizedError('ls-collaborators @scope/pkg'),
+    })
+
+    const verdicts = await verifyPublishAccess(
+      context,
+      [plan],
+      createPackageManager('yarn', true)
+    )
+
+    expect(verdicts.get(plan)).toBe('unknown')
+
+    expect(
+      warnCalls().filter((message) =>
+        message.includes(
+          'Could not verify publish permission for "@scope/pkg@1.2.3": the registry will reject the publish if access is missing.'
+        )
+      )
+    ).toHaveLength(1)
+  })
+})
