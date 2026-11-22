@@ -220,7 +220,7 @@ test('fails the release when the token exchange is rejected', async () => {
     context.env = { NPM_ID_TOKEN: 'mock-id-token' }
 
     mockExchange(404, {
-      error: 'package is not configured for trusted publishing',
+      message: 'package is not configured for trusted publishing',
     })
 
     await expect(
@@ -240,8 +240,8 @@ test('aggregates rejected exchanges across packages', async () => {
     context.cwd = cwd
     context.env = { NPM_ID_TOKEN: 'mock-id-token' }
 
-    mockExchange(404, { error: 'not configured' })
-    mockExchange(403, { error: 'workflow not allowed' })
+    mockExchange(404, { message: 'not configured' })
+    mockExchange(403, { message: 'workflow not allowed' })
 
     await expect(
       verifyTrustedPublishing(

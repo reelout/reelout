@@ -191,7 +191,7 @@ async function resolveIdentityToken(context: ReleaseContext): Promise<string> {
  *
  * @param context Release context containing environment and working directory
  * @param identityToken The OIDC identity token to exchange
- * @param name The name of the package being verified
+ * @param packageName The name of the package being verified
  * @returns A promise that resolves when the registry accepts the token
  * exchange
  * @throws If the registry rejected the token exchange
@@ -199,9 +199,9 @@ async function resolveIdentityToken(context: ReleaseContext): Promise<string> {
 async function exchangeTrustedPublishingToken(
   context: ReleaseContext,
   identityToken: string,
-  name: string
+  packageName: string
 ): Promise<void> {
-  const endpoint = `${DEFAULT_REGISTRY}-/npm/v1/oidc/token/exchange/package/${encodeURIComponent(name)}`
+  const endpoint = `${DEFAULT_REGISTRY}-/npm/v1/oidc/token/exchange/package/${encodeURIComponent(packageName)}`
 
   const response = await fetch(endpoint, {
     method: 'POST',
@@ -216,8 +216,8 @@ async function exchangeTrustedPublishingToken(
   const body: unknown = await response.json().catch(() => undefined)
 
   const detail =
-    isJsonObject(body) && typeof body.error === 'string' && body.error
-      ? `: ${body.error}`
+    isJsonObject(body) && typeof body.message === 'string' && body.message
+      ? `: ${body.message}`
       : ''
 
   throw new Error(`HTTP ${response.status}${detail}`)
