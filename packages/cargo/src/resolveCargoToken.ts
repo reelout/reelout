@@ -7,17 +7,18 @@ import { homedir } from 'node:os'
 import path from 'node:path'
 import { parse } from 'smol-toml'
 
-/** Read `~/.cargo/credentials.toml` relative to the given HOME directory. */
-function credentialsFilePath(home: string): string {
-  return path.join(home, '.cargo', 'credentials.toml')
+/** Read `credentials.toml` inside the given cargo home directory. */
+function credentialsFilePath(cargoHome: string): string {
+  return path.join(cargoHome, 'credentials.toml')
 }
 
 /**
  * Resolve the crates.io registry token for a release.
  *
  * Prefers a non-empty `CARGO_REGISTRY_TOKEN` environment variable, then
- * falls back to the `token` value under `[registry]` in
- * `~/.cargo/credentials.toml`. The resolved token is passed through to
+ * falls back to the `token` value under `[registry]` in the cargo
+ * credentials file, `$CARGO_HOME/credentials.toml` (default
+ * `~/.cargo/credentials.toml`). The resolved token is passed through to
  * `cargo` commands untouched; it is never written or logged.
  *
  * @param context Release context containing environment variables
@@ -36,7 +37,10 @@ export async function resolveCargoToken(
 
   try {
     credentials = await fs.readFile(
-      credentialsFilePath(context.env.HOME ?? homedir()),
+      credentialsFilePath(
+        context.env.CARGO_HOME ??
+          path.join(context.env.HOME ?? homedir(), '.cargo')
+      ),
       'utf-8'
     )
   } catch {

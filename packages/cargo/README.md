@@ -40,14 +40,14 @@ changes in the packaged files, and `noVerify` skips cargo's verification
 build. Dry runs imply `allowDirty`, because they upload nothing.
 
 Crates are published with the token from the `CARGO_REGISTRY_TOKEN`
-environment variable or `~/.cargo/credentials.toml`, verified against
-crates.io before anything is published. On GitHub Actions without a registry
-token, crates.io trusted publishing exchanges the workflow's OIDC identity
-token for a short-lived publish token; outside GitHub Actions, the same flow
-runs when `CARGO_ID_TOKEN` is set. Versions the registry already holds
-are skipped when a local pack matches the published checksum, and a publish
-that races a concurrent publication of identical content completes without
-failing.
+environment variable or `~/.cargo/credentials.toml` (honoring `CARGO_HOME`),
+verified against crates.io before anything is published. On GitHub Actions
+without a registry token, crates.io trusted publishing exchanges the
+workflow's OIDC identity token for a short-lived publish token; outside
+GitHub Actions, the same flow runs when `CARGO_ID_TOKEN` is set. Versions
+the registry already holds are skipped when a local pack matches the
+published checksum, and a publish that races a concurrent publication of
+identical content completes without failing.
 
 ## API
 

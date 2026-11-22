@@ -80,8 +80,8 @@ warning, and still exits `0`:
 
 - No registry credentials (`NPM_TOKEN`, ambient `.npmrc` authentication, or
   OIDC)? Packages are not published.
-- No `CARGO_REGISTRY_TOKEN`, ambient `~/.cargo/credentials.toml`, or trusted
-  publishing? Crates are not published.
+- No `CARGO_REGISTRY_TOKEN`, ambient `~/.cargo/credentials.toml` (honoring
+  `CARGO_HOME`), or trusted publishing? Crates are not published.
 - No `GITHUB_TOKEN` or `GITLAB_TOKEN`? The matching hosting releases are not
   created.
 

@@ -44,6 +44,20 @@ test('falls back to the cargo credentials file', async () => {
   })
 })
 
+test('prefers CARGO_HOME for the credentials file', async () => {
+  await temporaryDirectoryTask(async (cargoHome) => {
+    context.env = { CARGO_HOME: cargoHome, HOME: '/nonexistent' }
+
+    await mkdir(cargoHome, { recursive: true })
+    await writeFile(
+      path.join(cargoHome, 'credentials.toml'),
+      '[registry]\ntoken = "credentials-token"\n'
+    )
+
+    await expect(resolveCargoToken(context)).resolves.toBe('credentials-token')
+  })
+})
+
 test('falls back to the system home directory', async () => {
   await temporaryDirectoryTask(async (mockHome) => {
     osHome.dir = mockHome
