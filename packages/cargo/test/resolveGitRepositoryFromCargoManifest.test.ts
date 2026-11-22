@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
-import { resolveCargoRepository } from '@reelout/cargo'
+import { resolveGitRepositoryFromCargoManifest } from '@reelout/cargo'
 import { writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { temporaryDirectoryTask } from 'tempy'
@@ -20,7 +20,7 @@ test('resolves GitHub repository metadata from the root manifest', async () => {
       ].join('\n')
     )
 
-    expect(await resolveCargoRepository(cwd)).toEqual({
+    expect(await resolveGitRepositoryFromCargoManifest(cwd)).toEqual({
       host: 'github',
       owner: 'user',
       repo: 'repo',
@@ -42,7 +42,7 @@ test('resolves GitLab repository metadata from the root manifest', async () => {
       ].join('\n')
     )
 
-    expect(await resolveCargoRepository(cwd)).toEqual({
+    expect(await resolveGitRepositoryFromCargoManifest(cwd)).toEqual({
       host: 'gitlab',
       owner: 'user',
       repo: 'repo',
@@ -58,7 +58,7 @@ test('returns null when the manifest defines no repository', async () => {
       '[package]\nname = "a"\nversion = "1.2.3"\n'
     )
 
-    expect(await resolveCargoRepository(cwd)).toBe(null)
+    expect(await resolveGitRepositoryFromCargoManifest(cwd)).toBe(null)
   })
 })
 
@@ -75,7 +75,7 @@ test('returns null when the repository points at a local path', async () => {
       ].join('\n')
     )
 
-    expect(await resolveCargoRepository(cwd)).toBe(null)
+    expect(await resolveGitRepositoryFromCargoManifest(cwd)).toBe(null)
   })
 })
 
@@ -92,12 +92,12 @@ test('returns null when the repository host is unsupported', async () => {
       ].join('\n')
     )
 
-    expect(await resolveCargoRepository(cwd)).toBe(null)
+    expect(await resolveGitRepositoryFromCargoManifest(cwd)).toBe(null)
   })
 })
 
 test('returns null when no root manifest exists', async () => {
   await temporaryDirectoryTask(async (cwd) => {
-    expect(await resolveCargoRepository(cwd)).toBe(null)
+    expect(await resolveGitRepositoryFromCargoManifest(cwd)).toBe(null)
   })
 })

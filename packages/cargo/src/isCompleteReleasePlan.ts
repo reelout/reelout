@@ -7,7 +7,7 @@ import { PLUGIN_NAME } from './PLUGIN_NAME'
 /**
  * A release plan whose data is complete for a crate publish.
  */
-export type CompleteCargoReleasePlan = ReleasePlan & {
+export type CompleteReleasePlan = ReleasePlan & {
   package: Package & { name: string }
   release: Release & { version: string }
 }
@@ -22,7 +22,7 @@ export type CompleteCargoReleasePlan = ReleasePlan & {
  */
 export function isCompleteReleasePlan(
   plan: ReleasePlan
-): plan is CompleteCargoReleasePlan {
+): plan is CompleteReleasePlan {
   return (
     plan.package.provider === PLUGIN_NAME &&
     !plan.package.private &&

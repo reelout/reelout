@@ -5,6 +5,7 @@ import { colors } from 'consola/utils'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { parse } from 'smol-toml'
+import type { CargoToml } from './types'
 
 /** The file name of a Cargo manifest. */
 export const CARGO_MANIFEST_FILE = 'Cargo.toml'
@@ -22,48 +23,6 @@ export const CARGO_DEPENDENCY_TABLES = [
   'dev-dependencies',
   'build-dependencies',
 ] as const
-
-/**
- * A `[package]` value inherited from the workspace manifest through a
- * dotted key such as `version.workspace = true`.
- */
-export interface CargoInheritedValue {
-  workspace?: boolean | undefined
-}
-
-/** The parsed `[package]` table of a Cargo manifest. */
-export interface CargoPackageTable {
-  name?: string | undefined
-  version?: string | CargoInheritedValue | undefined
-  repository?: string | undefined
-  publish?: boolean | readonly string[] | undefined
-}
-
-/** The parsed `[workspace]` table of a Cargo manifest. */
-export interface CargoWorkspaceTable {
-  members?: readonly string[] | undefined
-  exclude?: readonly string[] | undefined
-  package?: { version?: string | undefined } | undefined
-}
-
-/** The dependency tables scoped to a build target, under `[target.*]`. */
-export interface CargoTargetTables {
-  dependencies?: Record<string, unknown> | undefined
-  'dev-dependencies'?: Record<string, unknown> | undefined
-  'build-dependencies'?: Record<string, unknown> | undefined
-}
-
-/**
- * The subset of a parsed Cargo manifest ReelOut reads.
- */
-export interface CargoToml {
-  package?: CargoPackageTable | undefined
-  workspace?: CargoWorkspaceTable | undefined
-  dependencies?: Record<string, unknown> | undefined
-  'dev-dependencies'?: Record<string, unknown> | undefined
-  'build-dependencies'?: Record<string, unknown> | undefined
-  target?: Record<string, CargoTargetTables> | undefined
-}
 
 /**
  * Read and parse the Cargo manifest in a directory.
@@ -108,19 +67,4 @@ export async function readCargoToml(dir: string): Promise<CargoToml> {
   }
 
   return manifest as CargoToml
-}
-
-/**
- * Determine whether a directory holds a Cargo manifest.
- *
- * @param dir Directory that may contain a Cargo manifest
- * @returns True when a `Cargo.toml` file exists in the directory
- */
-export async function hasCargoManifest(dir: string): Promise<boolean> {
-  try {
-    await fs.access(path.join(dir, CARGO_MANIFEST_FILE))
-    return true
-  } catch {
-    return false
-  }
 }

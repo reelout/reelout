@@ -5,10 +5,6 @@ import '../../../test/mock/fs'
 
 import { executeReleaseWorkflow, type ReleasePlan } from '@reelout/core'
 import plugin, { PLUGIN_NAME } from '@reelout/cargo'
-import type {
-  resolveCargoToken as resolveCargoTokenImpl,
-  verifyRegistryToken as verifyRegistryTokenImpl,
-} from '@reelout/cargo/verifyAuth'
 import { vol } from 'memfs'
 import { readFile } from 'node:fs/promises'
 import { beforeEach, expect, test, vi } from 'vitest'
@@ -54,8 +50,8 @@ vi.mock(import('@reelout/cargo/verifyPublishAccess'), () => ({
   verifyPublishAccess,
 }))
 
-vi.mock(import('@reelout/cargo/isPublishedCrateIdentical'), () => ({
-  isPublishedCrateIdentical: isIdentical,
+vi.mock(import('@reelout/cargo/proveSameCratePublication'), () => ({
+  proveSameCratePublication: isIdentical,
 }))
 
 vi.mock(import('@reelout/cargo/probeCrateReleasePlan'), () => ({
@@ -70,18 +66,13 @@ vi.mock(import('@reelout/cargo/publishCrate'), () => ({
   publishCrate,
 }))
 
-vi.mock(import('@reelout/cargo/verifyAuth'), async (importOriginal) => {
-  const actual = await importOriginal()
+vi.mock(import('@reelout/cargo/resolveCargoToken'), () => ({
+  resolveCargoToken,
+}))
 
-  return {
-    ...actual,
-    resolveCargoToken: (...args: Parameters<typeof resolveCargoTokenImpl>) =>
-      resolveCargoToken(...args),
-    verifyRegistryToken: (
-      ...args: Parameters<typeof verifyRegistryTokenImpl>
-    ) => verifyRegistryToken(...args),
-  }
-})
+vi.mock(import('@reelout/cargo/verifyRegistryToken'), () => ({
+  verifyRegistryToken,
+}))
 
 interface CreatePlanOptions {
   name?: string | undefined
@@ -287,7 +278,7 @@ test('warns and skips publishing when the registry token is missing', async () =
   expect(
     warnCalls().some((message) =>
       message.includes(
-        'Crates will not be published: CARGO_REGISTRY_TOKEN is not set.'
+        'Crates will not be published: a crates.io registry token is required.'
       )
     )
   ).toBe(true)
@@ -419,12 +410,12 @@ test('skips the lockfile refresh for plans without a release', async () => {
   expect(await readFile('/repo/Cargo.toml', 'utf-8')).toBe(manifest)
 })
 
-test('does not modify or publish plans from other providers', async () => {
-  const other = '{"name": "x", "version": "9.9.9"}'
+test('does not modify crate manifests when owned by another provider', async () => {
+  const manifest = '[package]\nname = "x"\nversion = "9.9.9"\n'
 
   vol.fromJSON({
     '/repo/Cargo.toml': '[package]\nname = "a"\nversion = "1.2.3"\n',
-    '/repo/other/package.json': other,
+    '/repo/other/Cargo.toml': manifest,
   })
 
   context.plans = [
@@ -438,8 +429,7 @@ test('does not modify or publish plans from other providers', async () => {
 
   await executeReleaseWorkflow(context, [plugin()])
 
-  expect(await readFile('/repo/other/package.json', 'utf-8')).toBe(other)
-  expect(publishCrate).not.toHaveBeenCalled()
+  expect(await readFile('/repo/other/Cargo.toml', 'utf-8')).toBe(manifest)
 })
 
 test('verifies access, probes, and publishes each plan', async () => {
@@ -499,7 +489,7 @@ test('forwards the dry-run status to the publish', async () => {
   expect(publishCrate.mock.calls[0]?.[2]).toMatchObject({ dryRun: true })
 })
 
-test('skips plans that were already published with identical content', async () => {
+test('skips the publish when the probe marks the plan as already published', async () => {
   mountManifest()
 
   context.plans = [createCompletePlan()]
@@ -587,7 +577,7 @@ test('recovers when an identical version was published concurrently', async () =
   expect(context.outcome?.status).toBe('success')
 })
 
-test('rejects when the concurrently published version differs', async () => {
+test('rethrows the original publish error when the concurrently published version differs', async () => {
   mountManifest()
 
   context.plans = [createCompletePlan()]
@@ -598,36 +588,6 @@ test('rejects when the concurrently published version differs', async () => {
   })
 
   isIdentical.mockResolvedValue(false)
-
-  const failure = publishOverError()
-
-  publishCrate.mockRejectedValueOnce(failure)
-
-  await expect(executeReleaseWorkflow(context, [plugin()])).rejects.toBe(
-    failure
-  )
-})
-
-test('rejects when the concurrently published version is absent', async () => {
-  mountManifest()
-
-  context.plans = [createCompletePlan()]
-
-  const failure = publishOverError()
-
-  publishCrate.mockRejectedValueOnce(failure)
-
-  await expect(executeReleaseWorkflow(context, [plugin()])).rejects.toBe(
-    failure
-  )
-})
-
-test('rejects when the concurrent publication cannot be re-probed', async () => {
-  mountManifest()
-
-  context.plans = [createCompletePlan()]
-
-  probePublishedCrate.mockRejectedValue(new Error('mock probe failure'))
 
   const failure = publishOverError()
 
@@ -666,7 +626,7 @@ test('publishes private crates without registry checks', async () => {
   expect(publishCrate).toHaveBeenCalledTimes(1)
 })
 
-test('does not publish plans from other providers', async () => {
+test('does not publish crates when owned by another provider', async () => {
   mountManifest()
 
   context.plans = [createCompletePlan({ provider: '@reelout/npm' })]

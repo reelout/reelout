@@ -4,14 +4,14 @@
 import { ALL_FILES, isSemVer, type Package } from '@reelout/core'
 import { glob } from 'glob'
 import path from 'node:path'
+import { hasCargoManifest } from './hasCargoManifest'
 import {
   CARGO_DEPENDENCY_TABLES,
   CARGO_LOCK_FILE,
   CARGO_MANIFEST_FILE,
-  hasCargoManifest,
   readCargoToml,
-  type CargoToml,
 } from './readCargoToml'
+import type { CargoToml } from './types'
 
 /** Inputs for building metadata for one crate of a Cargo workspace. */
 interface BuildCargoPackageOptions {
@@ -260,7 +260,7 @@ async function buildCargoPackage(
  * @param manifest The parsed crate manifest
  * @returns Sorted dependency names declared by the manifest
  */
-export function collectCargoDependencyNames(manifest: CargoToml): string[] {
+function collectCargoDependencyNames(manifest: CargoToml): string[] {
   const names = new Set<string>()
 
   for (const table of CARGO_DEPENDENCY_TABLES) {

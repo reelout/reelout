@@ -4,11 +4,11 @@
 import type { ReleaseContext } from '@reelout/core'
 import { formatError } from '@reelout/core'
 import { createHash } from 'node:crypto'
-import type { CompleteCargoReleasePlan } from './isCompleteReleasePlan'
+import type { CompleteReleasePlan } from './isCompleteReleasePlan'
 import { packLocalCrate } from './packLocalCrate'
 
 /**
- * Determine whether a published crate version carries the same content as
+ * Prove whether a published crate version carries the same content as
  * the local crate.
  *
  * Packs the crate locally and compares the SHA-256 checksum of the packed
@@ -22,9 +22,9 @@ import { packLocalCrate } from './packLocalCrate'
  * @param cksum The checksum recorded in the sparse index
  * @returns True when the packed crate matches the published checksum
  */
-export async function isPublishedCrateIdentical(
+export async function proveSameCratePublication(
   context: ReleaseContext,
-  plan: CompleteCargoReleasePlan,
+  plan: CompleteReleasePlan,
   cksum: string
 ): Promise<boolean> {
   let crate: Buffer

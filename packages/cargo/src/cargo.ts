@@ -13,19 +13,19 @@ import { colors } from 'consola/utils'
 import { version } from '../package.json'
 import { bumpCargoManifests } from './bumpCargoManifests'
 import { hasCargoCommand } from './hasCargoCommand'
+import { hasCargoManifest } from './hasCargoManifest'
 import { isCompleteReleasePlan } from './isCompleteReleasePlan'
 import { isPublishOverRejection } from './isPublishOverRejection'
 import { loadCargoPackages } from './loadCargoPackages'
 import { PLUGIN_NAME } from './PLUGIN_NAME'
 import { probeCrateReleasePlan } from './probeCrateReleasePlan'
 import { publishCrate } from './publishCrate'
-import { hasCargoManifest } from './readCargoToml'
 import { recoverFromCratePublishOverRejection } from './recoverFromCratePublishOverRejection'
 import { refreshCargoLock } from './refreshCargoLock'
-import { resolveCargoRepository } from './resolveCargoRepository'
+import { resolveCargoToken } from './resolveCargoToken'
+import { resolveGitRepositoryFromCargoManifest } from './resolveGitRepositoryFromCargoManifest'
 import { createSparseIndexClient } from './sparseIndex'
-import type { PluginOptions } from './types'
-import { resolveCargoToken, verifyRegistryToken } from './verifyAuth'
+import { verifyRegistryToken } from './verifyRegistryToken'
 import { verifyPublishAccess } from './verifyPublishAccess'
 
 export { PLUGIN_NAME }
@@ -34,6 +34,23 @@ export { PLUGIN_NAME }
 interface RegistryAuth {
   token: string
   login: string
+}
+
+/**
+ * Configuration options for the Cargo release plugin.
+ */
+export interface PluginOptions {
+  /**
+   * Pass `--allow-dirty` to `cargo publish` so working trees with
+   * uncommitted changes can still be published.
+   */
+  allowDirty?: boolean | undefined
+
+  /**
+   * Pass `--no-verify` to `cargo publish` to skip the verification build
+   * of the crate before it is published.
+   */
+  noVerify?: boolean | undefined
 }
 
 /**
@@ -86,7 +103,7 @@ const cargo = (options: PluginOptions = {}): ReleasePlugin => {
 
       active = true
 
-      const repo = await resolveCargoRepository(context.cwd)
+      const repo = await resolveGitRepositoryFromCargoManifest(context.cwd)
 
       context.repository = repo ?? context.repository
 
@@ -107,7 +124,7 @@ const cargo = (options: PluginOptions = {}): ReleasePlugin => {
 
         context.logger.warn(
           colors.yellow(
-            'Crates will not be published: CARGO_REGISTRY_TOKEN is not set.'
+            'Crates will not be published: a crates.io registry token is required.'
           )
         )
       }

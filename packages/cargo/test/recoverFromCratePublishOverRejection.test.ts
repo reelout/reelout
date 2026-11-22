@@ -3,7 +3,7 @@
 
 import {
   recoverFromCratePublishOverRejection,
-  type CompleteCargoReleasePlan,
+  type CompleteReleasePlan,
 } from '@reelout/cargo'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { context, logger } from '../../../test/mock/context'
@@ -12,15 +12,15 @@ const probePublishedCrate = vi.hoisted(() => vi.fn())
 
 const isIdentical = vi.hoisted(() => vi.fn())
 
-vi.mock(import('@reelout/cargo/isPublishedCrateIdentical'), () => ({
-  isPublishedCrateIdentical: isIdentical,
+vi.mock(import('@reelout/cargo/proveSameCratePublication'), () => ({
+  proveSameCratePublication: isIdentical,
 }))
 
 vi.mock(import('@reelout/cargo/probePublishedCrate'), () => ({
   probePublishedCrate,
 }))
 
-const plan: CompleteCargoReleasePlan = {
+const plan: CompleteReleasePlan = {
   package: {
     provider: '@reelout/cargo',
     name: 'a',

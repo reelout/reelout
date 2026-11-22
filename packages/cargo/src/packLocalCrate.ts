@@ -6,7 +6,7 @@ import { execCommand } from '@reelout/core'
 import { mkdtemp, readdir, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import type { CompleteCargoReleasePlan } from './isCompleteReleasePlan'
+import type { CompleteReleasePlan } from './isCompleteReleasePlan'
 
 /**
  * Pack a plan's crate into a `.crate` file with `cargo package`.
@@ -26,7 +26,7 @@ import type { CompleteCargoReleasePlan } from './isCompleteReleasePlan'
  */
 export async function packLocalCrate(
   context: ReleaseContext,
-  plan: CompleteCargoReleasePlan
+  plan: CompleteReleasePlan
 ): Promise<Buffer> {
   const packDir = await mkdtemp(path.join(tmpdir(), 'reelout-crate-'))
 

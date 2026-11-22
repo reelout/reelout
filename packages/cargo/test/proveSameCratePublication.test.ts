@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
-import { isPublishedCrateIdentical } from '@reelout/cargo'
-import type { CompleteCargoReleasePlan } from '@reelout/cargo'
+import { proveSameCratePublication } from '@reelout/cargo'
+import type { CompleteReleasePlan } from '@reelout/cargo'
 import { createHash } from 'node:crypto'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { context } from '../../../test/mock/context'
@@ -13,7 +13,7 @@ vi.mock(import('@reelout/cargo/packLocalCrate'), () => ({
   packLocalCrate,
 }))
 
-const plan: CompleteCargoReleasePlan = {
+const plan: CompleteReleasePlan = {
   package: {
     provider: '@reelout/cargo',
     name: 'a',
@@ -39,24 +39,24 @@ test('proves identical content by packing the local crate', async () => {
   packLocalCrate.mockResolvedValue(Buffer.from('packed-crate'))
 
   await expect(
-    isPublishedCrateIdentical(context, plan, checksumOf('packed-crate'))
+    proveSameCratePublication(context, plan, checksumOf('packed-crate'))
   ).resolves.toBe(true)
 
   expect(packLocalCrate).toHaveBeenCalledWith(context, plan)
 })
 
-test('reports mismatching content', async () => {
+test('reports differing crate content as unverified', async () => {
   packLocalCrate.mockResolvedValue(Buffer.from('packed-crate'))
 
   await expect(
-    isPublishedCrateIdentical(context, plan, checksumOf('other-crate'))
+    proveSameCratePublication(context, plan, checksumOf('other-crate'))
   ).resolves.toBe(false)
 })
 
-test('reports mismatching content when the local crate cannot be packed', async () => {
+test('reports the publication as unverified when the local crate cannot be packed', async () => {
   packLocalCrate.mockRejectedValue(new Error('mock pack failure'))
 
   await expect(
-    isPublishedCrateIdentical(context, plan, checksumOf('packed-crate'))
+    proveSameCratePublication(context, plan, checksumOf('packed-crate'))
   ).resolves.toBe(false)
 })

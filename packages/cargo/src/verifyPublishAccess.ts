@@ -4,10 +4,21 @@
 import type { ReleaseContext } from '@reelout/core'
 import { formatError } from '@reelout/core'
 import { colors } from 'consola/utils'
-import type { CompleteCargoReleasePlan } from './isCompleteReleasePlan'
+import { CARGO_REGISTRY_API, USER_AGENT } from './cratesIoApi'
+import type { CompleteReleasePlan } from './isCompleteReleasePlan'
 import type { SparseIndexClient, SparseIndexResult } from './sparseIndex'
-import type { PublishAccessVerdict } from './types'
-import { CARGO_REGISTRY_API, USER_AGENT } from './verifyAuth'
+
+/**
+ * The verdict of a crates.io publish-access check for a crate.
+ *
+ * - `allowed`: the authenticated registry user may publish the crate.
+ * - `denied`: the registry reports the crate as owned and the authenticated
+ *   user is not among its user owners.
+ * - `unknown`: publish access could not be determined, for example because
+ *   the crate is owned by a team, the ownership endpoint failed, or the
+ *   sparse index could not be read.
+ */
+export type PublishAccessVerdict = 'allowed' | 'denied' | 'unknown'
 
 /** Inputs for the crates.io publish-access check. */
 export interface VerifyPublishAccessOptions {
@@ -42,7 +53,7 @@ interface CrateOwner {
  */
 export async function verifyPublishAccess(
   context: ReleaseContext,
-  plans: readonly CompleteCargoReleasePlan[],
+  plans: readonly CompleteReleasePlan[],
   options: VerifyPublishAccessOptions
 ): Promise<void> {
   const denied: string[] = []
@@ -92,7 +103,7 @@ export async function verifyPublishAccess(
  */
 async function resolveVerdict(
   context: ReleaseContext,
-  plan: CompleteCargoReleasePlan,
+  plan: CompleteReleasePlan,
   options: VerifyPublishAccessOptions
 ): Promise<PublishAccessVerdict> {
   const target = `${plan.package.name}@${plan.release.version}`
@@ -143,7 +154,7 @@ async function resolveVerdict(
  */
 async function resolveOwnersVerdict(
   context: ReleaseContext,
-  plan: CompleteCargoReleasePlan,
+  plan: CompleteReleasePlan,
   options: VerifyPublishAccessOptions
 ): Promise<PublishAccessVerdict> {
   const target = `${plan.package.name}@${plan.release.version}`

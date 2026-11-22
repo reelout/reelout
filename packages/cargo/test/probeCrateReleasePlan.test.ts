@@ -4,7 +4,7 @@
 import type { ReleasePlan } from '@reelout/core'
 import {
   probeCrateReleasePlan,
-  type CompleteCargoReleasePlan,
+  type CompleteReleasePlan,
   type SparseIndexClient,
 } from '@reelout/cargo'
 import { createHash } from 'node:crypto'
@@ -23,7 +23,7 @@ const reload = vi.fn()
 
 const index: SparseIndexClient = { getRecords, reload }
 
-const plan: CompleteCargoReleasePlan = {
+const plan: CompleteReleasePlan = {
   package: {
     provider: '@reelout/cargo',
     name: 'a',
@@ -93,7 +93,7 @@ test('rejects plans whose published content cannot be verified as identical', as
   expect(skipped.has(plan)).toBe(false)
 })
 
-test('leaves absent versions to the publish', async () => {
+test('returns without verifying when the version is absent from the registry', async () => {
   getRecords.mockResolvedValue({ status: 'absent' })
 
   const skipped = new Set<ReleasePlan>()

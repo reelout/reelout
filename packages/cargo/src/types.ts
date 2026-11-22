@@ -2,30 +2,43 @@
 // Copyright (c) 2026 Fai
 
 /**
- * Configuration options for the Cargo release plugin.
+ * A `[package]` value inherited from the workspace manifest through a
+ * dotted key such as `version.workspace = true`.
  */
-export interface PluginOptions {
-  /**
-   * Pass `--allow-dirty` to `cargo publish` so working trees with
-   * uncommitted changes can still be published.
-   */
-  allowDirty?: boolean | undefined
+export interface CargoInheritedValue {
+  workspace?: boolean | undefined
+}
 
-  /**
-   * Pass `--no-verify` to `cargo publish` to skip the verification build
-   * of the crate before it is published.
-   */
-  noVerify?: boolean | undefined
+/** The parsed `[package]` table of a Cargo manifest. */
+export interface CargoPackageTable {
+  name?: string | undefined
+  version?: string | CargoInheritedValue | undefined
+  repository?: string | undefined
+  publish?: boolean | readonly string[] | undefined
+}
+
+/** The parsed `[workspace]` table of a Cargo manifest. */
+export interface CargoWorkspaceTable {
+  members?: readonly string[] | undefined
+  exclude?: readonly string[] | undefined
+  package?: { version?: string | undefined } | undefined
+}
+
+/** The dependency tables scoped to a build target, under `[target.*]`. */
+export interface CargoTargetTables {
+  dependencies?: Record<string, unknown> | undefined
+  'dev-dependencies'?: Record<string, unknown> | undefined
+  'build-dependencies'?: Record<string, unknown> | undefined
 }
 
 /**
- * The verdict of a crates.io publish-access check for a crate.
- *
- * - `allowed`: the authenticated registry user may publish the crate.
- * - `denied`: the registry reports the crate as owned and the authenticated
- *   user is not among its user owners.
- * - `unknown`: publish access could not be determined, for example because
- *   the crate is owned by a team, the ownership endpoint failed, or the
- *   sparse index could not be read.
+ * The subset of a parsed Cargo manifest ReelOut reads.
  */
-export type PublishAccessVerdict = 'allowed' | 'denied' | 'unknown'
+export interface CargoToml {
+  package?: CargoPackageTable | undefined
+  workspace?: CargoWorkspaceTable | undefined
+  dependencies?: Record<string, unknown> | undefined
+  'dev-dependencies'?: Record<string, unknown> | undefined
+  'build-dependencies'?: Record<string, unknown> | undefined
+  target?: Record<string, CargoTargetTables> | undefined
+}

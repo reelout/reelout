@@ -14,7 +14,7 @@ import { readCargoToml } from './readCargoToml'
  * @param cwd Directory containing the root Cargo manifest
  * @returns Git repository details or null if missing or unresolvable
  */
-export async function resolveCargoRepository(
+export async function resolveGitRepositoryFromCargoManifest(
   cwd: string
 ): Promise<GitRepository | null> {
   try {

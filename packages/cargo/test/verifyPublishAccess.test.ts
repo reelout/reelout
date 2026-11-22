@@ -5,7 +5,7 @@ import {
   CARGO_REGISTRY_API,
   USER_AGENT,
   verifyPublishAccess,
-  type CompleteCargoReleasePlan,
+  type CompleteReleasePlan,
   type SparseIndexClient,
 } from '@reelout/cargo'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
@@ -17,7 +17,7 @@ const getRecords = vi.hoisted(() => vi.fn())
 
 const index: SparseIndexClient = { getRecords, reload: vi.fn() }
 
-function createPlan(name: string, version: string): CompleteCargoReleasePlan {
+function createPlan(name: string, version: string): CompleteReleasePlan {
   return {
     package: {
       provider: '@reelout/cargo',
@@ -36,7 +36,7 @@ function createPlan(name: string, version: string): CompleteCargoReleasePlan {
 
 const plan = createPlan('a', '1.2.3')
 
-const verify = (plans: readonly CompleteCargoReleasePlan[]) =>
+const verify = (plans: readonly CompleteReleasePlan[]) =>
   verifyPublishAccess(context, plans, {
     token: 'mock-token',
     login: 'mock-login',
@@ -70,6 +70,7 @@ test('allows new crates without an ownership check', async () => {
   await verify([plan])
 
   expect(fetchMock).not.toHaveBeenCalled()
+  expect(warnCalls()).toEqual([])
 })
 
 test('allows versions that are already published', async () => {
@@ -81,6 +82,7 @@ test('allows versions that are already published', async () => {
   await verify([plan])
 
   expect(fetchMock).not.toHaveBeenCalled()
+  expect(warnCalls()).toEqual([])
 })
 
 test('checks the owners of existing crates with a new version', async () => {
@@ -105,6 +107,7 @@ test('checks the owners of existing crates with a new version', async () => {
       },
     },
   ])
+  expect(warnCalls()).toEqual([])
 })
 
 test('warns and proceeds for team-owned crates', async () => {

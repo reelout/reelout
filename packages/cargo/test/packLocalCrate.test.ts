@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
-import { packLocalCrate, type CompleteCargoReleasePlan } from '@reelout/cargo'
+import { packLocalCrate, type CompleteReleasePlan } from '@reelout/cargo'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { beforeEach, expect, test, vi } from 'vitest'
@@ -14,7 +14,7 @@ vi.mock(import('@reelout/core/util/execCommand'), () => ({
     execCommand(command, args, options),
 }))
 
-const plan: CompleteCargoReleasePlan = {
+const plan: CompleteReleasePlan = {
   package: {
     provider: '@reelout/cargo',
     name: 'a',

@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Fai
 
 import { formatError } from '@reelout/core'
-import { USER_AGENT } from './verifyAuth'
+import { USER_AGENT } from './cratesIoApi'
 
 const SPARSE_INDEX_URL = 'https://index.crates.io'
 

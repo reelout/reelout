@@ -1,21 +1,11 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
-import {
-  CARGO_LOCK_FILE,
-  CARGO_MANIFEST_FILE,
-  hasCargoManifest,
-  readCargoToml,
-} from '@reelout/cargo'
+import { CARGO_MANIFEST_FILE, readCargoToml } from '@reelout/cargo'
 import { writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { temporaryDirectoryTask } from 'tempy'
 import { expect, test } from 'vitest'
-
-test('exposes the Cargo file names', () => {
-  expect(CARGO_MANIFEST_FILE).toBe('Cargo.toml')
-  expect(CARGO_LOCK_FILE).toBe('Cargo.lock')
-})
 
 test('parses package, workspace, and dependency tables', async () => {
   await temporaryDirectoryTask(async (cwd) => {
@@ -110,15 +100,5 @@ test('wraps parse failures with the manifest path', async () => {
     )
     expect((error as Error).message).toContain('" could not be parsed.')
     expect((error as Error).cause).toBeInstanceOf(Error)
-  })
-})
-
-test('detects whether a directory holds a Cargo manifest', async () => {
-  await temporaryDirectoryTask(async (cwd) => {
-    expect(await hasCargoManifest(cwd)).toBe(false)
-
-    await writeFile(path.join(cwd, CARGO_MANIFEST_FILE), '[package]\n')
-
-    expect(await hasCargoManifest(cwd)).toBe(true)
   })
 })

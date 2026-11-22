@@ -3,8 +3,8 @@
 
 import type { ReleaseContext, ReleasePlan } from '@reelout/core'
 import { colors } from 'consola/utils'
-import type { CompleteCargoReleasePlan } from './isCompleteReleasePlan'
-import { isPublishedCrateIdentical } from './isPublishedCrateIdentical'
+import type { CompleteReleasePlan } from './isCompleteReleasePlan'
+import { proveSameCratePublication } from './proveSameCratePublication'
 import { probePublishedCrate } from './probePublishedCrate'
 import type { SparseIndexClient } from './sparseIndex'
 
@@ -23,7 +23,7 @@ import type { SparseIndexClient } from './sparseIndex'
  */
 export async function probeCrateReleasePlan(
   context: ReleaseContext,
-  plan: CompleteCargoReleasePlan,
+  plan: CompleteReleasePlan,
   index: SparseIndexClient,
   skipped: Set<ReleasePlan>
 ): Promise<void> {
@@ -39,7 +39,7 @@ export async function probeCrateReleasePlan(
     return
   }
 
-  const identical = await isPublishedCrateIdentical(context, plan, probe.cksum)
+  const identical = await proveSameCratePublication(context, plan, probe.cksum)
 
   if (!identical) {
     throw new Error(
