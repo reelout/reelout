@@ -1790,6 +1790,20 @@ test('verifies trusted publishing before probing publishable plans', async () =>
   )
 })
 
+test('verifies trusted publishing in dry-run mode', async () => {
+  using _dryRun = vi.spyOn(context, 'dryRun', 'get').mockReturnValue(true)
+
+  provideOIDCAuth()
+
+  mountPackageFixture()
+
+  context.plans = [createCompleteReleasePlan()]
+
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(verifyTrustedPublishing).toHaveBeenCalledTimes(1)
+})
+
 test('previews the authentication skip identically in dry-run mode', async () => {
   using _dryRun = vi.spyOn(context, 'dryRun', 'get').mockReturnValue(true)
 
