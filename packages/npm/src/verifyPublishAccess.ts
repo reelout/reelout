@@ -390,6 +390,49 @@ async function resolveIdentity(
 }
 
 /**
+ * Run an npm CLI registry query and parse its JSON response.
+ *
+ * Credential rejections fail the release only when the npm CLI shares the
+ * release's registry credentials (an injected token or non-Yarn-Berry
+ * ambient credentials); Yarn Berry ambient credential rejections, command
+ * failures, and unparseable output resolve to undefined.
+ *
+ * @param check Shared verification state for the release
+ * @param args The npm CLI arguments, including the subcommand
+ * @param cwd The directory the command runs in
+ * @param npmEnv Environment for the spawned npm CLI
+ * @returns The parsed JSON response, or undefined when the query failed
+ */
+async function queryNpmCli(
+  check: AccessCheck,
+  args: readonly string[],
+  cwd: string,
+  npmEnv: NodeJS.ProcessEnv
+): Promise<unknown> {
+  let stdout: string
+
+  try {
+    stdout = await execCommand('npm', args, {
+      cwd,
+      env: npmEnv,
+      signal: check.context.signal,
+    })
+  } catch (error) {
+    if (check.npmCliSharesCredentials) {
+      assertCredentialsAccepted(error)
+    }
+
+    return undefined
+  }
+
+  try {
+    return JSON.parse(stdout)
+  } catch {
+    return undefined
+  }
+}
+
+/**
  * Determine publish access for a scoped package through its collaborator
  * list.
  *
@@ -419,44 +462,21 @@ async function checkCollaborators(
 ): Promise<PublishAccessVerdict> {
   const npmEnv = buildNpmEnv(check, registry, env)
 
-  let stdout: string
+  const collaborators = await queryNpmCli(
+    check,
+    [
+      'access',
+      'ls-collaborators',
+      plan.package.name,
+      '--json',
+      '--registry',
+      registry,
+    ],
+    packageDir,
+    npmEnv
+  )
 
-  try {
-    stdout = await execCommand(
-      'npm',
-      [
-        'access',
-        'ls-collaborators',
-        plan.package.name,
-        '--json',
-        '--registry',
-        registry,
-      ],
-      {
-        cwd: packageDir,
-        env: npmEnv,
-        signal: check.context.signal,
-      }
-    )
-  } catch (error) {
-    if (check.npmCliSharesCredentials) {
-      assertCredentialsAccepted(error)
-    }
-
-    return 'unknown'
-  }
-
-  let collaborators: Record<string, unknown>
-
-  try {
-    const parsed: unknown = JSON.parse(stdout)
-
-    if (!isJsonObject(parsed)) {
-      return 'unknown'
-    }
-
-    collaborators = parsed
-  } catch {
+  if (!isJsonObject(collaborators)) {
     return 'unknown'
   }
 
@@ -530,33 +550,12 @@ async function checkTeamMembership(
   packageDir: string,
   npmEnv: NodeJS.ProcessEnv
 ): Promise<boolean | undefined> {
-  let stdout: string
-
-  try {
-    stdout = await execCommand(
-      'npm',
-      ['team', 'ls', team, '--json', '--registry', registry],
-      {
-        cwd: packageDir,
-        env: npmEnv,
-        signal: check.context.signal,
-      }
-    )
-  } catch (error) {
-    if (check.npmCliSharesCredentials) {
-      assertCredentialsAccepted(error)
-    }
-
-    return undefined
-  }
-
-  let members: unknown
-
-  try {
-    members = JSON.parse(stdout)
-  } catch {
-    return undefined
-  }
+  const members = await queryNpmCli(
+    check,
+    ['team', 'ls', team, '--json', '--registry', registry],
+    packageDir,
+    npmEnv
+  )
 
   if (!Array.isArray(members)) {
     return undefined
@@ -598,31 +597,14 @@ async function checkOrgRoster(
 ): Promise<PublishAccessVerdict> {
   const npmEnv = buildNpmEnv(check, registry, env)
 
-  let stdout: string
+  const roster = await queryNpmCli(
+    check,
+    ['org', 'ls', scope, '--json', '--registry', registry],
+    packageDir,
+    npmEnv
+  )
 
-  try {
-    stdout = await execCommand(
-      'npm',
-      ['org', 'ls', scope, '--json', '--registry', registry],
-      {
-        cwd: packageDir,
-        env: npmEnv,
-        signal: check.context.signal,
-      }
-    )
-  } catch (error) {
-    if (check.npmCliSharesCredentials) {
-      assertCredentialsAccepted(error)
-    }
-
-    return 'unknown'
-  }
-
-  let roster: unknown
-
-  try {
-    roster = JSON.parse(stdout)
-  } catch {
+  if (roster === undefined) {
     return 'unknown'
   }
 
