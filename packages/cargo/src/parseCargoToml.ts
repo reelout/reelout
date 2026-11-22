@@ -66,16 +66,6 @@ export interface CargoToml {
 }
 
 /**
- * Read the raw text of the Cargo manifest in a directory.
- *
- * @param dir Directory containing the Cargo manifest
- * @returns The raw manifest text with comments and formatting intact
- */
-export async function readCargoTomlText(dir: string): Promise<string> {
-  return await fs.readFile(path.join(dir, CARGO_MANIFEST_FILE), 'utf-8')
-}
-
-/**
  * Read and parse the Cargo manifest in a directory.
  *
  * Reads `Cargo.toml` in the directory and parses it into the manifest

@@ -24,7 +24,6 @@ export interface PublishCrateOptions {
  * working directory
  * @param plan Release plan describing the target crate and release version
  * @param options Publishing flags including dry-run status
- * @throws If the publish command fails
  */
 export async function publishCrate(
   context: ReleaseContext,

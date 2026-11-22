@@ -39,7 +39,6 @@ export type PublishedCrateStatus =
  * @param version The crate version to probe
  * @param options Probe options carrying the index client
  * @returns The published version's checksum, or absent status
- * @throws If the sparse index cannot be read
  */
 export async function probePublishedCrate(
   name: string,

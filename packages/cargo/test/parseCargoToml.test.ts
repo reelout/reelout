@@ -6,7 +6,6 @@ import {
   CARGO_MANIFEST_FILE,
   hasCargoManifest,
   readCargoToml,
-  readCargoTomlText,
 } from '@reelout/cargo'
 import { writeFile } from 'node:fs/promises'
 import path from 'node:path'
@@ -16,16 +15,6 @@ import { expect, test } from 'vitest'
 test('exposes the Cargo file names', () => {
   expect(CARGO_MANIFEST_FILE).toBe('Cargo.toml')
   expect(CARGO_LOCK_FILE).toBe('Cargo.lock')
-})
-
-test('reads the raw manifest text with comments and formatting intact', async () => {
-  await temporaryDirectoryTask(async (cwd) => {
-    const text = '[package]\nname = "a" # comment\nversion = "1.2.3"\n'
-
-    await writeFile(path.join(cwd, CARGO_MANIFEST_FILE), text)
-
-    expect(await readCargoTomlText(cwd)).toBe(text)
-  })
 })
 
 test('parses package, workspace, and dependency tables', async () => {

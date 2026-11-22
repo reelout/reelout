@@ -137,8 +137,6 @@ function sparseIndexPath(name: string): string {
  * @param name The crate name the records belong to
  * @param text The raw index file text
  * @returns The parsed index records
- * @throws If a record is not valid JSON or does not carry the expected
- * fields
  */
 function parseIndexRecords(name: string, text: string): CrateIndexRecord[] {
   const records: CrateIndexRecord[] = []
