@@ -489,7 +489,7 @@ test('denies publishing a new scoped package when the readable roster omits the 
   })
 })
 
-test('warns when the organization roster for a new scoped package cannot be read', async () => {
+test('warns when the organization roster cannot be read', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd
     context.env = { NPM_TOKEN: 'mock-npm-token' }
@@ -814,7 +814,7 @@ test('warns when a write team member list cannot be parsed', async () => {
   })
 })
 
-test('warns when a write team member list is not an array', async () => {
+test('warns when a write team member list is valid JSON but not an array', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd
     context.env = { NPM_TOKEN: 'mock-npm-token' }

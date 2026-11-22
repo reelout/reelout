@@ -53,7 +53,7 @@ collaborator and team permissions otherwise. When the registry shows no
 publish access, the release fails with `Missing publish permission ...`
 before anything is published.
 
-The check is advisory and cannot cover every registry behavior:
+The check is best-effort and cannot cover every registry behavior:
 
 - OIDC trusted publishing (`NPM_ID_TOKEN`) cannot be probed locally. Those
   publishes proceed with a warning and rely on the registry's own rejection,

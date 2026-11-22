@@ -82,13 +82,13 @@ type PackumentResult =
  *
  * Queries the registry identity and package metadata with the package
  * manager's read commands, then consults npm CLI access endpoints for scoped
- * packages the identity does not maintain. Returns `allowed` when the identity
- * maintains the package or holds write access, `denied` when the registry
- * shows no publish access, and `unknown` when permission cannot be determined
- * (OIDC trusted publishing, network failures, or unsupported registries).
- * Plans with a `denied` verdict fail aggregated before any publish, while
- * `unknown` verdicts only warn because the registry rejects unauthorized
- * publishes on its own. Incomplete and non-npm plans are skipped.
+ * packages the identity does not maintain. Returns `allowed` when the registry
+ * grants the identity publish access, `denied` when the registry shows no
+ * publish access, and `unknown` when permission cannot be determined (OIDC
+ * trusted publishing, network failures, or unsupported registries). Denied
+ * plans are aggregated into one error that fails the release before any
+ * publish, while `unknown` verdicts only warn because the registry rejects
+ * unauthorized publishes on its own. Incomplete and non-npm plans are skipped.
  *
  * @param context Release context containing environment and working directory
  * @param plans Release plans to verify
