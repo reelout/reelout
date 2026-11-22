@@ -87,9 +87,9 @@ are.
 
 ### `rules`
 
-Rules match the current branch and set the prerelease qualifier and npm channel.
-ReelOut checks them in order and uses the first match. A rule's `pattern` is a
-glob; `type` is optional and defaults to `branch`.
+Rules match the current branch and set the prerelease qualifier and release
+channel. ReelOut checks them in order and uses the first match. A rule's
+`pattern` is a glob; `type` is optional and defaults to `branch`.
 
 ```ts
 rules: [
@@ -100,8 +100,8 @@ rules: [
 
 A string is shorthand for a rule whose pattern, qualifier, and channel use that
 string; its qualifier and channel are sanitized for use as a SemVer prerelease
-identifier and npm dist-tag. Use an object to define a glob pattern or when the
-qualifier or channel should differ from the pattern:
+identifier and release channel. Use an object to define a glob pattern or
+when the qualifier or channel should differ from the pattern:
 
 ```ts
 rules: [{ pattern: 'release/*', qualifier: 'rc', channel: 'candidate' }]
@@ -115,13 +115,14 @@ example, `alpha-{date}`. Rules without a `pattern`, as well as `false`, `null`,
 and `undefined` entries, are ignored.
 
 By default, the `alpha`, `beta`, and `next` branches each use the same label for
-their prerelease qualifier and npm channel.
+their prerelease qualifier and release channel.
 
 ### `plugins`
 
 An ordered list of plugins to run during the release. By default, ReelOut runs
 the analyzer, builder, and changelog plugins, followed by npm publishing, Git
-operations, and GitHub releases.
+operations, and GitHub releases. Add `'@reelout/cargo'` to the list to publish
+Cargo workspace crates to crates.io in addition to npm packages.
 
 Entries can be module specifiers, plugin factories or objects, or tuples that
 pass options to a plugin factory:
@@ -166,7 +167,7 @@ CLI options override the corresponding release settings for a run:
 | `--filter <pattern>`                 | Release only packages whose names match the glob patterns; repeatable, `!` excludes matches  |
 | `--type <auto\|major\|minor\|patch>` | Choose a release type; `auto` derives it from commits                                        |
 | `--qualifier <id\|true\|false>`      | Set the SemVer prerelease identifier, use the matching branch rule, or disable the qualifier |
-| `--channel <name\|true\|false>`      | Set the npm dist-tag, use the matching branch rule, or disable the channel                   |
+| `--channel <name\|true\|false>`      | Set the release channel, use the matching branch rule, or disable the channel                |
 | `--allow-empty`                      | Run the workflow even when no releasable changes are detected                                |
 | `--dry-run`                          | Preview the release without writing files or creating or publishing release assets           |
 | `--strict`                           | Turn missing-credential skipping into errors, for pipelines that must publish everything     |

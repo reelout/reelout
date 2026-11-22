@@ -2,8 +2,8 @@
 
 The `reelout` package re-exports APIs from `@reelout/cli`, `@reelout/config`,
 `@reelout/context`, and `@reelout/core`. Import integration plugins such as
-`@reelout/npm`, `@reelout/git`, `@reelout/github`, and `@reelout/gitlab` from
-their respective packages.
+`@reelout/npm`, `@reelout/cargo`, `@reelout/git`, `@reelout/github`, and
+`@reelout/gitlab` from their respective packages.
 
 ReelOut is ESM-only and requires Node.js >= 24.15.
 

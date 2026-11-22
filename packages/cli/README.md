@@ -24,7 +24,7 @@ const program = await createProgram({
   name: 'reelout',
   version: '1.0.0',
   description:
-    'Plugin-driven release automation for JavaScript and TypeScript monorepos.',
+    'Plugin-driven release automation for monorepos, with built-in npm and Cargo support.',
   cwd: process.cwd(),
   env: process.env,
   stdout: process.stdout,

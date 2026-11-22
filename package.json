@@ -1,7 +1,7 @@
 {
   "name": "reelout",
   "version": "0.10.0",
-  "description": "Plugin-driven release automation for JavaScript and TypeScript monorepos.",
+  "description": "Plugin-driven release automation for monorepos, with built-in npm and Cargo support.",
   "keywords": [
     "release",
     "monorepo",
@@ -9,6 +9,7 @@
     "changelog",
     "conventional-commits",
     "npm",
+    "cargo",
     "git",
     "github",
     "gitlab",

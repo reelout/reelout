@@ -79,7 +79,7 @@ export async function createProgram(
     )
     .option(
       '--channel <boolean or string>',
-      'Set the npm dist-tag (for example, `beta`); use `false` to disable it or `true` to follow branch rules.',
+      'Set the release channel, applied as the npm dist-tag (for example, `beta`); use `false` to disable it or `true` to follow branch rules.',
       (value) => (value === 'true' ? true : value === 'false' ? false : value)
     )
     .option(

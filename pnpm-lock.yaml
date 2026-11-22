@@ -299,6 +299,9 @@ catalogs:
     semver:
       specifier: ^7.8.6
       version: 7.8.6
+    smol-toml:
+      specifier: ^1.9.1
+      version: 1.9.1
     sort-package-json:
       specifier: ^4.1.0
       version: 4.1.0
@@ -448,6 +451,28 @@ importers:
         specifier: 'catalog:'
         version: 5.1.0(@types/node@24.19.2)(@vitest/coverage-istanbul@5.1.0)(jsdom@31.0.1)(vite@8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
 
+  packages/cargo:
+    dependencies:
+      '@reelout/core':
+        specifier: workspace:^
+        version: link:../core
+      consola:
+        specifier: 'catalog:'
+        version: 3.4.2
+      glob:
+        specifier: 'catalog:'
+        version: 14.0.6
+      hosted-git-info:
+        specifier: 'catalog:'
+        version: 10.1.1
+      smol-toml:
+        specifier: 'catalog:'
+        version: 1.9.1
+    devDependencies:
+      '@types/hosted-git-info':
+        specifier: 'catalog:'
+        version: 3.0.5(patch_hash=616ae92eb507f046d0b7d17bc011ac39f690bc88e2a027543b9740cdc9709bfd)
+
   packages/cli:
     dependencies:
       '@reelout/context':
@@ -465,6 +490,9 @@ importers:
 
   packages/config:
     dependencies:
+      '@reelout/cargo':
+        specifier: workspace:^
+        version: link:../cargo
       '@reelout/core':
         specifier: workspace:^
         version: link:../core
@@ -3800,6 +3828,10 @@ packages:
   smart-buffer@4.2.0:
     resolution: {integrity: sha512-94hK0Hh8rPqQl2xXc3HsaBoOXKV20MToPkcXvwbISWLEs+64sBq5kFgn2kJDHb1Pry9yrP0dxrCI9RRci7RXKg==}
     engines: {node: '>= 6.0.0', npm: '>= 3.0.0'}
+
+  smol-toml@1.9.1:
+    resolution: {integrity: sha512-j7WyPdf0CJoutMzMoPLF/bVXHtKZIT9Rb4eGeEbWw8X2t5oirjPgpL+OpaENZrILYaXqYwnVH+qgUwVbl+pUJQ==}
+    engines: {node: '>= 18'}
 
   socks-proxy-agent@8.0.5:
     resolution: {integrity: sha512-HehCEsotFqbPW9sJ8WVYB6UbmIMv7kUUORIF2Nncq4VQvBfNBLibW9YZR5dlYCSUhwcD628pRllm7n+E+YTzJw==}
@@ -7995,6 +8027,8 @@ snapshots:
       is-fullwidth-code-point: 3.0.0
 
   smart-buffer@4.2.0: {}
+
+  smol-toml@1.9.1: {}
 
   socks-proxy-agent@8.0.5(supports-color@10.2.2):
     dependencies:

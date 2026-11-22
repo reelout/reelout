@@ -9,6 +9,7 @@ Install ReelOut, preview the proposed changes, then publish when you're ready.
 - Commits that follow the [Conventional Commits](https://conventionalcommits.org) specification (for example `feat: ...` or `fix: ...`).
 - A **GitHub** or **GitLab** remote — the Git plugin pushes tags, and the matching hosting plugin creates releases.
 - An **npm account and token** if you publish packages to npm.
+- A **crates.io account and token** if you publish crates to crates.io.
 
 ## Installation
 
@@ -29,6 +30,7 @@ plugin instead of GitHub when needed:
 | Package           | Purpose                                                               |
 | ----------------- | --------------------------------------------------------------------- |
 | `@reelout/npm`    | Resolves the workspace, updates manifests, and publishes npm packages |
+| `@reelout/cargo`  | Resolves the Cargo workspace, updates manifests, and publishes crates |
 | `@reelout/git`    | Creates the release commit and pushes tags                            |
 | `@reelout/github` | Creates GitHub releases                                               |
 | `@reelout/gitlab` | Creates GitLab releases                                               |
@@ -79,6 +81,8 @@ warning, and still exits `0`:
 
 - No registry credentials (`NPM_TOKEN`, ambient `.npmrc` authentication, or
   OIDC)? Packages are not published.
+- No `CARGO_REGISTRY_TOKEN`, ambient `~/.cargo/credentials.toml` (honoring
+  `CARGO_HOME`), or trusted publishing? Crates are not published.
 - No `GITHUB_TOKEN` or `GITLAB_TOKEN`? The matching hosting releases are not
   created.
 
@@ -88,12 +92,14 @@ everything.
 
 Versions the registry already holds are skipped too: ReelOut compares the
 published tarball with the local package, skips the publish when the content
-is identical, and syncs the release-channel dist-tag.
+is identical, and syncs the release-channel dist-tag for npm packages; for
+crates, it compares the packed crate checksum against the sparse index.
 
 ## Prereleases and channels
 
 On a branch named `alpha`, `beta`, or `next`, ReelOut creates a prerelease
-(for example, `1.2.0-beta.1`) and publishes it under the matching npm dist-tag.
+(for example, `1.2.0-beta.1`) and publishes it under the matching release
+channel (the npm dist-tag for npm packages).
 Override these values with `--qualifier` and `--channel`, or define custom
 branch rules (see [Configuration](./02-config.md#rules)):
 

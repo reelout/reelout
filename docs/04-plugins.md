@@ -11,15 +11,15 @@ Plugins register middleware for named hooks, which run in this order:
 configure → discover → analyze → build → write → publish → finalize
 ```
 
-| Hook        | Purpose                                                          | Built-in users           |
-| ----------- | ---------------------------------------------------------------- | ------------------------ |
-| `configure` | Adjust the context and verify credentials before other hooks run | npm, git, github, gitlab |
-| `discover`  | Find workspace packages and resolve their tags                   | npm, changelog           |
-| `analyze`   | Classify commits and derive per-package releases                 | analyzer                 |
-| `build`     | Compute versions, tag names, and release notes                   | builder, changelog       |
-| `write`     | Write manifests and changelogs, then create the release commit   | changelog, npm, git      |
-| `publish`   | Publish packages, push tags, and create hosting releases         | npm, git, github, gitlab |
-| `finalize`  | Send notifications or clean up                                   | —                        |
+| Hook        | Purpose                                                          | Built-in users                  |
+| ----------- | ---------------------------------------------------------------- | ------------------------------- |
+| `configure` | Adjust the context and verify credentials before other hooks run | cargo, npm, git, github, gitlab |
+| `discover`  | Find workspace packages and resolve their tags                   | cargo, npm, changelog           |
+| `analyze`   | Classify commits and derive per-package releases                 | analyzer                        |
+| `build`     | Compute versions, tag names, and release notes                   | builder, changelog              |
+| `write`     | Write manifests and changelogs, then create the release commit   | changelog, cargo, npm, git      |
+| `publish`   | Publish packages, push tags, and create hosting releases         | cargo, npm, git, github, gitlab |
+| `finalize`  | Send notifications or clean up                                   | —                               |
 
 Every hook is optional. A plugin typically implements only the hooks it needs.
 
@@ -167,15 +167,16 @@ The skill source lives at [`.agents/skills/create-reelout-plugin/SKILL.md`](http
 
 ## Built-in plugins
 
-| Plugin    | Package                   | What it does                                                                                                                                        |
-| --------- | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| analyzer  | `@reelout/core/analyzer`  | Classifies commits, plans package releases, and propagates dependency updates                                                                       |
-| builder   | `@reelout/core/builder`   | Computes versions, tag names, and release notes                                                                                                     |
-| changelog | `@reelout/core/changelog` | Resolves package tags and generates changelogs                                                                                                      |
-| npm       | `@reelout/npm`            | Resolves the workspace, updates manifests and dependency ranges, and publishes packages, skipping versions already published with identical content |
-| git       | `@reelout/git`            | Creates the release commit, pushes tags, and rolls back tags on failure                                                                             |
-| github    | `@reelout/github`         | Creates GitHub releases, overwriting existing ones, and restores or removes them if a later step fails                                              |
-| gitlab    | `@reelout/gitlab`         | Creates GitLab releases, overwriting existing ones, and restores or removes them if a later step fails                                              |
+| Plugin    | Package                   | What it does                                                                                                                                                                          |
+| --------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| analyzer  | `@reelout/core/analyzer`  | Classifies commits, plans package releases, and propagates dependency updates                                                                                                         |
+| builder   | `@reelout/core/builder`   | Computes versions, tag names, and release notes                                                                                                                                       |
+| changelog | `@reelout/core/changelog` | Resolves package tags and generates changelogs                                                                                                                                        |
+| npm       | `@reelout/npm`            | Resolves the workspace, updates manifests and dependency ranges, and publishes packages, skipping versions already published with identical content                                   |
+| cargo     | `@reelout/cargo`          | Resolves the Cargo workspace, updates manifests and dependency requirements, refreshes `Cargo.lock`, and publishes crates, skipping versions already published with identical content |
+| git       | `@reelout/git`            | Creates the release commit, pushes tags, and rolls back tags on failure                                                                                                               |
+| github    | `@reelout/github`         | Creates GitHub releases, overwriting existing ones, and restores or removes them if a later step fails                                                                                |
+| gitlab    | `@reelout/gitlab`         | Creates GitLab releases, overwriting existing ones, and restores or removes them if a later step fails                                                                                |
 
 ## Programmatic utilities
 

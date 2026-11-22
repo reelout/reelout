@@ -1,0 +1,51 @@
+{
+  "name": "@reelout/cargo",
+  "version": "0.0.0",
+  "description": "Cargo plugin for discovering workspaces, updating manifests and dependency requirements, refreshing the lockfile, and publishing crates.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/reelout/reelout.git",
+    "directory": "packages/cargo"
+  },
+  "license": "MIT",
+  "type": "module",
+  "imports": {},
+  "exports": {
+    "./package.json": {
+      "default": "./package.json"
+    },
+    ".": {
+      "module": "./src/index.ts",
+      "development": "./src/index.ts",
+      "types": "./src/index.ts",
+      "default": "./dist/index.js"
+    },
+    "./*": {
+      "module": "./src/*.ts",
+      "development": "./src/*.ts",
+      "types": "./src/*.ts",
+      "default": "./dist/*.js"
+    }
+  },
+  "files": [
+    "./dist",
+    "./src"
+  ],
+  "scripts": {
+    "build": "vite build --ssr --sourcemap",
+    "dev": "vite build --ssr --watch"
+  },
+  "dependencies": {
+    "@reelout/core": "workspace:^",
+    "consola": "catalog:",
+    "glob": "catalog:",
+    "hosted-git-info": "catalog:",
+    "smol-toml": "catalog:"
+  },
+  "devDependencies": {
+    "@types/hosted-git-info": "catalog:"
+  },
+  "engines": {
+    "node": ">=24.15"
+  }
+}
