@@ -207,6 +207,34 @@ test('matches maintainer names case-insensitively', async () => {
   })
 })
 
+test('allows publishing when the metadata reports maintainers as name-email strings', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_TOKEN: 'mock-npm-token' }
+
+    const plan = createPlan({ name: 'a' })
+
+    mockRegistry({
+      whoami: 'mock-user',
+      packument: JSON.stringify({
+        name: 'a',
+        maintainers: [
+          'other-user <other@example.com>',
+          'mock-user <mock@example.com>',
+        ],
+      }),
+    })
+
+    const verdicts = await verifyPublishAccess(
+      context,
+      [plan],
+      createPackageManager('npm')
+    )
+
+    expect(verdicts.get(plan)).toBe('allowed')
+  })
+})
+
 test('denies publishing an unscoped package the identity does not maintain', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd
@@ -329,6 +357,29 @@ test("allows publishing a new scoped package under the identity's personal scope
   })
 })
 
+test('warns when the identity cannot be resolved for a new scoped package', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_TOKEN: 'mock-npm-token' }
+
+    const plan = createPlan({ name: '@scope/new' })
+
+    mockRegistry({
+      whoami: new Error('network unreachable'),
+      packument: notFoundError('@scope/new'),
+    })
+
+    const verdicts = await verifyPublishAccess(
+      context,
+      [plan],
+      createPackageManager('npm')
+    )
+
+    expect(verdicts.get(plan)).toBe('unknown')
+    expect(warnCalls()).toHaveLength(1)
+  })
+})
+
 test('allows publishing a new scoped package when the org roster lists the identity', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd
@@ -355,6 +406,29 @@ test('allows publishing a new scoped package when the org roster lists the ident
       ['whoami', '--registry', NPMJS],
       ['org', 'ls', 'scope', '--json', '--registry', NPMJS],
     ])
+  })
+})
+
+test('allows publishing a new scoped package when the organization roster is an array listing the identity', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_TOKEN: 'mock-npm-token' }
+
+    const plan = createPlan({ name: '@scope/new' })
+
+    mockRegistry({
+      whoami: 'mock-user',
+      packument: notFoundError('@scope/new'),
+      org: JSON.stringify(['mock-user']),
+    })
+
+    const verdicts = await verifyPublishAccess(
+      context,
+      [plan],
+      createPackageManager('npm')
+    )
+
+    expect(verdicts.get(plan)).toBe('allowed')
   })
 })
 
@@ -410,6 +484,30 @@ test('warns when the org roster for a new scoped package cannot be read', async 
   })
 })
 
+test('warns when the organization roster cannot be parsed', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_TOKEN: 'mock-npm-token' }
+
+    const plan = createPlan({ name: '@scope/new' })
+
+    mockRegistry({
+      whoami: 'mock-user',
+      packument: notFoundError('@scope/new'),
+      org: 'not-json',
+    })
+
+    const verdicts = await verifyPublishAccess(
+      context,
+      [plan],
+      createPackageManager('npm')
+    )
+
+    expect(verdicts.get(plan)).toBe('unknown')
+    expect(warnCalls()).toHaveLength(1)
+  })
+})
+
 test('allows publishing a scoped package when the collaborator list grants write access', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd
@@ -457,6 +555,27 @@ test('denies publishing a scoped package when the collaborator list grants only 
       whoami: 'mock-user',
       packument: maintainedBy('other-user'),
       collaborators: JSON.stringify({ 'mock-user': 'read' }),
+    })
+
+    await expect(
+      verifyPublishAccess(context, [plan], createPackageManager('npm'))
+    ).rejects.toThrow(
+      'Missing publish permission for "@scope/pkg@1.2.3" (https://registry.npmjs.org/).'
+    )
+  })
+})
+
+test('denies publishing a scoped package when collaborator access entries are not strings', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_TOKEN: 'mock-npm-token' }
+
+    const plan = createPlan({ name: '@scope/pkg' })
+
+    mockRegistry({
+      whoami: 'mock-user',
+      packument: maintainedBy('other-user'),
+      collaborators: JSON.stringify({ someone: 123 }),
     })
 
     await expect(
@@ -561,6 +680,54 @@ test('warns when the collaborator list cannot be read', async () => {
   })
 })
 
+test('warns when the collaborator list is valid JSON but not an object', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_TOKEN: 'mock-npm-token' }
+
+    const plan = createPlan({ name: '@scope/pkg' })
+
+    mockRegistry({
+      whoami: 'mock-user',
+      packument: maintainedBy('other-user'),
+      collaborators: 'null',
+    })
+
+    const verdicts = await verifyPublishAccess(
+      context,
+      [plan],
+      createPackageManager('npm')
+    )
+
+    expect(verdicts.get(plan)).toBe('unknown')
+    expect(warnCalls()).toHaveLength(1)
+  })
+})
+
+test('warns when the collaborator list cannot be parsed', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_TOKEN: 'mock-npm-token' }
+
+    const plan = createPlan({ name: '@scope/pkg' })
+
+    mockRegistry({
+      whoami: 'mock-user',
+      packument: maintainedBy('other-user'),
+      collaborators: 'not-json',
+    })
+
+    const verdicts = await verifyPublishAccess(
+      context,
+      [plan],
+      createPackageManager('npm')
+    )
+
+    expect(verdicts.get(plan)).toBe('unknown')
+    expect(warnCalls()).toHaveLength(1)
+  })
+})
+
 test('warns when a write team member list cannot be resolved', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd
@@ -573,6 +740,56 @@ test('warns when a write team member list cannot be resolved', async () => {
       packument: maintainedBy('other-user'),
       collaborators: JSON.stringify({ 'scope:devs': 'write' }),
       team: new Error('network unreachable'),
+    })
+
+    const verdicts = await verifyPublishAccess(
+      context,
+      [plan],
+      createPackageManager('npm')
+    )
+
+    expect(verdicts.get(plan)).toBe('unknown')
+    expect(warnCalls()).toHaveLength(1)
+  })
+})
+
+test('warns when a write team member list cannot be parsed', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_TOKEN: 'mock-npm-token' }
+
+    const plan = createPlan({ name: '@scope/pkg' })
+
+    mockRegistry({
+      whoami: 'mock-user',
+      packument: maintainedBy('other-user'),
+      collaborators: JSON.stringify({ 'scope:devs': 'write' }),
+      team: 'not-json',
+    })
+
+    const verdicts = await verifyPublishAccess(
+      context,
+      [plan],
+      createPackageManager('npm')
+    )
+
+    expect(verdicts.get(plan)).toBe('unknown')
+    expect(warnCalls()).toHaveLength(1)
+  })
+})
+
+test('warns when a write team member list is not an array', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_TOKEN: 'mock-npm-token' }
+
+    const plan = createPlan({ name: '@scope/pkg' })
+
+    mockRegistry({
+      whoami: 'mock-user',
+      packument: maintainedBy('other-user'),
+      collaborators: JSON.stringify({ 'scope:devs': 'write' }),
+      team: JSON.stringify({ 'mock-user': 'member' }),
     })
 
     const verdicts = await verifyPublishAccess(
@@ -740,6 +957,26 @@ test('warns when the registry metadata cannot be parsed', async () => {
     const plan = createPlan({ name: 'a' })
 
     mockRegistry({ packument: 'not-json' })
+
+    const verdicts = await verifyPublishAccess(
+      context,
+      [plan],
+      createPackageManager('npm')
+    )
+
+    expect(verdicts.get(plan)).toBe('unknown')
+    expect(warnCalls()).toHaveLength(1)
+  })
+})
+
+test('warns when the registry metadata is valid JSON but not an object', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_TOKEN: 'mock-npm-token' }
+
+    const plan = createPlan({ name: 'a' })
+
+    mockRegistry({ packument: 'null' })
 
     const verdicts = await verifyPublishAccess(
       context,
