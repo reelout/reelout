@@ -11,15 +11,15 @@ Plugins register middleware for named hooks, which run in this order:
 configure → discover → analyze → build → write → publish → finalize
 ```
 
-| Hook        | Purpose                                                          | Built-in users           |
-| ----------- | ---------------------------------------------------------------- | ------------------------ |
-| `configure` | Adjust the context and verify credentials before other hooks run | npm, git, github, gitlab |
-| `discover`  | Find workspace packages and resolve their tags                   | npm, changelog           |
-| `analyze`   | Classify commits and derive per-package releases                 | analyzer                 |
-| `build`     | Compute versions, tag names, and release notes                   | builder, changelog       |
-| `write`     | Write manifests and changelogs, then create the release commit   | changelog, npm, git      |
-| `publish`   | Publish packages, push tags, and create hosting releases         | npm, git, github, gitlab |
-| `finalize`  | Send notifications or clean up                                   | —                        |
+| Hook        | Purpose                                                          | Built-in users                  |
+| ----------- | ---------------------------------------------------------------- | ------------------------------- |
+| `configure` | Adjust the context and verify credentials before other hooks run | cargo, npm, git, github, gitlab |
+| `discover`  | Find workspace packages and resolve their tags                   | cargo, npm, changelog           |
+| `analyze`   | Classify commits and derive per-package releases                 | analyzer                        |
+| `build`     | Compute versions, tag names, and release notes                   | builder, changelog              |
+| `write`     | Write manifests and changelogs, then create the release commit   | changelog, cargo, npm, git      |
+| `publish`   | Publish packages, push tags, and create hosting releases         | cargo, npm, git, github, gitlab |
+| `finalize`  | Send notifications or clean up                                   | —                               |
 
 Every hook is optional. A plugin typically implements only the hooks it needs.
 
