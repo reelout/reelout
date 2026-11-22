@@ -65,6 +65,9 @@ The check is advisory and cannot cover every registry behavior:
   stay inconclusive and only warn.
 - Organization membership does not always imply publish rights; the registry
   remains the final authority and rejects unauthorized publishes.
+- Some registries report a restricted package like a missing one (404), so a
+  restricted existing package can pass the pre-flight as new and `allowed`;
+  the registry still rejects the publish.
 
 ## A plugin could not be resolved
 

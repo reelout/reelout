@@ -13,9 +13,11 @@ import {
   isCompleteReleasePlan,
   type CompleteReleasePlan,
 } from './isCompleteReleasePlan'
+import { isJsonObject } from './isJsonObject'
 import { NOT_FOUND_PATTERN } from './probePublishedVersion'
 import { prepareAuth, type Env } from './prepareAuth'
 import { resolvePublishRegistry } from './resolvePublishRegistry'
+import { INVALID_CREDENTIALS_MESSAGE } from './verifyAuth'
 
 /**
  * The outcome of verifying publish permission for a release plan.
@@ -28,9 +30,6 @@ export type PublishAccessVerdict = 'allowed' | 'denied' | 'unknown'
 
 const AUTH_REJECTED_PATTERN =
   /E401|ENEEDAUTH|401 Unauthorized|Response Code: 401|Unable to authenticate|not logged in/i
-
-const INVALID_CREDENTIALS_MESSAGE =
-  'NPM_TOKEN or ambient registry credentials are invalid or expired.'
 
 /**
  * Shared state for the per-plan publish permission checks.
@@ -70,8 +69,7 @@ type PackumentResult =
  * @param plans Release plans to verify
  * @param packageManager Information about the active package manager
  * @returns A map of each complete npm plan to its publish access verdict
- * @throws If the registry rejects the configured credentials, or any plan is
- * denied publish permission
+ * @throws If any plan is denied publish permission
  */
 export async function verifyPublishAccess(
   context: ReleaseContext,
@@ -140,7 +138,6 @@ export async function verifyPublishAccess(
  * @param registry The plan's resolved publish registry
  * @param injectToken Whether `NPM_TOKEN` credentials are injected
  * @returns The plan's publish access verdict
- * @throws If the registry rejects the configured credentials
  */
 async function checkPlan(
   check: AccessCheck,
@@ -681,14 +678,4 @@ function hasRosterEntry(roster: unknown, identity: string): boolean {
   }
 
   return false
-}
-
-/**
- * Determine whether a value is a plain JSON object.
- *
- * @param value The value to inspect
- * @returns True when the value is a non-array, non-null object
- */
-function isJsonObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }

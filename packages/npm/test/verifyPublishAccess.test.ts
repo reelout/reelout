@@ -582,6 +582,7 @@ test('warns when a write team member list cannot be resolved', async () => {
     )
 
     expect(verdicts.get(plan)).toBe('unknown')
+    expect(warnCalls()).toHaveLength(1)
   })
 })
 
@@ -668,6 +669,7 @@ test('warns when the registry metadata cannot be parsed', async () => {
     )
 
     expect(verdicts.get(plan)).toBe('unknown')
+    expect(warnCalls()).toHaveLength(1)
   })
 })
 
@@ -690,6 +692,7 @@ test('warns when the identity lookup fails without rejecting the credentials', a
     )
 
     expect(verdicts.get(plan)).toBe('unknown')
+    expect(warnCalls()).toHaveLength(1)
   })
 })
 
@@ -712,6 +715,7 @@ test('warns when the identity lookup returns no username', async () => {
     )
 
     expect(verdicts.get(plan)).toBe('unknown')
+    expect(warnCalls()).toHaveLength(1)
   })
 })
 
@@ -755,6 +759,7 @@ test('warns without commands when the plan registry has no credentials', async (
     )
 
     expect(verdicts.get(plan)).toBe('unknown')
+    expect(warnCalls()).toHaveLength(1)
     expect(execCommand).not.toHaveBeenCalled()
   })
 })
