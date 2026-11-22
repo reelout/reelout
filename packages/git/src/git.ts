@@ -7,7 +7,7 @@ import {
   deleteGitTag,
   ensureGitUserConfig,
   generateReleaseCommitMessage,
-  HookPriority,
+  Priority,
   pushGitChanges,
   type ReleasePlugin,
   type Tag,
@@ -42,8 +42,8 @@ const git = (): ReleasePlugin => ({
     return await next(context)
   },
   write: {
-    priority: HookPriority.Low,
-    handler: async (context, next) => {
+    priority: Priority.Low,
+    middleware: async (context, next) => {
       if (context.dryRun) {
         context.logger.debug(
           '[DRY RUN] The release commit will not be created.'

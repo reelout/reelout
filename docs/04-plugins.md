@@ -5,7 +5,7 @@ notes. This guide explains the lifecycle and how to create a custom plugin.
 
 ## The release lifecycle
 
-Plugins register handlers for named hooks, which run in this order:
+Plugins register middleware for named hooks, which run in this order:
 
 ```text
 configure → discover → analyze → build → write → publish → finalize
@@ -25,12 +25,12 @@ Every hook is optional. A plugin typically implements only the hooks it needs.
 
 The `finalize` hook is terminal: it runs on every workflow outcome. When a
 phase hook throws, plugin rollbacks run while the error unwinds, then every
-`finalize` handler still runs with the failure recorded on `context.outcome`.
-The same applies when the workflow is cancelled between phases. Handlers can
-use this to notify on both success and failure. When a `finalize` handler
-itself throws, the remaining handlers still run and the error is reported as
-a warning after the release report; a failing `finalize` handler never
-changes the workflow outcome.
+`finalize` middleware still runs with the failure recorded on
+`context.outcome`. The same applies when the workflow is cancelled between
+phases. Middleware can use this to notify on both success and failure. When a
+`finalize` middleware itself throws, the remaining middleware still runs and
+the error is reported as a warning after the release report; a failing
+`finalize` middleware never changes the workflow outcome.
 
 ## Skipping steps
 
@@ -60,35 +60,35 @@ pipelines that require every step fail fast.
 
 ## Priorities
 
-Within each hook, handlers run from higher priority to lower priority.
-Handlers with equal priority retain their registration order.
+Within each hook, middleware run from higher priority to lower priority.
+Middleware with equal priority retain their registration order.
 
 ```ts
-HookPriority.High // 50
-HookPriority.Normal // 0
-HookPriority.Low // -50
+Priority.High // 50
+Priority.Normal // 0
+Priority.Low // -50
 ```
 
 For example, the changelog and npm plugins run at `Normal` priority in `write`,
 while the Git plugin creates the release commit at `Low` priority. This lets
-the release commit include changes made by earlier handlers.
+the release commit include changes made by earlier middleware.
 
 ## Authoring a plugin
 
 A plugin is an object with a `name`, a `version`, and any hooks it needs. Each
-handler receives `(context, next)`. Perform the plugin's work, then call
+middleware receives `(context, next)`. Perform the plugin's work, then call
 `next(context)` to continue the workflow.
 
 ```ts
 // my-notify-plugin.ts
-import { HookPriority, type ReleasePlugin } from 'reelout'
+import { Priority, type ReleasePlugin } from 'reelout'
 
 const notifyPlugin: ReleasePlugin = {
   name: 'notify',
   version: '1.0.0',
   finalize: {
-    priority: HookPriority.Low,
-    async handler(context, next) {
+    priority: Priority.Low,
+    async middleware(context, next) {
       const result =
         context.outcome?.status === 'failure' ? 'failed' : 'succeeded'
       const released = context.plans.filter((plan) => plan.release != null)
@@ -101,7 +101,7 @@ const notifyPlugin: ReleasePlugin = {
 export default notifyPlugin
 ```
 
-Handlers may also be plain functions. The `context` is the `ReleaseContext`
+Middleware may also be plain functions. The `context` is the `ReleaseContext`
 created by `createContext`; it contains the working directory, environment,
 repository and commit information, logger, resolved packages, and release
 plans.
@@ -179,7 +179,7 @@ The skill source lives at [`.agents/skills/create-reelout-plugin/SKILL.md`](http
 
 ## Programmatic utilities
 
-For programmatic use, `reelout` exports `createPlugin`, `HookManager`,
-`HandlerMiddleware`, `HookPriority`, and `RELEASE_HOOK_NAMES`. See the
+For programmatic use, `reelout` exports `createPlugin`, `HookDispatcher`,
+`Interceptor`, `Priority`, and `RELEASE_HOOK_NAMES`. See the
 [Programmatic API](./05-api.md) guide or the
 [API reference](https://reelout.overview.vercel.app/).

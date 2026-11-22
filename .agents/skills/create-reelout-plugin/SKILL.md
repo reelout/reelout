@@ -1,6 +1,6 @@
 ---
 name: create-reelout-plugin
-description: 'Helps create, extend, and review ReelOut release plugins and hook handlers, including lifecycle, middleware, dry-run, rollback, registration, tests, and package setup.'
+description: 'Helps create, extend, and review ReelOut release plugins and hook middleware, including lifecycle, dry-run, rollback, registration, tests, and package setup.'
 ---
 
 # Create a ReelOut Plugin
@@ -18,7 +18,7 @@ the plugin's behavior.
    [plugin guide](https://github.com/reelout/reelout/blob/main/docs/04-plugins.md)
    and inspect the installed `@reelout/core` sources:
    - `src/types.ts` for plugin, context, and hook types
-   - `src/plugin/HookManager.ts` for middleware and priorities
+   - `src/plugin/HookDispatcher.ts` for middleware and priorities
    - `src/config/resolvePlugin.ts` for plugin resolution
 
    Find the package under `node_modules/@reelout/core` or, for a transitive
@@ -57,7 +57,7 @@ const createMyPlugin = (): ReleasePlugin => ({
 export default createMyPlugin
 ```
 
-Use `{ priority, handler }` instead of a bare handler when a hook needs a
+Use `{ priority, middleware }` instead of a bare middleware function when a hook needs a
 non-default priority. ReelOut's built-in plugins read `version` from their
 package manifest. A third-party plugin can inline its version or read it from
 its own manifest with JSON import attributes:
@@ -112,11 +112,11 @@ configure → discover → analyze → build → write → publish → finalize
 | `publish`   | Publish packages, push tags, and create releases              |
 | `finalize`  | Notify or clean up                                            |
 
-Every hook is optional. A handler receives `(context, next)` and participates
-in an asynchronous middleware chain:
+Every hook is optional. Middleware receives `(context, next)` and
+participates in an asynchronous middleware chain:
 
 ```ts
-const handler = async (context, next) => {
+const middleware = async (context, next) => {
   // Perform this plugin's work.
   return await next(context)
 }
@@ -126,24 +126,24 @@ const handler = async (context, next) => {
   short-circuits the remaining hooks and phases without throwing, so the
   workflow can still report success. Repeated calls are no-ops; do not rely
   on them.
-- Higher priority values run first. A bare handler uses
-  `HookPriority.Normal` (`0`); use `{ priority, handler }` to set another
+- Higher priority values run first. Bare middleware uses
+  `Priority.Normal` (`0`); use `{ priority, middleware }` to set another
   priority.
-- Keep `write` handlers that create files at normal priority. The Git plugin
-  commits at `HookPriority.Low` (`-50`) so earlier handlers' changes are
-  included. `HookPriority.High` is `50`.
+- Keep `write` middleware that create files at normal priority. The Git plugin
+  commits at `Priority.Low` (`-50`) so earlier middleware's changes are
+  included. `Priority.High` is `50`.
 - If the plugin cannot safely continue, throw an actionable error naming the
   missing prerequisite. The workflow stops, runs `finalize`, prints the
   report, and then rejects with the failure.
 - `finalize` runs for success, failure, and cancellation. Use
   `context.outcome` (`status`, `error`, and `phase`) to choose cleanup or
-  notifications. If a `finalize` handler throws, its error is logged as a
-  warning after the report; it does not stop other `finalize` handlers or
+  notifications. If a `finalize` middleware throws, its error is logged as a
+  warning after the report; it does not stop other `finalize` middleware or
   change the workflow outcome.
 
 ## Context and side-effect safety
 
-Handlers receive a mutable `ReleaseContext`. Commonly used fields:
+Middleware receives a mutable `ReleaseContext`. Commonly used fields:
 
 | Fields                                                     | Meaning                                                                                                   |
 | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
@@ -156,7 +156,7 @@ Handlers receive a mutable `ReleaseContext`. Commonly used fields:
 | `outcome`                                                  | `ReleaseOutcome \| null`; set before `finalize`, with status, error, and failing phase                    |
 | `type`, `versionQualifier`, `releaseChannel`, `allowEmpty` | Resolved CLI overrides                                                                                    |
 
-Apply these rules to every handler:
+Apply these rules to all middleware:
 
 - **Dry runs:** If `context.dryRun` is true, do not perform real side effects.
   Log the intended action with `context.logger.debug('[DRY RUN] ...')`.
@@ -174,7 +174,7 @@ Apply these rules to every handler:
 
 - Keep the plugin ESM-only (`"type": "module"`), target Node.js `>=24.15`, and
   use ESM imports rather than `require`.
-- Import `ReleasePlugin` and any required runtime APIs (such as `HookPriority`
+- Import `ReleasePlugin` and any required runtime APIs (such as `Priority`
   or `executeReleaseWorkflow`) from `reelout`, which the project already
   depends on.
 - Add JSDoc to exported functions, beginning with a one-sentence summary.
@@ -186,7 +186,8 @@ runner:
 
 - Use `executeReleaseWorkflow(context, [plugin()])` from `reelout` to test
   hook order, priority, error propagation, finalization, and reporting.
-- For unit tests, build a `ReleaseContext` with every field the handler reads.
+- For unit tests, build a `ReleaseContext` with every field the middleware
+  reads.
   At minimum, provide `cwd`, `env`, `logger`, `dryRun`, and any `packages` or
   `plans` data it inspects.
 - For an integration-style test, use `createContext` from `reelout` with a
@@ -202,6 +203,6 @@ runner:
 - For workflow-level examples, see
   [`packages/gitlab/test/gitlab.test.ts`](https://github.com/reelout/reelout/blob/main/packages/gitlab/test/gitlab.test.ts).
 
-Before finishing, confirm that successful handlers continue the chain once,
+Before finishing, confirm that successful middleware continue the chain once,
 failures report actionable errors, owned side effects are cleaned up where
 applicable, and exports and package metadata follow project conventions.
