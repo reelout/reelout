@@ -63,6 +63,9 @@ The check is advisory and cannot cover every registry behavior:
 - Registries without npm's access endpoints, such as GitHub Packages or
   Verdaccio, cannot be verified beyond maintainer metadata, so those checks
   stay inconclusive and only warn.
+- Yarn Berry keeps ambient registry credentials in `.yarnrc.yml`, which the
+  npm CLI cannot read, so its collaborator, team, and organization lookups
+  stay inconclusive and only warn; an injected `NPM_TOKEN` is still verified.
 - Organization membership does not always imply publish rights; the registry
   remains the final authority and rejects unauthorized publishes.
 - Some registries report a restricted package like a missing one (404), so a

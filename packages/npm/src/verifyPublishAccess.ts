@@ -54,6 +54,15 @@ interface AccessCheck {
   context: ReleaseContext
   packageManager: PackageManagerInfo
   identities: Map<string, string | undefined>
+
+  /**
+   * Whether the spawned npm CLI commands authenticate with the release's
+   * registry credentials.
+   *
+   * Ambient Yarn Berry credentials live in `.yarnrc.yml`, which the npm
+   * CLI cannot read, so its rejections are inconclusive rather than final.
+   */
+  npmCliSharesCredentials: boolean
 }
 
 /**
@@ -104,6 +113,7 @@ export async function verifyPublishAccess(
     context,
     packageManager,
     identities: new Map<string, string | undefined>(),
+    npmCliSharesCredentials: injectToken || !packageManager.isYarnBerry,
   }
 
   const denied: string[] = []
@@ -386,8 +396,10 @@ async function resolveIdentity(
  * Queries the npm CLI's collaborator endpoint for the plan's package,
  * granting access on a direct write entry, denying on a read entry, and
  * resolving write-permission teams through their member lists. Credential
- * rejections fail the release; any other query failure degrades to an
- * unknown verdict instead of denying.
+ * rejections fail the release only when the npm CLI shares the release's
+ * credentials (an injected token or non-Yarn-Berry ambient credentials);
+ * Yarn Berry ambient credential rejections degrade to an unknown verdict,
+ * as does any other query failure.
  *
  * @param check Shared verification state for the release
  * @param plan The release plan whose package is checked
@@ -427,7 +439,9 @@ async function checkCollaborators(
       }
     )
   } catch (error) {
-    assertCredentialsAccepted(error)
+    if (check.npmCliSharesCredentials) {
+      assertCredentialsAccepted(error)
+    }
 
     return 'unknown'
   }
@@ -494,7 +508,10 @@ async function checkCollaborators(
  * Determine whether the registry identity is a member of an npm team.
  *
  * Queries the npm CLI's team member list, comparing entries
- * case-insensitively with the resolved identity.
+ * case-insensitively with the resolved identity. Credential rejections fail
+ * the release only when the npm CLI shares the release's credentials (an
+ * injected token or non-Yarn-Berry ambient credentials); Yarn Berry ambient
+ * credential rejections resolve to undefined.
  *
  * @param check Shared verification state for the release
  * @param team The team identifier, in `<scope>:<team>` format
@@ -526,7 +543,9 @@ async function checkTeamMembership(
       }
     )
   } catch (error) {
-    assertCredentialsAccepted(error)
+    if (check.npmCliSharesCredentials) {
+      assertCredentialsAccepted(error)
+    }
 
     return undefined
   }
@@ -556,8 +575,10 @@ async function checkTeamMembership(
  *
  * Queries the npm CLI's organization roster, granting access when the
  * identity appears as a member and denying when the roster is readable but
- * does not include the identity. Credential rejections fail the release; an
- * unreadable roster degrades to an unknown verdict instead of denying.
+ * does not include the identity. Credential rejections fail the release
+ * only when the npm CLI shares the release's credentials (an injected token
+ * or non-Yarn-Berry ambient credentials); Yarn Berry ambient credential
+ * rejections degrade to an unknown verdict, as does an unreadable roster.
  *
  * @param check Shared verification state for the release
  * @param scope The package's scope name, without the `@` prefix
@@ -590,7 +611,9 @@ async function checkOrgRoster(
       }
     )
   } catch (error) {
-    assertCredentialsAccepted(error)
+    if (check.npmCliSharesCredentials) {
+      assertCredentialsAccepted(error)
+    }
 
     return 'unknown'
   }
