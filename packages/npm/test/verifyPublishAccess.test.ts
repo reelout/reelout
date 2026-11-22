@@ -432,6 +432,29 @@ test('allows publishing a new scoped package when the organization roster is an 
   })
 })
 
+test('allows publishing a new scoped package when a nested organization roster lists the identity', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_TOKEN: 'mock-npm-token' }
+
+    const plan = createPlan({ name: '@scope/new' })
+
+    mockRegistry({
+      whoami: 'mock-user',
+      packument: notFoundError('@scope/new'),
+      org: JSON.stringify(['other-user', { 'mock-user': 'developer' }]),
+    })
+
+    const verdicts = await verifyPublishAccess(
+      context,
+      [plan],
+      createPackageManager('npm')
+    )
+
+    expect(verdicts.get(plan)).toBe('allowed')
+  })
+})
+
 test('denies publishing a new scoped package when the readable roster omits the identity', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd
@@ -1115,6 +1138,47 @@ test('allows publishing with ambient credentials and verifies them without token
         'npm',
         ['whoami', '--registry', NPMJS],
         { cwd, env: {}, signal: undefined },
+      ],
+    ])
+  })
+})
+
+test('allows publishing a scoped package with ambient credentials through the collaborator list', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = {}
+
+    await writeFile(
+      path.join(cwd, '.npmrc'),
+      '//registry.npmjs.org/:_authToken=mock-ambient-token'
+    )
+
+    const plan = createPlan({ name: '@scope/pkg' })
+
+    mockRegistry({
+      whoami: 'mock-user',
+      packument: maintainedBy('other-user'),
+      collaborators: JSON.stringify({ 'mock-user': 'write' }),
+    })
+
+    const verdicts = await verifyPublishAccess(
+      context,
+      [plan],
+      createPackageManager('npm')
+    )
+
+    expect(verdicts.get(plan)).toBe('allowed')
+
+    expect(execCommand.mock.calls.map((call) => call[1])).toEqual([
+      ['view', '@scope/pkg', '--json', '--registry', NPMJS],
+      ['whoami', '--registry', NPMJS],
+      [
+        'access',
+        'ls-collaborators',
+        '@scope/pkg',
+        '--json',
+        '--registry',
+        NPMJS,
       ],
     ])
   })
