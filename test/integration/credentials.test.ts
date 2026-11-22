@@ -367,6 +367,9 @@ test('completes an already published npm plan with a synced dist-tag and no publ
       expect(logger.mock.calls).toMatchInlineSnapshot(`
         [
           [
+            "[33mCould not verify publish permission for "pkg@0.1.0": the registry will reject the publish if access is missing.[39m",
+          ],
+          [
             "[33mSkipping publish of "pkg@0.1.0": already published with identical content.[39m",
           ],
           [

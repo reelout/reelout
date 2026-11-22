@@ -14,6 +14,7 @@ logging automatically when `RUNNER_DEBUG` or `ACTIONS_STEP_DEBUG` is truthy.
 | `The GITLAB_TOKEN environment variable is required in strict mode.`                                                                       | The GitLab plugin needs a token in strict mode                                                                          | Set `GITLAB_TOKEN`, or drop `--strict` to skip GitLab releases instead                                                         |
 | `NPM_TOKEN is required for NPM authentication in strict mode.`                                                                            | npm publishing needs registry credentials in strict mode                                                                | Set `NPM_TOKEN`, or drop `--strict` to skip npm publishing instead                                                             |
 | `NPM_TOKEN or ambient registry credentials are invalid or expired.`                                                                       | The `whoami` pre-flight against the publish registry failed                                                             | Refresh the token or ambient `.npmrc` credentials, then retry                                                                  |
+| `Missing publish permission for "<name>@<version>" (<registry>).`                                                                         | The publish access pre-flight found no publish permission for the listed packages                                       | Grant the publishing identity maintainer or write access, or fix the credentials, then retry                                   |
 | `The GITHUB_TOKEN environment variable could not be verified.`                                                                            | The GitHub token pre-flight check could not read the release repository                                                 | Refresh `GITHUB_TOKEN` or grant it access to the repository, then retry                                                        |
 | `The GITLAB_TOKEN environment variable could not be verified.`                                                                            | The GitLab token pre-flight check could not read the release project                                                    | Refresh `GITLAB_TOKEN` or grant it access to the project, then retry                                                           |
 | `Version "<name>@<version>" was not published: the registry already has this version and its content could not be verified as identical.` | The registry already holds this version, but its content is not identical to the local package or could not be verified | Revert to the published content, or publish a new version; check `--debug` output for verification failures                    |
@@ -42,6 +43,28 @@ when a credential is missing.
 Versions already published with identical content are skipped too: ReelOut
 verifies the registry tarball against the local package and syncs the
 release-channel dist-tag, so re-running a release is safe.
+
+## Publish permission pre-flight
+
+Before publishing, the npm plugin checks that the registry credentials can
+publish each scheduled package: maintainers for existing packages, scope
+ownership or organization membership for new scoped packages, and npm
+collaborator and team permissions otherwise. When the registry shows no
+publish access, the release fails with `Missing publish permission ...`
+before anything is published.
+
+The check is advisory and cannot cover every registry behavior:
+
+- OIDC trusted publishing (`NPM_ID_TOKEN`) cannot be probed locally. Those
+  publishes proceed with a warning and rely on the registry's own rejection,
+  which can surface mid-run after earlier packages were already published.
+- Two-factor authentication is enforced by the registry at publish time, not
+  by this check.
+- Registries without npm's access endpoints, such as GitHub Packages or
+  Verdaccio, cannot be verified beyond maintainer metadata, so those checks
+  stay inconclusive and only warn.
+- Organization membership does not always imply publish rights; the registry
+  remains the final authority and rejects unauthorized publishes.
 
 ## A plugin could not be resolved
 
@@ -103,3 +126,4 @@ These warnings are non-fatal but usually worth investigating:
 - `GitHub releases will not be created: GITHUB_TOKEN is not set.` — GitHub releases were skipped for a missing token.
 - `GitLab releases will not be created: GITLAB_TOKEN is not set.` — GitLab releases were skipped for a missing token.
 - `Skipping publish of "<name>@<version>": already published with identical content.` — the registry already holds this exact version; the dist-tag was synced instead.
+- `Could not verify publish permission for "<name>@<version>": the registry will reject the publish if access is missing.` — publish permission could not be determined; the publish itself still runs.

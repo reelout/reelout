@@ -318,6 +318,12 @@ test('releases workspace packages', async () => {
             "[33mPackage could not be loaded: JSON file at "[1m<cwd>/packages/pkg5/package.json[22m" could not be parsed.[39m",
           ],
           [
+            "[33mCould not verify publish permission for "@scope/pkg1@1.1.0": the registry will reject the publish if access is missing.[39m",
+          ],
+          [
+            "[33mCould not verify publish permission for "@scope/pkg2@2.1.0": the registry will reject the publish if access is missing.[39m",
+          ],
+          [
             "Status: [32mSUCCESS[39m",
           ],
           [
@@ -431,6 +437,12 @@ test('prints a dry-run report for workspace releases', async () => {
             "[33mPackage could not be loaded: JSON file at "[1m<cwd>/packages/pkg5/package.json[22m" could not be parsed.[39m",
           ],
           [
+            "[33mCould not verify publish permission for "@scope/pkg1@1.1.0": the registry will reject the publish if access is missing.[39m",
+          ],
+          [
+            "[33mCould not verify publish permission for "@scope/pkg2@2.1.0": the registry will reject the publish if access is missing.[39m",
+          ],
+          [
             "Status: [32mSUCCESS[39m [33m(dry run)[39m",
           ],
           [
@@ -542,6 +554,12 @@ test('releases workspace packages when the pnpm workspace manifest changes', asy
       `)
       expect(logger.mock.calls).toMatchInlineSnapshot(`
         [
+          [
+            "[33mCould not verify publish permission for "@scope/pkg1@1.0.1": the registry will reject the publish if access is missing.[39m",
+          ],
+          [
+            "[33mCould not verify publish permission for "@scope/pkg2@2.0.1": the registry will reject the publish if access is missing.[39m",
+          ],
           [
             "Status: [32mSUCCESS[39m",
           ],

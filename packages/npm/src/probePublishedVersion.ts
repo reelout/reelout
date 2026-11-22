@@ -25,7 +25,10 @@ export type PublishedVersionStatus =
       distTags: Record<string, string>
     }
 
-const NOT_FOUND_PATTERN =
+/**
+ * Error pattern matching a registry's response for a missing package.
+ */
+export const NOT_FOUND_PATTERN =
   /E404|ERR_PNPM_PACKAGE_NOT_FOUND|Response Code: 404|Not Found - 404/i
 
 /**

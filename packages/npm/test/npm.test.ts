@@ -2575,6 +2575,18 @@ test('probes with injected NPM_TOKEN credentials and publishes when the version 
     ],
     [
       'npm',
+      ['view', 'a', '--json', '--registry', NPMJS],
+      {
+        cwd: '/repo/a',
+        env: {
+          NPM_TOKEN: 'mock-npm-token',
+          'npm_config_//registry.npmjs.org/:_authToken': 'mock-npm-token',
+        },
+        signal: undefined,
+      },
+    ],
+    [
+      'npm',
       ['view', 'a@1.2.3', '--json', '--registry', NPMJS],
       {
         cwd: '/repo/a',

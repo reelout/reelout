@@ -42,12 +42,20 @@ public. It uses `GITHUB_TOKEN` on GitHub or `GITLAB_TOKEN` on GitLab for this
 check. When `provenance` is `true`, npm also requires a `repository` field in
 the published `package.json` to generate provenance attestations.
 
+Before publishing, the plugin verifies that the registry credentials grant
+publish permission for each scheduled package. It checks existing packages
+against their maintainers, new scoped packages against the user or
+organization owning the scope, and remaining scoped packages through npm
+collaborator and team permissions. A missing permission fails the release
+before anything is published; inconclusive checks, such as OIDC trusted
+publishing, only warn.
+
 ## API
 
 Key exports include:
 
 - **Plugin** — `npm` (default export).
-- **Publishing** — `publishPackage`, `prepareAuth`, and `resolvePublishRegistry`.
+- **Publishing** — `publishPackage`, `prepareAuth`, `resolvePublishRegistry`, and `verifyPublishAccess`.
 - **Manifests** — `readPackageJson`, `writePackageJson`, `updatePackageJson`, `removePackageJson`, `bumpPackageDependencies`.
 - **Workspaces** — `resolveWorkspaceMembers`, `loadWorkspacePackages`, `loadPackages`, `loadRootPackage`.
 - **Package managers** — `resolvePackageManager`, `inspectPackageManager`, and `getPackageManagerVersion`.

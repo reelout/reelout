@@ -159,6 +159,9 @@ test('simulates parallel release workflows across milestone tracks', async () =>
       expect(logger.mock.calls).toMatchInlineSnapshot(`
         [
           [
+            "[33mCould not verify publish permission for "@scope/pkg1@1.6.0-dev.20260101.0": the registry will reject the publish if access is missing.[39m",
+          ],
+          [
             "Status: [32mSUCCESS[39m",
           ],
           [
@@ -221,6 +224,9 @@ test('simulates parallel release workflows across milestone tracks', async () =>
 
       expect(logger.mock.calls).toMatchInlineSnapshot(`
         [
+          [
+            "[33mCould not verify publish permission for "@scope/pkg1@1.6.0-dev.20260101.1": the registry will reject the publish if access is missing.[39m",
+          ],
           [
             "Status: [32mSUCCESS[39m",
           ],
@@ -310,6 +316,9 @@ test('simulates parallel release workflows across milestone tracks', async () =>
 
       expect(logger.mock.calls).toMatchInlineSnapshot(`
         [
+          [
+            "[33mCould not verify publish permission for "@scope/pkg1@1.7.0-0": the registry will reject the publish if access is missing.[39m",
+          ],
           [
             "Status: [32mSUCCESS[39m",
           ],
@@ -412,6 +421,9 @@ test('simulates parallel release workflows across milestone tracks', async () =>
       expect(logger.mock.calls).toMatchInlineSnapshot(`
         [
           [
+            "[33mCould not verify publish permission for "@scope/pkg1@1.7.0-dev.20260101.0": the registry will reject the publish if access is missing.[39m",
+          ],
+          [
             "Status: [32mSUCCESS[39m",
           ],
           [
@@ -454,6 +466,9 @@ test('simulates parallel release workflows across milestone tracks', async () =>
 
       expect(logger.mock.calls).toMatchInlineSnapshot(`
         [
+          [
+            "[33mCould not verify publish permission for "@scope/pkg1@1.6.0-rc.0": the registry will reject the publish if access is missing.[39m",
+          ],
           [
             "Status: [32mSUCCESS[39m",
           ],
@@ -518,6 +533,9 @@ test('simulates parallel release workflows across milestone tracks', async () =>
       expect(logger.mock.calls).toMatchInlineSnapshot(`
         [
           [
+            "[33mCould not verify publish permission for "@scope/pkg1@1.6.0-rc.1": the registry will reject the publish if access is missing.[39m",
+          ],
+          [
             "Status: [32mSUCCESS[39m",
           ],
           [
@@ -563,6 +581,9 @@ test('simulates parallel release workflows across milestone tracks', async () =>
 
       expect(logger.mock.calls).toMatchInlineSnapshot(`
         [
+          [
+            "[33mCould not verify publish permission for "@scope/pkg1@1.6.0": the registry will reject the publish if access is missing.[39m",
+          ],
           [
             "Status: [32mSUCCESS[39m",
           ],
@@ -624,6 +645,9 @@ test('simulates parallel release workflows across milestone tracks', async () =>
 
       expect(logger.mock.calls).toMatchInlineSnapshot(`
         [
+          [
+            "[33mCould not verify publish permission for "@scope/pkg1@1.7.0-dev.20260102.0": the registry will reject the publish if access is missing.[39m",
+          ],
           [
             "Status: [32mSUCCESS[39m",
           ],
