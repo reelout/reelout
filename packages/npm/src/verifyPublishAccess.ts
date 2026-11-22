@@ -32,6 +32,19 @@ const AUTH_REJECTED_PATTERN =
   /E401|ENEEDAUTH|401 Unauthorized|Response Code: 401|Unable to authenticate|not logged in/i
 
 /**
+ * Fail the release when a registry lookup rejects the configured
+ * credentials.
+ *
+ * @param error The error from the failed lookup
+ * @throws If the error reports rejected registry credentials
+ */
+function assertCredentialsAccepted(error: unknown): void {
+  if (AUTH_REJECTED_PATTERN.test(String(formatError(error)))) {
+    throw new Error(INVALID_CREDENTIALS_MESSAGE, { cause: error })
+  }
+}
+
+/**
  * Shared state for the per-plan publish permission checks.
  */
 interface AccessCheck {
@@ -236,7 +249,6 @@ async function checkPlan(
  * @param env Prepared authentication environment, if credentials are injected
  * @returns The package's missing status or maintainers, or undefined when the
  * metadata could not be retrieved or parsed
- * @throws If the registry rejects the configured credentials
  */
 async function fetchPackument(
   check: AccessCheck,
@@ -276,9 +288,7 @@ async function fetchPackument(
       return { status: 'missing' }
     }
 
-    if (AUTH_REJECTED_PATTERN.test(message)) {
-      throw new Error(INVALID_CREDENTIALS_MESSAGE, { cause: error })
-    }
+    assertCredentialsAccepted(error)
 
     return undefined
   }
@@ -316,7 +326,6 @@ async function fetchPackument(
  * @param registry The publish registry the identity is resolved against
  * @param env Prepared authentication environment, if credentials are injected
  * @returns The registry username, or undefined when it cannot be determined
- * @throws If the registry rejects the configured credentials
  */
 async function resolveIdentity(
   check: AccessCheck,
@@ -357,9 +366,7 @@ async function resolveIdentity(
     identity =
       candidate.length > 0 && !/\s/.test(candidate) ? candidate : undefined
   } catch (error) {
-    if (AUTH_REJECTED_PATTERN.test(String(formatError(error)))) {
-      throw new Error(INVALID_CREDENTIALS_MESSAGE, { cause: error })
-    }
+    assertCredentialsAccepted(error)
 
     identity = undefined
   }
@@ -375,8 +382,9 @@ async function resolveIdentity(
  *
  * Queries the npm CLI's collaborator endpoint for the plan's package,
  * granting access on a direct write entry, denying on a read entry, and
- * resolving write-permission teams through their member lists. Any query
- * failure degrades to an unknown verdict instead of denying.
+ * resolving write-permission teams through their member lists. Credential
+ * rejections fail the release; any other query failure degrades to an
+ * unknown verdict instead of denying.
  *
  * @param check Shared verification state for the release
  * @param plan The release plan whose package is checked
@@ -415,7 +423,9 @@ async function checkCollaborators(
         signal: check.context.signal,
       }
     )
-  } catch {
+  } catch (error) {
+    assertCredentialsAccepted(error)
+
     return 'unknown'
   }
 
@@ -512,7 +522,9 @@ async function checkTeamMembership(
         signal: check.context.signal,
       }
     )
-  } catch {
+  } catch (error) {
+    assertCredentialsAccepted(error)
+
     return undefined
   }
 
@@ -541,8 +553,8 @@ async function checkTeamMembership(
  *
  * Queries the npm CLI's organization roster, granting access when the
  * identity appears as a member and denying when the roster is readable but
- * does not include the identity. An unreadable roster degrades to an unknown
- * verdict instead of denying.
+ * does not include the identity. Credential rejections fail the release; an
+ * unreadable roster degrades to an unknown verdict instead of denying.
  *
  * @param check Shared verification state for the release
  * @param scope The package's scope name, without the `@` prefix
@@ -574,7 +586,9 @@ async function checkOrgRoster(
         signal: check.context.signal,
       }
     )
-  } catch {
+  } catch (error) {
+    assertCredentialsAccepted(error)
+
     return 'unknown'
   }
 

@@ -633,6 +633,85 @@ test('rejects when the registry metadata lookup reports invalid credentials', as
   })
 })
 
+test('rejects when the collaborator lookup reports invalid credentials', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_TOKEN: 'mock-npm-token' }
+
+    const requestError = unauthorizedError('ls-collaborators @scope/pkg')
+
+    mockRegistry({
+      whoami: 'mock-user',
+      packument: maintainedBy('other-user'),
+      collaborators: requestError,
+    })
+
+    const error: unknown = await verifyPublishAccess(
+      context,
+      [createPlan({ name: '@scope/pkg' })],
+      createPackageManager('npm')
+    ).catch((err: unknown) => err)
+
+    expect(error).toMatchInlineSnapshot(
+      `[Error: NPM_TOKEN or ambient registry credentials are invalid or expired.]`
+    )
+    expect((error as Error).cause).toBe(requestError)
+  })
+})
+
+test('rejects when the team member lookup reports invalid credentials', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_TOKEN: 'mock-npm-token' }
+
+    const requestError = unauthorizedError('team ls scope:devs')
+
+    mockRegistry({
+      whoami: 'mock-user',
+      packument: maintainedBy('other-user'),
+      collaborators: JSON.stringify({ 'scope:devs': 'write' }),
+      team: requestError,
+    })
+
+    const error: unknown = await verifyPublishAccess(
+      context,
+      [createPlan({ name: '@scope/pkg' })],
+      createPackageManager('npm')
+    ).catch((err: unknown) => err)
+
+    expect(error).toMatchInlineSnapshot(
+      `[Error: NPM_TOKEN or ambient registry credentials are invalid or expired.]`
+    )
+    expect((error as Error).cause).toBe(requestError)
+  })
+})
+
+test('rejects when the organization roster lookup reports invalid credentials', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_TOKEN: 'mock-npm-token' }
+
+    const requestError = unauthorizedError('org ls scope')
+
+    mockRegistry({
+      whoami: 'mock-user',
+      packument: notFoundError('@scope/new'),
+      org: requestError,
+    })
+
+    const error: unknown = await verifyPublishAccess(
+      context,
+      [createPlan({ name: '@scope/new' })],
+      createPackageManager('npm')
+    ).catch((err: unknown) => err)
+
+    expect(error).toMatchInlineSnapshot(
+      `[Error: NPM_TOKEN or ambient registry credentials are invalid or expired.]`
+    )
+    expect((error as Error).cause).toBe(requestError)
+  })
+})
+
 test('warns when the registry metadata cannot be retrieved', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd
