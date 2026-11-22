@@ -55,8 +55,9 @@ vi.mock(import('@reelout/npm/publishPackage'), () => ({
   publishPackage: vi.fn(),
 }))
 
-// The integration environment is assumed fully provisioned, so trusted
-// publishing is verified without the registry's token exchange.
+// The integration environment stubs mock OIDC tokens, so trusted
+// publishing is mocked out to keep the registry's token exchange
+// unreached.
 vi.mock(import('@reelout/npm/verifyTrustedPublishing'), () => ({
   verifyTrustedPublishing: vi.fn(async () => {}),
 }))

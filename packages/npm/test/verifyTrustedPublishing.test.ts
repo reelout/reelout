@@ -36,7 +36,7 @@ interface PlanOptions {
   version?: string | undefined
   isPrivate?: boolean | undefined
   provider?: string | undefined
-  hasRelease?: boolean | undefined
+  withoutRelease?: boolean | undefined
 }
 
 const createPlan = (options: PlanOptions = {}): ReleasePlan =>
@@ -52,10 +52,9 @@ const createPlan = (options: PlanOptions = {}): ReleasePlan =>
       location: '.',
     },
     history: [],
-    release:
-      options.hasRelease === false
-        ? null
-        : { type: 'patch', version: options.version ?? '1.2.3' },
+    release: options.withoutRelease
+      ? null
+      : { type: 'patch', version: options.version ?? '1.2.3' },
   }) as ReleasePlan
 
 const exchangeEndpoint = (name: string): string =>
@@ -115,26 +114,16 @@ test('skips verification without OIDC tokens', async () => {
   expect(fetchMock).not.toHaveBeenCalled()
 })
 
-test('skips verification for yarn classic', async () => {
+test('skips verification for yarn releases', async () => {
   context.env = { NPM_ID_TOKEN: 'mock-id-token' }
 
-  await verifyTrustedPublishing(
-    context,
-    [createPlan({ name: 'a' })],
-    createPackageManager('yarn')
-  )
-
-  expect(fetchMock).not.toHaveBeenCalled()
-})
-
-test('skips verification for yarn berry', async () => {
-  context.env = { NPM_ID_TOKEN: 'mock-id-token' }
-
-  await verifyTrustedPublishing(
-    context,
-    [createPlan({ name: 'a' })],
-    createPackageManager('yarn', true)
-  )
+  for (const isYarnBerry of [false, true]) {
+    await verifyTrustedPublishing(
+      context,
+      [createPlan({ name: 'a' })],
+      createPackageManager('yarn', isYarnBerry)
+    )
+  }
 
   expect(fetchMock).not.toHaveBeenCalled()
 })
@@ -357,7 +346,7 @@ test('skips packages that target another registry', async () => {
   })
 })
 
-test('skips private and incomplete plans', async () => {
+test('skips private, incomplete, and non-npm plans', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd
     context.env = { NPM_ID_TOKEN: 'mock-id-token' }
@@ -368,7 +357,7 @@ test('skips private and incomplete plans', async () => {
       context,
       [
         createPlan({ name: 'private-a', isPrivate: true }),
-        createPlan({ name: 'unreleased-a', hasRelease: false }),
+        createPlan({ name: 'unreleased-a', withoutRelease: true }),
         createPlan({ provider: 'other', name: 'foreign-a' }),
         createPlan(),
         createPlan({ name: 'a', version: '1.2.3' }),
