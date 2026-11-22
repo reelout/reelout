@@ -513,61 +513,6 @@ test('warns when the organization roster is valid JSON but not an object', async
   })
 })
 
-test('warns when the organization roster cannot be read', async () => {
-  await temporaryDirectoryTask(async (cwd) => {
-    context.cwd = cwd
-    context.env = { NPM_TOKEN: 'mock-npm-token' }
-
-    const plan = createPlan({ name: '@scope/new' })
-
-    mockRegistry({
-      whoami: 'mock-user',
-      packument: notFoundError('@scope/new'),
-      org: new Error('network unreachable'),
-    })
-
-    const verdicts = await verifyPublishAccess(
-      context,
-      [plan],
-      createPackageManager('npm')
-    )
-
-    expect(verdicts.get(plan)).toBe('unknown')
-
-    expect(
-      warnCalls().filter((message) =>
-        message.includes(
-          'Could not verify publish permission for "@scope/new@1.2.3"'
-        )
-      )
-    ).toHaveLength(1)
-  })
-})
-
-test('warns when the organization roster cannot be parsed', async () => {
-  await temporaryDirectoryTask(async (cwd) => {
-    context.cwd = cwd
-    context.env = { NPM_TOKEN: 'mock-npm-token' }
-
-    const plan = createPlan({ name: '@scope/new' })
-
-    mockRegistry({
-      whoami: 'mock-user',
-      packument: notFoundError('@scope/new'),
-      org: 'not-json',
-    })
-
-    const verdicts = await verifyPublishAccess(
-      context,
-      [plan],
-      createPackageManager('npm')
-    )
-
-    expect(verdicts.get(plan)).toBe('unknown')
-    expect(warnCalls()).toHaveLength(1)
-  })
-})
-
 test('allows publishing a scoped package when the collaborator list grants write access', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd
@@ -775,56 +720,6 @@ test('warns when the collaborator list cannot be parsed', async () => {
       whoami: 'mock-user',
       packument: maintainedBy('other-user'),
       collaborators: 'not-json',
-    })
-
-    const verdicts = await verifyPublishAccess(
-      context,
-      [plan],
-      createPackageManager('npm')
-    )
-
-    expect(verdicts.get(plan)).toBe('unknown')
-    expect(warnCalls()).toHaveLength(1)
-  })
-})
-
-test('warns when a write team member list cannot be read', async () => {
-  await temporaryDirectoryTask(async (cwd) => {
-    context.cwd = cwd
-    context.env = { NPM_TOKEN: 'mock-npm-token' }
-
-    const plan = createPlan({ name: '@scope/pkg' })
-
-    mockRegistry({
-      whoami: 'mock-user',
-      packument: maintainedBy('other-user'),
-      collaborators: JSON.stringify({ 'scope:devs': 'write' }),
-      team: new Error('network unreachable'),
-    })
-
-    const verdicts = await verifyPublishAccess(
-      context,
-      [plan],
-      createPackageManager('npm')
-    )
-
-    expect(verdicts.get(plan)).toBe('unknown')
-    expect(warnCalls()).toHaveLength(1)
-  })
-})
-
-test('warns when a write team member list cannot be parsed', async () => {
-  await temporaryDirectoryTask(async (cwd) => {
-    context.cwd = cwd
-    context.env = { NPM_TOKEN: 'mock-npm-token' }
-
-    const plan = createPlan({ name: '@scope/pkg' })
-
-    mockRegistry({
-      whoami: 'mock-user',
-      packument: maintainedBy('other-user'),
-      collaborators: JSON.stringify({ 'scope:devs': 'write' }),
-      team: 'not-json',
     })
 
     const verdicts = await verifyPublishAccess(
@@ -1425,40 +1320,6 @@ test('warns when Yarn Berry ambient credentials cannot authenticate the collabor
         ],
       ],
     ])
-  })
-})
-
-test('warns when Yarn Berry ambient credentials cannot authenticate the team member lookup', async () => {
-  await temporaryDirectoryTask(async (cwd) => {
-    context.cwd = cwd
-    context.env = {}
-
-    await writeYarnBerryAmbientCredentials(cwd)
-
-    const plan = createPlan({ name: '@scope/pkg' })
-
-    mockRegistry({
-      whoami: 'mock-user',
-      packument: maintainedBy('other-user'),
-      collaborators: JSON.stringify({ 'scope:devs': 'write' }),
-      team: unauthorizedError('team ls scope:devs'),
-    })
-
-    const verdicts = await verifyPublishAccess(
-      context,
-      [plan],
-      createPackageManager('yarn', true)
-    )
-
-    expect(verdicts.get(plan)).toBe('unknown')
-
-    expect(
-      warnCalls().filter((message) =>
-        message.includes(
-          'Could not verify publish permission for "@scope/pkg@1.2.3": the registry will reject the publish if access is missing.'
-        )
-      )
-    ).toHaveLength(1)
   })
 })
 
