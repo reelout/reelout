@@ -247,6 +247,21 @@ test('aggregates rejected exchanges across packages', async () => {
   })
 })
 
+test('fails the release when no usable identity token source exists', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_ID_TOKEN: '   ' }
+
+    await expect(
+      verifyTrustedPublishing(
+        context,
+        [createPlan({ name: 'a', version: '1.2.3' })],
+        createPackageManager('npm')
+      )
+    ).rejects.toThrow('OIDC identity token is not available.')
+  })
+})
+
 test('fails the release when the identity token request fails', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd
