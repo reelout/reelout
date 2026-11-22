@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.12.0](https://github.com/reelout/reelout/compare/%40reelout%2Fcore%400.11.0...%40reelout%2Fcore%400.12.0) (2026-11-22)
+
+### Features
+
+- **cargo:** add Cargo workspace release plugin ([#30](https://github.com/reelout/reelout/issues/30)) ([8aa7abc](https://github.com/reelout/reelout/commit/8aa7abcf201477d2cf029d6c7567baf5b071e556))
+
 ## [0.11.0](https://github.com/reelout/reelout/compare/%40reelout%2Fcore%400.10.0...%40reelout%2Fcore%400.11.0) (2026-11-21)
 
 ### Features

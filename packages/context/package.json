@@ -1,6 +1,6 @@
 {
   "name": "@reelout/context",
-  "version": "0.7.2",
+  "version": "0.8.0",
   "description": "Creates the release execution context from Git state, resolved configuration, and runtime options.",
   "repository": {
     "type": "git",
