@@ -1,6 +1,6 @@
 {
   "name": "@reelout/npm",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "npm plugin for discovering workspaces, updating manifests and dependency ranges, and publishing packages.",
   "repository": {
     "type": "git",

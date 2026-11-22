@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.7.1](https://github.com/reelout/reelout/compare/%40reelout%2Fcontext%400.7.0...%40reelout%2Fcontext%400.7.1) (2026-11-22)
+
+### Features
+
+- **npm:** verify publish permission before publishing ([#29](https://github.com/reelout/reelout/issues/29)) ([1b7af00](https://github.com/reelout/reelout/commit/1b7af0069c2a4cdefb9ae30c8b2f4b30271e71d1))
+
 ## [0.7.0](https://github.com/reelout/reelout/compare/%40reelout%2Fcontext%400.6.2...%40reelout%2Fcontext%400.7.0) (2026-11-21)
 
 ### Features
