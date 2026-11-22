@@ -100,6 +100,19 @@ test('forwards the dry-run, allow-dirty, and no-verify flags', async () => {
   ])
 })
 
+test('implies --allow-dirty for dry runs', async () => {
+  await publishCrate(
+    context,
+    createPlan({ name: 'a', releaseVersion: '1.2.3' }),
+    { dryRun: true }
+  )
+
+  expect(execCommand.mock.calls[0]?.slice(0, 2)).toEqual([
+    'cargo',
+    ['publish', '-p', 'a', '--dry-run', '--allow-dirty'],
+  ])
+})
+
 test('injects the trusted-publishing registry token into the environment', async () => {
   context.env = { CARGO_HOME: '/cargo-home' }
 

@@ -35,7 +35,9 @@ export default {
 }
 ```
 
-The plugin accepts `allowDirty` and `noVerify` options.
+The plugin accepts two options: `allowDirty` publishes despite uncommitted
+changes in the packaged files, and `noVerify` skips cargo's verification
+build. Dry runs imply `allowDirty`, because they upload nothing.
 
 Crates are published with the token from the `CARGO_REGISTRY_TOKEN`
 environment variable or `~/.cargo/credentials.toml`, verified against
