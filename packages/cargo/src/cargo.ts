@@ -96,8 +96,6 @@ const cargo = (options: PluginOptions = {}): ReleasePlugin => {
 
   let registryAuth: RegistryAuth | undefined
 
-  let trustedPublishing = false
-
   let active = false
 
   return {
@@ -120,13 +118,13 @@ const cargo = (options: PluginOptions = {}): ReleasePlugin => {
 
       const token = await resolveCargoToken(context)
 
+      const trustedPublishing = !token && hasTrustedPublishingAuth(context.env)
+
       if (token) {
         const login = await verifyRegistryToken(context, token)
 
         registryAuth = { token, login }
-      } else if (hasTrustedPublishingAuth(context.env)) {
-        trustedPublishing = true
-      } else {
+      } else if (!trustedPublishing) {
         if (context.strict) {
           throw new Error(
             'The CARGO_REGISTRY_TOKEN environment variable is required in strict mode.'
@@ -205,6 +203,14 @@ const cargo = (options: PluginOptions = {}): ReleasePlugin => {
       return next(context)
     },
     publish: async (context, next) => {
+      if (!active) {
+        context.logger.debug(
+          'Cargo publishing was skipped: no Cargo workspace was found.'
+        )
+
+        return next(context)
+      }
+
       if (publishSkipped) {
         context.logger.debug(
           'Cargo publishing was skipped during configuration.'
@@ -214,14 +220,6 @@ const cargo = (options: PluginOptions = {}): ReleasePlugin => {
       }
 
       const auth = registryAuth
-
-      if (!auth && !trustedPublishing) {
-        context.logger.debug(
-          'Cargo publishing was skipped: no registry authentication was found.'
-        )
-
-        return next(context)
-      }
 
       const index = createSparseIndexClient({ signal: context.signal })
 
