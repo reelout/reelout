@@ -57,7 +57,7 @@ const createMyPlugin = (): ReleasePlugin => ({
 export default createMyPlugin
 ```
 
-Use `{ priority, middleware }` instead of bare middleware when a hook needs a
+Use `{ priority, middleware }` instead of a bare middleware function when a hook needs a
 non-default priority. ReelOut's built-in plugins read `version` from their
 package manifest. A third-party plugin can inline its version or read it from
 its own manifest with JSON import attributes:
