@@ -113,6 +113,19 @@ test('implies --allow-dirty for dry runs', async () => {
   ])
 })
 
+test('forwards allow-dirty without a dry run', async () => {
+  await publishCrate(
+    context,
+    createPlan({ name: 'a', releaseVersion: '1.2.3' }),
+    { allowDirty: true }
+  )
+
+  expect(execCommand.mock.calls[0]?.slice(0, 2)).toEqual([
+    'cargo',
+    ['publish', '-p', 'a', '--allow-dirty'],
+  ])
+})
+
 test('injects the trusted-publishing registry token into the environment', async () => {
   context.env = { CARGO_HOME: '/cargo-home' }
 
