@@ -145,8 +145,8 @@ const middleware = async (context, next) => {
 
 A plugin that applies only to some repositories should detect applicability
 with a cheap, stable predicate and check it directly in every hook that acts.
-ReelOut's built-in npm, Cargo, GitHub, and GitLab plugins follow this
-stateless pattern:
+ReelOut's built-in npm, GitHub, and GitLab plugins follow this stateless
+pattern:
 
 ```ts
 import type { ReleasePlugin } from 'reelout'

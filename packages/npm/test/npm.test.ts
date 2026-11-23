@@ -794,6 +794,7 @@ test('does not modify package manifests when dry-run mode is enabled', async () 
 
 test('does not modify package manifests when owned by another provider', async () => {
   vol.fromJSON({
+    '/repo/package.json': JSON.stringify({ name: 'root', version: '0.0.0' }),
     '/repo/a/package.json': JSON.stringify({
       name: 'a',
       version: '1.0.0',
@@ -808,6 +809,7 @@ test('does not modify package manifests when owned by another provider', async (
   context.plans = [
     {
       package: {
+        name: 'a',
         provider: PLUGIN_NAME,
         location: 'a',
         version: '1.0.0',
@@ -818,6 +820,7 @@ test('does not modify package manifests when owned by another provider', async (
     },
     {
       package: {
+        name: 'b',
         provider: '@reelout/cargo',
         location: 'b',
         version: '1.0.0',
@@ -832,8 +835,16 @@ test('does not modify package manifests when owned by another provider', async (
 
   expect(vol.toJSON()).toMatchInlineSnapshot(`
     {
-      "/repo/a/package.json": "{"name":"a","version":"1.0.0","devDependencies":{"b":"^1.0.0"}}",
+      "/repo/a/package.json": "{
+      "name": "a",
+      "version": "1.0.1",
+      "devDependencies": {
+        "b": "^1.0.0"
+      }
+    }
+    ",
       "/repo/b/package.json": "{"name":"b","version":"1.0.0"}",
+      "/repo/package.json": "{"name":"root","version":"0.0.0"}",
     }
   `)
 })

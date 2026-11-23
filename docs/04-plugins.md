@@ -73,9 +73,10 @@ decides at `configure` time whether it applies to the repository:
 
 Hosting plugins read the repository from the `origin` remote; a `repository`
 field declared in the root manifest takes precedence. A plugin that does not
-apply stays **inactive** for the run: it logs one debug line, verifies no
-credentials, and makes no network requests or file changes. Inactivity is
-enablement, not a skipped step, so `--strict` does not turn it into an error.
+apply stays **inactive** for the run: it logs its inactivity at `debug`
+level, verifies no credentials, and makes no network requests or file
+changes. Inactivity is enablement, not a skipped step, so `--strict` does
+not turn it into an error.
 
 Mixed repositories activate more than one integration: a JavaScript workspace
 that also keeps a `Cargo.toml` publishes npm packages and crates, so a missing
