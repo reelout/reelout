@@ -28,6 +28,7 @@ export interface PublishPackageOptions {
  * @param context Release context containing environment, streams, and directory
  * @param plan Release plan describing the target package and release version
  * @param options Publishing flags including dry-run status, tags, and provenance
+ * @throws If staged publishing is requested while Yarn Classic is active
  */
 export async function publishPackage(
   context: ReleaseContext,

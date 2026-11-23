@@ -19,19 +19,20 @@ import {
  *
  * Retries the failed publish through the package manager's staged publish
  * command when the plan targets the public npm registry, warning when the
- * `stage` option explicitly disables the fallback. Skips the fallback when
- * the publish was already staged, the active package manager cannot stage,
- * or the plan targets another registry, leaving the original error to the
- * caller.
+ * `stage` option explicitly disables the fallback. Fails when the active
+ * package manager is Yarn Classic, which has no staging support, and
+ * propagates a failing staged publish. Skips the fallback when the publish
+ * was already staged or the plan targets another registry, leaving the
+ * original error to the caller.
  *
- * @param context Release context containing environment and working directory
+ * @param context Release context containing environment, streams, and directory
  * @param plan The complete release plan whose direct publish failed
  * @param packageManager Information about the active package manager
  * @param options Publishing flags the failed direct publish was invoked with
  * @param originalError The error the direct publish failed with
  * @returns True when the plan was staged for publishing, false when the
  * fallback did not apply
- * @throws If the staged publish attempt failed
+ * @throws If the active package manager is Yarn Classic, which has no staging support
  */
 export async function fallbackToStagedPublish(
   context: ReleaseContext,
@@ -45,15 +46,21 @@ export async function fallbackToStagedPublish(
   if (options.stage === false) {
     context.logger.warn(
       colors.yellow(
-        `Staged publish fallback for "${target}" is disabled: the "stage" option is set to false.`
+        `Staged publish fallback for "${target}" is disabled: the "stage" option is set to false. Set "stage" to true or remove the option to enable staged publishing.`
       )
     )
 
     return false
   }
 
-  if (options.stage === true || packageManager.isYarnClassic) {
+  if (options.stage === true) {
     return false
+  }
+
+  if (packageManager.isYarnClassic) {
+    throw new Error('Staged publishing is not supported by Yarn Classic.', {
+      cause: originalError,
+    })
   }
 
   const registry = normalizeRegistry(

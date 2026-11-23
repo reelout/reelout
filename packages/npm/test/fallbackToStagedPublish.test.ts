@@ -126,7 +126,7 @@ test('warns and skips the fallback when the stage option disables it', async () 
   expect(
     warnCalls().filter((message) =>
       message.includes(
-        'Staged publish fallback for "foo@1.1.0" is disabled: the "stage" option is set to false.'
+        'Staged publish fallback for "foo@1.1.0" is disabled: the "stage" option is set to false. Set "stage" to true or remove the option to enable staged publishing.'
       )
     )
   ).toHaveLength(1)
@@ -145,16 +145,17 @@ test('skips the fallback for an already staged publish', async () => {
   expect(publishPackage).not.toHaveBeenCalled()
 })
 
-test('skips the fallback when the package manager cannot stage', async () => {
-  const staged = await fallbackToStagedPublish(
-    context,
-    plan,
-    yarnClassicPackageManager,
-    {},
-    stageRequiredError()
-  )
+test('fails when the package manager cannot stage', async () => {
+  await expect(
+    fallbackToStagedPublish(
+      context,
+      plan,
+      yarnClassicPackageManager,
+      {},
+      stageRequiredError()
+    )
+  ).rejects.toThrow('Staged publishing is not supported by Yarn Classic.')
 
-  expect(staged).toBe(false)
   expect(publishPackage).not.toHaveBeenCalled()
 })
 

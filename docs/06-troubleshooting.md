@@ -37,7 +37,7 @@ logging automatically when `RUNNER_DEBUG` or `ACTIONS_STEP_DEBUG` is truthy.
 | `The resolved version qualifier "<q>" is not a valid SemVer prerelease identifier.`                                                       | The qualifier is not a valid prerelease identifier                                                                      | Use identifiers such as `alpha`, `beta.1`, `rc.2`                                                                              |
 | `Version "<v>" must be strictly lower than preceding version "<p>".`                                                                      | A package version would move backwards                                                                                  | Correct the affected version                                                                                                   |
 | `Command '<cmd>' failed (exit code N)`                                                                                                    | An underlying `git`, `npm`, or `cargo` command failed                                                                   | Check the error output for stderr, then retry with `--debug`                                                                   |
-| `Staged publishing is not supported by Yarn Classic.`                                                                                     | Staged publishing was requested while the active package manager is Yarn 1.x, which has no staging support              | Switch to Yarn Berry, npm, or pnpm, or remove the `stage` option                                                               |
+| `Staged publishing is not supported by Yarn Classic.`                                                                                     | Staged publishing was requested while the active package manager is Yarn 1.x, which has no staging support              | Switch to Yarn Berry, npm, or pnpm to stage the package                                                                        |
 
 ## Missing credentials
 
@@ -151,6 +151,11 @@ with accepted limitations:
   `exclude` rules, causes a mismatch that fails the release; confirm the
   difference manually and publish a new version instead.
 
+crates.io has no staged publishing: no `cargo` command or registry protocol
+stages a crate, publishes are permanent, and `yank` only hides a version from
+the index. The Cargo plugin therefore publishes directly with no staging
+equivalent.
+
 ## Cargo manifest bumping
 
 Manifest edits are targeted text edits that preserve comments and
@@ -229,5 +234,5 @@ These warnings are non-fatal but usually worth investigating:
 - `Skipping publish of "<name>@<version>": already published with identical content.` — the registry already holds this exact version; npm also syncs the release-channel dist-tag.
 - `Could not verify publish permission for "<name>@<version>": the registry will reject the publish if access is missing.` — publish permission could not be determined; the publish itself still runs.
 - `Falling back to staged publish of "<name>@<version>": the registry requires staged publishing.` — the registry rejected the direct publish with `E_STAGE_REQUIRED`, so the package was staged for approval instead.
-- `Staged publish fallback for "<name>@<version>" is disabled: the "stage" option is set to false.` — a stage-required rejection surfaced while the fallback was disabled; the release failed with the original error.
+- `Staged publish fallback for "<name>@<version>" is disabled: the "stage" option is set to false. Set "stage" to true or remove the option to enable staged publishing.` — a stage-required rejection surfaced while the fallback was disabled; the release failed with the original error.
 - `Packages were staged instead of published: <targets>.` — the run finished, but the listed packages wait for approval; review them with `stage list` and finish with `stage approve <stage-id>`.

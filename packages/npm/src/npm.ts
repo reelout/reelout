@@ -219,9 +219,11 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
         try {
           await publishPackage(context, plan, publishOptions)
         } catch (error) {
+          const recoverable =
+            packageManager !== undefined && isCompleteReleasePlan(plan)
+
           if (
-            packageManager !== undefined &&
-            isCompleteReleasePlan(plan) &&
+            recoverable &&
             isStageRequiredRejection(error) &&
             (await fallbackToStagedPublish(
               context,
@@ -236,11 +238,7 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
             continue
           }
 
-          if (
-            packageManager === undefined ||
-            !isCompleteReleasePlan(plan) ||
-            !isPublishOverRejection(error)
-          ) {
+          if (!recoverable || !isPublishOverRejection(error)) {
             throw error
           }
 

@@ -20,6 +20,10 @@ import plugin, {
 import type { downloadPublishedTarball } from '@reelout/npm/downloadPublishedTarball'
 import type { isPackageTarballIdentical } from '@reelout/npm/isPackageTarballIdentical'
 import type { prepareAuth as prepareAuthImpl } from '@reelout/npm/prepareAuth'
+import type {
+  PublishPackageOptions,
+  publishPackage as publishPackageImpl,
+} from '@reelout/npm/publishPackage'
 import { vol } from 'memfs'
 import { createHash } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
@@ -43,7 +47,10 @@ const prepareAuth = vi.hoisted(() =>
 )
 
 const publishPackage = vi.hoisted(() =>
-  vi.fn(async (cwd: string, ...args: unknown[]) => await prepareAuth({ cwd }))
+  vi.fn(
+    async (cwd: string, ...args: unknown[]): Promise<void> =>
+      await prepareAuth({ cwd })
+  )
 )
 
 const isGitHubRepositoryPublic = vi.hoisted(() => vi.fn())
@@ -2446,6 +2453,60 @@ test('falls back to staged publishing when the registry requires staging', async
   expect(context.outcome?.status).toBe('success')
 })
 
+test('retries the rejected direct publish command as a stage publish command', async () => {
+  provideOIDCAuth()
+
+  mountPackageFixture()
+
+  context.plans = [createCompleteReleasePlan()]
+
+  const { publishPackage: actualPublishPackage } = await vi.importActual<{
+    publishPackage: typeof publishPackageImpl
+  }>('@reelout/npm/publishPackage')
+
+  publishPackage.mockImplementation(async (_cwd, plan, options) => {
+    await actualPublishPackage(
+      context,
+      plan as ReleasePlan,
+      options as PublishPackageOptions
+    )
+  })
+
+  execCommand
+    .mockImplementationOnce(async () => {
+      throw notFoundError()
+    })
+    .mockImplementationOnce(async () => {
+      throw stageRequiredError()
+    })
+
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(publishPackage).toHaveBeenCalledTimes(2)
+
+  expect(execCommand.mock.calls).toEqual([
+    [
+      'npm',
+      ['view', 'a@1.2.3', '--json', '--registry', NPMJS],
+      expect.anything(),
+    ],
+    ['npm', ['publish'], expect.anything()],
+    ['npm', ['stage', 'publish'], expect.anything()],
+  ])
+
+  expect(
+    warnCalls().filter((message) =>
+      message.includes('Falling back to staged publish of "a@1.2.3"')
+    )
+  ).toHaveLength(1)
+  expect(
+    warnCalls().filter((message) =>
+      message.includes('Packages were staged instead of published: "a@1.2.3"')
+    )
+  ).toHaveLength(1)
+  expect(context.outcome?.status).toBe('success')
+})
+
 test('rethrows the stage-required rejection when the stage option disables the fallback', async () => {
   provideOIDCAuth()
 
@@ -2463,7 +2524,7 @@ test('rethrows the stage-required rejection when the stage option disables the f
   expect(
     warnCalls().filter((message) =>
       message.includes(
-        'Staged publish fallback for "a@1.2.3" is disabled: the "stage" option is set to false.'
+        'Staged publish fallback for "a@1.2.3" is disabled: the "stage" option is set to false. Set "stage" to true or remove the option to enable staged publishing.'
       )
     )
   ).toHaveLength(1)
