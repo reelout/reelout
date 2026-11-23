@@ -229,7 +229,7 @@ test('returns oidc without registry verification when GitHub Actions OIDC tokens
   })
 })
 
-test('returns token and verifies NPM_TOKEN when OIDC environment tokens are also available', async () => {
+test('returns oidc without registry verification when NPM_TOKEN and OIDC environment tokens are both available', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd
     context.env = {
@@ -237,11 +237,10 @@ test('returns token and verifies NPM_TOKEN when OIDC environment tokens are also
       NPM_ID_TOKEN: 'mock-id-token',
     }
 
-    resolvePackageManager.mockResolvedValue('npm')
+    expect(await verifyAuth(context)).toBe('oidc')
 
-    expect(await verifyAuth(context)).toBe('token')
-
-    expect(execCommand).toHaveBeenCalledTimes(1)
+    expect(execCommand).not.toHaveBeenCalled()
+    expect(resolvePackageManager).not.toHaveBeenCalled()
   })
 })
 

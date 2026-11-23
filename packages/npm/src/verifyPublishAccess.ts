@@ -108,7 +108,10 @@ export async function verifyPublishAccess(
 
   const injectToken = Boolean(context.env.NPM_TOKEN?.trim())
 
-  const oidcOnly = !injectToken && hasOIDCAuth(context.env)
+  // OIDC authentication takes precedence over an injected `NPM_TOKEN`, so
+  // the spawned CLI commands would not share the credentials the publish
+  // uses and every verdict stays inconclusive.
+  const oidcOnly = hasOIDCAuth(context.env)
 
   const check: AccessCheckState = {
     context,

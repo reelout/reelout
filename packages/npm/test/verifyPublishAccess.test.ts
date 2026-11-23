@@ -993,6 +993,28 @@ test('warns for every package without running commands when only OIDC tokens are
   })
 })
 
+test('warns without running commands when NPM_TOKEN and OIDC tokens are both available', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = {
+      NPM_TOKEN: 'mock-npm-token',
+      NPM_ID_TOKEN: 'mock-id-token',
+    }
+
+    const plan = createPlan({ name: 'a' })
+
+    const verdicts = await verifyPublishAccess(
+      context,
+      [plan],
+      createPackageManager('npm')
+    )
+
+    expect(verdicts.get(plan)).toBe('unknown')
+    expect(execCommand).not.toHaveBeenCalled()
+    expect(warnCalls()).toHaveLength(1)
+  })
+})
+
 test('warns without running commands when no registry credentials are available', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd
