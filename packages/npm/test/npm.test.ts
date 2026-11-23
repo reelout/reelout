@@ -2434,6 +2434,51 @@ test('falls back to staged publishing when the registry requires staging', async
   expect(context.outcome?.status).toBe('success')
 })
 
+test('names the pnpm stage commands in the staged summary', async () => {
+  provideOIDCAuth()
+
+  resolvePackageManager.mockResolvedValue('pnpm')
+
+  mountPackageFixture()
+
+  context.plans = [createCompleteReleasePlan()]
+
+  publishPackage.mockRejectedValueOnce(stageRequiredError())
+
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(
+    warnCalls().filter((message) =>
+      message.includes(
+        'with "pnpm stage list" and finish the release with "pnpm stage approve <stage-id>"'
+      )
+    )
+  ).toHaveLength(1)
+})
+
+test('names the yarn npm stage commands in the staged summary', async () => {
+  provideOIDCAuth()
+
+  resolvePackageManager.mockResolvedValue('yarn')
+  getPackageManagerVersion.mockResolvedValue(4)
+
+  mountPackageFixture()
+
+  context.plans = [createCompleteReleasePlan()]
+
+  publishPackage.mockRejectedValueOnce(stageRequiredError())
+
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(
+    warnCalls().filter((message) =>
+      message.includes(
+        'with "yarn npm stage list" and finish the release with "yarn npm stage approve <stage-id>"'
+      )
+    )
+  ).toHaveLength(1)
+})
+
 test('rethrows the stage-required rejection when the stage option disables the fallback', async () => {
   provideOIDCAuth()
 
