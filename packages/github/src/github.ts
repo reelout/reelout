@@ -36,10 +36,11 @@ const readGitHubToken = (env: ReleaseContext['env']): string | undefined => {
  *   missing token fails the run; otherwise the plugin's `publish` step is
  *   skipped and a warning is logged.
  * - `publish`: Skips release creation when the plugin is inactive. Creates
- *   GitHub releases in reverse alphabetical package order (ensuring the root
- *   package release is created last). Overwrites the name and notes of an existing release for a
- *   planned tag. Automatically rolls back — restoring overwritten releases and deleting created
- *   ones — if subsequent publishing stages fail.
+ *   GitHub releases in reverse alphabetical package order (ensuring the
+ *   root package release is created last). Overwrites the name and notes
+ *   of an existing release for a planned tag. Automatically rolls back —
+ *   restoring overwritten releases and deleting created ones — if
+ *   subsequent publishing stages fail.
  *
  * @returns A release plugin configured for GitHub release creation.
  */
