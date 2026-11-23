@@ -55,7 +55,7 @@ runs per package and only for the public npm registry; when packages were
 staged, the run ends with a warning that lists them alongside the package
 manager's `stage list` and `stage approve <stage-id>` commands. Approving a
 staged publication requires an interactive 2FA prompt, so it stays a manual
-step. Yarn Classic cannot stage and fails when staging is requested.
+step.
 
 Before publishing, the plugin verifies that the registry credentials grant
 publish permission for each scheduled package. It checks existing packages
