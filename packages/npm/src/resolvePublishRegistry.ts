@@ -6,19 +6,16 @@ import path from 'node:path'
 import { extractPackageScope } from './extractPackageScope'
 import type { PackageManagerInfo } from './inspectPackageManager'
 import { loadConfig } from './loadConfig'
-import { loadYarnConfig } from './loadYarnConfig'
 import { normalizeRegistry } from './normalizeRegistry'
 import { readPackageJson } from './readPackageJson'
 
 export const DEFAULT_REGISTRY = 'https://registry.npmjs.org/'
 
-export const DEFAULT_YARN_REGISTRY = 'https://registry.yarnpkg.com/'
-
 /**
  * Resolve the publish registry URL for a package.
  *
  * Inspects `package.json` settings, scoped overrides, and package manager files
- * to determine the target endpoint. Falls back to default npm or Yarn registries
+ * to determine the target endpoint. Falls back to the default npm registry
  * when no explicit configuration exists.
  *
  * @param context Release context containing environment and working directory
@@ -45,53 +42,25 @@ export async function resolvePublishRegistry(
     }
   } catch {}
 
-  if (packageManager.isYarnBerry) {
-    try {
-      const config = await loadYarnConfig(context.cwd)
+  try {
+    const config = await loadConfig(context.cwd, { env: context.env })
 
-      if (packageScope) {
-        const scopeSettings = config.get('npmScopes').get(packageScope)
-
-        const registry =
-          normalizeRegistry(scopeSettings?.get('npmPublishRegistry')) ??
-          normalizeRegistry(scopeSettings?.get('npmRegistryServer'))
-
-        if (registry) {
-          return registry
-        }
-      }
-
-      const registry =
-        normalizeRegistry(config.get('npmPublishRegistry')) ??
-        normalizeRegistry(config.get('npmRegistryServer'))
+    if (packageScope) {
+      const registry = normalizeRegistry(
+        config.get(`@${packageScope}:registry`) as string
+      )
 
       if (registry) {
         return registry
       }
-    } catch {}
+    }
 
-    return DEFAULT_YARN_REGISTRY
-  } else {
-    try {
-      const config = await loadConfig(context.cwd, { env: context.env })
+    const registry = normalizeRegistry(config.get('registry') as string)
 
-      if (packageScope) {
-        const registry = normalizeRegistry(
-          config.get(`@${packageScope}:registry`) as string
-        )
-
-        if (registry) {
-          return registry
-        }
-      }
-
-      const registry = normalizeRegistry(config.get('registry') as string)
-
-      if (registry) {
-        return registry
-      }
-    } catch {}
-  }
+    if (registry) {
+      return registry
+    }
+  } catch {}
 
   return DEFAULT_REGISTRY
 }

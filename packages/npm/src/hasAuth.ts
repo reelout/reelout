@@ -2,16 +2,8 @@
 // Copyright (c) 2026 Fai
 
 import type { Package, ReleaseContext } from '@reelout/core'
-import { structUtils } from '@yarnpkg/core'
-import { npmConfigUtils } from '@yarnpkg/plugin-npm'
 import type { PackageManagerInfo } from './inspectPackageManager'
 import { loadConfig } from './loadConfig'
-import {
-  loadYarnConfig,
-  type YarnRegistryConfig,
-  type YarnScopeConfig,
-} from './loadYarnConfig'
-import { normalizeRegistry } from './normalizeRegistry'
 import { resolvePublishRegistry } from './resolvePublishRegistry'
 
 /**
@@ -36,48 +28,12 @@ export async function hasAuth(
 
   const registry = await resolvePublishRegistry(context, pkg, packageManager)
 
-  if (packageManager.isYarnBerry) {
-    const hasTokenOrIdent = (config: YarnRegistryConfig | null | undefined) => {
-      return Boolean(config?.get('npmAuthToken') || config?.get('npmAuthIdent'))
-    }
+  const config = await loadConfig(context.cwd, { env: context.env })
 
-    const configuration = await loadYarnConfig(context.cwd)
+  const credentials = config.getCredentialsByURI(registry)
 
-    const ident = pkg.name ? structUtils.parseIdent(pkg.name) : undefined
-
-    const scopeConfiguration = npmConfigUtils.getScopeConfiguration(
-      ident ? ident.scope : null,
-      { configuration }
-    ) as YarnScopeConfig | null
-
-    if (hasTokenOrIdent(scopeConfiguration)) {
-      return true
-    }
-
-    const registryConfiguration = npmConfigUtils.getRegistryConfiguration(
-      registry,
-      { configuration }
-    ) as YarnRegistryConfig | null
-
-    if (hasTokenOrIdent(registryConfiguration)) {
-      return true
-    }
-
-    const defaultRegistry =
-      normalizeRegistry(configuration.get('npmPublishRegistry')) ??
-      normalizeRegistry(configuration.get('npmRegistryServer'))
-
-    if (defaultRegistry === registry && hasTokenOrIdent(configuration)) {
-      return true
-    }
-  } else {
-    const config = await loadConfig(context.cwd, { env: context.env })
-
-    const credentials = config.getCredentialsByURI(registry)
-
-    if (credentials.token || credentials.auth) {
-      return true
-    }
+  if (credentials.token || credentials.auth) {
+    return true
   }
 
   return false

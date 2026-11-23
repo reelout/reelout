@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
-import { loadYarnConfig } from '@reelout/npm'
+import { loadYarnConfig } from '@reelout/yarn'
 import { folderUtils } from '@yarnpkg/core'
 import { npath } from '@yarnpkg/fslib'
 import { writeFile } from 'node:fs/promises'

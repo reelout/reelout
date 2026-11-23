@@ -54,16 +54,6 @@ interface AccessCheckState {
   context: ReleaseContext
   packageManager: PackageManagerInfo
   identities: Map<string, string | undefined>
-
-  /**
-   * Whether the spawned npm CLI commands authenticate with the credentials
-   * the current plan publishes with, refreshed per plan.
-   *
-   * Ambient Yarn Berry credentials live in `.yarnrc.yml`, which the npm CLI
-   * cannot read, and a token that ambient credentials shadow is never
-   * injected, so the npm CLI's rejections stay inconclusive in both cases.
-   */
-  npmCliSharesCredentials: boolean
 }
 
 /**
@@ -117,7 +107,6 @@ export async function verifyPublishAccess(
     context,
     packageManager,
     identities: new Map<string, string | undefined>(),
-    npmCliSharesCredentials: false,
   }
 
   const denied: string[] = []
@@ -186,9 +175,6 @@ async function checkPlan(
   await using env = injectToken
     ? await prepareAuth(context, plan.package, packageManager)
     : undefined
-
-  check.npmCliSharesCredentials =
-    env !== undefined || !packageManager.isYarnBerry
 
   const packageDir = path.resolve(context.cwd, plan.package.location)
 
@@ -286,23 +272,15 @@ async function fetchPackument(
   let stdout: string
 
   try {
-    if (packageManager.isYarnBerry) {
-      stdout = await execCommand('yarn', ['npm', 'info', name, '--json'], {
+    stdout = await execCommand(
+      packageManager.isPnpm ? 'pnpm' : 'npm',
+      ['view', name, '--json', '--registry', registry],
+      {
         cwd: packageDir,
         env: { ...context.env, ...env },
         signal: context.signal,
-      })
-    } else {
-      stdout = await execCommand(
-        packageManager.isPnpm ? 'pnpm' : 'npm',
-        ['view', name, '--json', '--registry', registry],
-        {
-          cwd: packageDir,
-          env: { ...context.env, ...env },
-          signal: context.signal,
-        }
-      )
-    }
+      }
+    )
   } catch (error) {
     const message = String(formatError(error))
 
@@ -363,25 +341,15 @@ async function resolveIdentity(
   let identity: string | undefined
 
   try {
-    let stdout: string
-
-    if (packageManager.isYarnBerry) {
-      stdout = await execCommand('yarn', ['npm', 'whoami'], {
+    const stdout = await execCommand(
+      packageManager.isPnpm ? 'pnpm' : 'npm',
+      ['whoami', '--registry', registry],
+      {
         cwd: context.cwd,
         env: { ...context.env, ...env },
         signal: context.signal,
-      })
-    } else {
-      stdout = await execCommand(
-        packageManager.isPnpm ? 'pnpm' : 'npm',
-        ['whoami', '--registry', registry],
-        {
-          cwd: context.cwd,
-          env: { ...context.env, ...env },
-          signal: context.signal,
-        }
-      )
-    }
+      }
+    )
 
     const candidate = stdout.trim().split('\n')[0]?.trim() ?? ''
 
@@ -401,10 +369,8 @@ async function resolveIdentity(
 /**
  * Run an npm CLI registry query and parse its JSON response.
  *
- * Credential rejections fail the release only when the npm CLI shares the
- * release's registry credentials (an injected token or non-Yarn-Berry
- * ambient credentials); Yarn Berry ambient credential rejections, command
- * failures, and unparseable output resolve to undefined.
+ * Credential rejections fail the release; command failures and unparseable
+ * output resolve to undefined.
  *
  * @param check Shared verification state for the release
  * @param args The npm CLI arguments, including the subcommand
@@ -427,9 +393,7 @@ async function queryNpmCli(
       signal: check.context.signal,
     })
   } catch (error) {
-    if (check.npmCliSharesCredentials) {
-      assertCredentialsAccepted(error)
-    }
+    assertCredentialsAccepted(error)
 
     return undefined
   }
@@ -448,10 +412,8 @@ async function queryNpmCli(
  * Queries the npm CLI's collaborator endpoint for the plan's package,
  * granting access on a direct write entry, denying on a read entry, and
  * resolving write-permission teams through their member lists. Credential
- * rejections fail the release only when the npm CLI shares the release's
- * credentials (an injected token or non-Yarn-Berry ambient credentials);
- * Yarn Berry ambient credential rejections degrade to an unknown verdict,
- * as does any other query failure.
+ * rejections fail the release; any other query failure degrades to an
+ * unknown verdict.
  *
  * @param check Shared verification state for the release
  * @param plan The release plan whose package is checked
@@ -538,9 +500,7 @@ async function checkCollaborators(
  *
  * Queries the npm CLI's team member list, comparing entries
  * case-insensitively with the resolved identity. Credential rejections fail
- * the release only when the npm CLI shares the release's credentials (an
- * injected token or non-Yarn-Berry ambient credentials); Yarn Berry ambient
- * credential rejections resolve to undefined.
+ * the release.
  *
  * @param check Shared verification state for the release
  * @param team The team identifier, in `<scope>:<team>` format
@@ -583,11 +543,8 @@ async function checkTeamMembership(
  *
  * Queries the npm CLI's organization roster, granting access when the
  * identity appears as a member and denying when the roster is readable but
- * does not include the identity. Credential rejections fail the release
- * only when the npm CLI shares the release's credentials (an injected token
- * or non-Yarn-Berry ambient credentials); Yarn Berry ambient credential
- * rejections degrade to an unknown verdict, as does an unreadable or
- * malformed roster.
+ * does not include the identity. Credential rejections fail the release; an
+ * unreadable or malformed roster degrades to an unknown verdict.
  *
  * @param check Shared verification state for the release
  * @param scope The package's scope name, without the `@` prefix

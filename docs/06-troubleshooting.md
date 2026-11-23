@@ -13,6 +13,7 @@ logging automatically when `RUNNER_DEBUG` or `ACTIONS_STEP_DEBUG` is truthy.
 | `The GITHUB_TOKEN environment variable is required in strict mode.`                                                                       | The GitHub plugin needs a token in strict mode                                                                          | Set `GITHUB_TOKEN` (GitHub Actions provides `${{ secrets.GITHUB_TOKEN }}`), or drop `--strict` to skip GitHub releases instead |
 | `The GITLAB_TOKEN environment variable is required in strict mode.`                                                                       | The GitLab plugin needs a token in strict mode                                                                          | Set `GITLAB_TOKEN`, or drop `--strict` to skip GitLab releases instead                                                         |
 | `NPM_TOKEN is required for NPM authentication in strict mode.`                                                                            | npm publishing needs registry credentials in strict mode                                                                | Set `NPM_TOKEN`, or drop `--strict` to skip npm publishing instead                                                             |
+| `NPM_TOKEN is required for Yarn authentication in strict mode.`                                                                           | Yarn publishing needs registry credentials in strict mode                                                               | Set `NPM_TOKEN`, or drop `--strict` to skip Yarn publishing instead                                                            |
 | `NPM_TOKEN or ambient registry credentials are invalid or expired.`                                                                       | The `whoami` or publish access pre-flight against the publish registry failed                                           | Refresh the token or ambient `.npmrc` credentials, then retry                                                                  |
 | `Missing publish permission for "<name>@<version>" (<registry>).`                                                                         | The publish access pre-flight found no publish permission for the listed packages                                       | Grant the publishing identity maintainer or write access, or fix the credentials, then retry                                   |
 | `Trusted publishing could not be verified for "<name>@<version>" (<reason>).`                                                             | The npm registry rejected the trusted-publishing token exchange for the listed packages, or the exchange request failed | Configure the package for trusted publishing on npmjs.com, check the network, or publish with `NPM_TOKEN` instead              |
@@ -46,6 +47,9 @@ step that needs it, logs a warning, and continues:
 
 - No registry credentials (`NPM_TOKEN`, ambient `.npmrc` authentication, or
   OIDC): packages are not published.
+- No Yarn registry credentials (`NPM_TOKEN`, ambient `.npmrc` authentication
+  for Yarn Classic, or `.yarnrc.yml` for Yarn Berry): Yarn packages are not
+  published.
 - No `CARGO_REGISTRY_TOKEN`, ambient `~/.cargo/credentials.toml` (honoring
   `CARGO_HOME`), or trusted publishing: crates are not published.
 - No `GITHUB_TOKEN` or `GITLAB_TOKEN`: the matching hosting releases are not
@@ -61,10 +65,10 @@ crates it compares the sparse-index checksum against a locally packed crate.
 
 ## Publish permission pre-flight
 
-Before publishing, the npm plugin checks that the registry credentials can
-publish each scheduled package: maintainers for existing packages, scope
-ownership or organization membership for new scoped packages, and npm
-collaborator and team permissions otherwise. When the registry shows no
+Before publishing, the npm and Yarn plugins check that the registry
+credentials can publish each scheduled package: maintainers for existing
+packages, scope ownership or organization membership for new scoped packages,
+and npm collaborator and team permissions otherwise. When the registry shows no
 publish access, the release fails with `Missing publish permission ...`
 before anything is published.
 
@@ -103,7 +107,7 @@ stages the package, `<package manager> stage list` reviews it, and
 prompt. Yarn Classic has no staging support and fails when staging is
 requested.
 
-The npm plugin's `stage` option selects the behavior:
+The `stage` option of the npm and Yarn plugins selects the behavior:
 
 - **unset (default)**: packages publish directly. When the registry rejects
   a direct publish with `E_STAGE_REQUIRED` — credentials that may only
@@ -170,14 +174,17 @@ formatting, with two limits:
 ## Plugin activation
 
 Every built-in plugin is enabled by default and activates only when the
-repository matches: npm for a root `package.json`, Cargo for a root
-`Cargo.toml`, and GitHub or GitLab for a matching Git remote. Inactive
-plugins are skipped entirely — they verify no tokens and make no requests —
-and `--strict` does not escalate inactivity.
+repository matches: npm for a root `package.json` whose active package manager
+is npm or pnpm, Cargo for a root `Cargo.toml`, and GitHub or GitLab for a
+matching Git remote. The Yarn plugin is opt-in and never enables itself:
+install `@reelout/yarn` and list it in [`plugins`](./02-config.md#plugins) to
+publish Yarn workspaces. Inactive plugins are skipped entirely — they verify no
+tokens and make no requests — and `--strict` does not escalate inactivity.
 
 Run with `--debug` to see why a plugin is inactive:
 
 - `NPM workspace could not be found at "<path>".`
+- `NPM plugin is inactive: Yarn is the active package manager.`
 - `Cargo workspace could not be found at "<path>".`
 - `GitHub releases will not be created: no GitHub-hosted repository was detected.`
 - `GitLab releases will not be created: no GitLab-hosted repository was detected.`
@@ -193,9 +200,10 @@ remove the unwanted integration.
 If ReelOut cannot resolve a plugin's string specifier, the release fails with a
 module-not-found error. The integration plugins—`@reelout/npm`,
 `@reelout/cargo`, `@reelout/git`, `@reelout/github`, and
-`@reelout/gitlab`—resolve through `@reelout/config`. For an unresolved
-third-party plugin, install the package or remove its entry from
-[`plugins`](./02-config.md#plugins).
+`@reelout/gitlab`—resolve through `@reelout/config`. The opt-in
+`@reelout/yarn` plugin must be installed separately before it can be
+registered. For an unresolved third-party plugin, install the package or
+remove its entry from [`plugins`](./02-config.md#plugins).
 
 ## No packages are scheduled for release
 
@@ -246,6 +254,7 @@ These warnings are non-fatal but usually worth investigating:
 - `Tag could not be determined for package at ...` — no previous tag resolved for a package.
 - `Changelog could not be generated for package at ...` — changelog generation failed for a package.
 - `Packages will not be published: NPM_TOKEN is required for NPM authentication.` — npm publishing was skipped for missing registry credentials.
+- `Packages will not be published: NPM_TOKEN is required for Yarn authentication.` — Yarn publishing was skipped for missing registry credentials.
 - `Crates will not be published: a crates.io registry token is required.` — crate publishing was skipped for missing registry credentials.
 - `Crates will not be published: the cargo command is not available.` — crate publishing was skipped because `cargo` is not installed.
 - `Cargo.lock will not be refreshed: the cargo command is not available.` — the lockfile refresh was skipped because `cargo` is not installed.

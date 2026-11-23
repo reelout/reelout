@@ -52,20 +52,6 @@ export async function prepareAuth(
     })
   }
 
-  if (packageManager.isYarnClassic) {
-    return conceal<Env>({
-      [`npm_config_${getAuthTokenKey(registry)}`]: token,
-      async [Symbol.asyncDispose]() {},
-    })
-  }
-
-  if (packageManager.isYarnBerry) {
-    return conceal<Env>({
-      YARN_NPM_AUTH_TOKEN: token,
-      async [Symbol.asyncDispose]() {},
-    })
-  }
-
   config.setCredentialsByURI(registry, { token })
   await saveConfigSafely(config, 'user')
 

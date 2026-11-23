@@ -4,13 +4,13 @@
 
 ReelOut is an ESM-only TypeScript monorepo managed with pnpm workspaces. The root package exposes the public API and CLI; workspace packages contain the implementation. The minimum supported Node.js version is `24.15`.
 
-| Package                                   | Responsibility                                       |
-| ----------------------------------------- | ---------------------------------------------------- |
-| `cli`                                     | Command-line interface                               |
-| `config`                                  | Configuration discovery, merging, and normalization  |
-| `context`                                 | Release execution context                            |
-| `core`                                    | Workflow engine, hooks, and built-in release plugins |
-| `cargo`, `git`, `github`, `gitlab`, `npm` | Git and registry-host integrations                   |
+| Package                                           | Responsibility                                       |
+| ------------------------------------------------- | ---------------------------------------------------- |
+| `cli`                                             | Command-line interface                               |
+| `config`                                          | Configuration discovery, merging, and normalization  |
+| `context`                                         | Release execution context                            |
+| `core`                                            | Workflow engine, hooks, and built-in release plugins |
+| `cargo`, `git`, `github`, `gitlab`, `npm`, `yarn` | Git and registry-host integrations                   |
 
 ## Development
 

@@ -23,16 +23,13 @@ vi.mock(import('@reelout/core/util/execCommand'), () => ({
 
 const NPMJS = 'https://registry.npmjs.org/'
 
-const createPackageManager = (
-  name: 'npm' | 'pnpm' | 'yarn',
-  isYarnBerry = false
-): PackageManagerInfo => ({
+const createPackageManager = (name: 'npm' | 'pnpm'): PackageManagerInfo => ({
   name,
   isNpm: name === 'npm',
   isPnpm: name === 'pnpm',
-  isYarn: name === 'yarn',
-  isYarnClassic: name === 'yarn' && !isYarnBerry,
-  isYarnBerry: name === 'yarn' && isYarnBerry,
+  isYarn: false,
+  isYarnClassic: false,
+  isYarnBerry: false,
 })
 
 interface PlanOptions {
@@ -125,19 +122,6 @@ const unauthorizedError = (target: string): Error =>
     `Command 'npm ${target}' failed (exit code 1)
 npm error code E401
 npm error 401 Unauthorized`
-  )
-
-const YARNPKG = 'https://registry.yarnpkg.com/'
-
-const writeYarnBerryAmbientCredentials = (cwd: string): Promise<void> =>
-  writeFile(
-    path.join(cwd, '.yarnrc.yml'),
-    [
-      'npmRegistries:',
-      `  ${YARNPKG}:`,
-      '    npmAuthToken: mock-yarn-token',
-      '',
-    ].join('\n')
   )
 
 const warnCalls = (): string[] =>
@@ -1241,200 +1225,5 @@ test('passes the injected registry token to spawned npm access commands for pnpm
         }),
       }),
     ])
-  })
-})
-
-test('probes with yarn npm info and resolves the identity with yarn npm whoami for Yarn Berry', async () => {
-  await temporaryDirectoryTask(async (cwd) => {
-    context.cwd = cwd
-    context.env = { NPM_TOKEN: 'mock-npm-token' }
-
-    const plan = createPlan({ name: 'a' })
-
-    mockRegistry({
-      whoami: 'mock-user',
-      packument: maintainedBy('mock-user'),
-    })
-
-    const verdicts = await verifyPublishAccess(
-      context,
-      [plan],
-      createPackageManager('yarn', true)
-    )
-
-    expect(verdicts.get(plan)).toBe('allowed')
-
-    expect(execCommand.mock.calls.map((call) => [call[0], call[1]])).toEqual([
-      ['yarn', ['npm', 'info', 'a', '--json']],
-      ['yarn', ['npm', 'whoami']],
-    ])
-  })
-})
-
-test('allows a new unscoped package when Yarn Berry reports it as missing', async () => {
-  await temporaryDirectoryTask(async (cwd) => {
-    context.cwd = cwd
-    context.env = { NPM_TOKEN: 'mock-npm-token' }
-
-    const plan = createPlan({ name: 'a' })
-
-    mockRegistry({
-      packument: new Error(
-        `Command 'yarn npm info a --json' failed (exit code 1)
-Response Code: 404`
-      ),
-    })
-
-    const verdicts = await verifyPublishAccess(
-      context,
-      [plan],
-      createPackageManager('yarn', true)
-    )
-
-    expect(verdicts.get(plan)).toBe('allowed')
-    expect(execCommand).toHaveBeenCalledTimes(1)
-  })
-})
-
-test('warns when Yarn Berry ambient credentials cannot authenticate the collaborator lookup', async () => {
-  await temporaryDirectoryTask(async (cwd) => {
-    context.cwd = cwd
-    context.env = {}
-
-    await writeYarnBerryAmbientCredentials(cwd)
-
-    const plan = createPlan({ name: '@scope/pkg' })
-
-    mockRegistry({
-      whoami: 'mock-user',
-      packument: maintainedBy('other-user'),
-      collaborators: unauthorizedError('ls-collaborators @scope/pkg'),
-    })
-
-    const verdicts = await verifyPublishAccess(
-      context,
-      [plan],
-      createPackageManager('yarn', true)
-    )
-
-    expect(verdicts.get(plan)).toBe('unknown')
-
-    expect(
-      warnCalls().filter((message) =>
-        message.includes(
-          'Could not verify publish permission for "@scope/pkg@1.2.3": the registry will reject the publish if access is missing.'
-        )
-      )
-    ).toHaveLength(1)
-
-    expect(execCommand.mock.calls.map((call) => [call[0], call[1]])).toEqual([
-      ['yarn', ['npm', 'info', '@scope/pkg', '--json']],
-      ['yarn', ['npm', 'whoami']],
-      [
-        'npm',
-        [
-          'access',
-          'ls-collaborators',
-          '@scope/pkg',
-          '--json',
-          '--registry',
-          YARNPKG,
-        ],
-      ],
-    ])
-  })
-})
-
-test('warns when Yarn Berry ambient credentials cannot authenticate the organization roster lookup', async () => {
-  await temporaryDirectoryTask(async (cwd) => {
-    context.cwd = cwd
-    context.env = {}
-
-    await writeYarnBerryAmbientCredentials(cwd)
-
-    const plan = createPlan({ name: '@scope/new' })
-
-    mockRegistry({
-      whoami: 'mock-user',
-      packument: new Error(
-        `Command 'yarn npm info @scope/new --json' failed (exit code 1)
-Response Code: 404`
-      ),
-      org: unauthorizedError('org ls scope'),
-    })
-
-    const verdicts = await verifyPublishAccess(
-      context,
-      [plan],
-      createPackageManager('yarn', true)
-    )
-
-    expect(verdicts.get(plan)).toBe('unknown')
-
-    expect(
-      warnCalls().filter((message) =>
-        message.includes(
-          'Could not verify publish permission for "@scope/new@1.2.3": the registry will reject the publish if access is missing.'
-        )
-      )
-    ).toHaveLength(1)
-  })
-})
-
-test('rejects when Yarn Berry injected credentials cannot authenticate the collaborator lookup', async () => {
-  await temporaryDirectoryTask(async (cwd) => {
-    context.cwd = cwd
-    context.env = { NPM_TOKEN: 'mock-npm-token' }
-
-    const plan = createPlan({ name: '@scope/pkg' })
-
-    mockRegistry({
-      whoami: 'mock-user',
-      packument: maintainedBy('other-user'),
-      collaborators: unauthorizedError('ls-collaborators @scope/pkg'),
-    })
-
-    const error: unknown = await verifyPublishAccess(
-      context,
-      [plan],
-      createPackageManager('yarn', true)
-    ).catch((err: unknown) => err)
-
-    expect(error).toMatchInlineSnapshot(
-      `[Error: NPM_TOKEN or ambient registry credentials are invalid or expired.]`
-    )
-  })
-})
-
-test('warns when Yarn Berry ambient credentials take precedence over an injected token in the collaborator lookup', async () => {
-  await temporaryDirectoryTask(async (cwd) => {
-    context.cwd = cwd
-    context.env = { NPM_TOKEN: 'mock-npm-token' }
-
-    await writeYarnBerryAmbientCredentials(cwd)
-
-    const plan = createPlan({ name: '@scope/pkg' })
-
-    mockRegistry({
-      whoami: 'mock-user',
-      packument: maintainedBy('other-user'),
-      collaborators: unauthorizedError('ls-collaborators @scope/pkg'),
-    })
-
-    const verdicts = await verifyPublishAccess(
-      context,
-      [plan],
-      createPackageManager('yarn', true)
-    )
-
-    expect(verdicts.get(plan)).toBe('unknown')
-
-    expect(
-      warnCalls().filter((message) =>
-        message.includes(
-          'Could not verify publish permission for "@scope/pkg@1.2.3": the registry will reject the publish if access is missing.'
-        )
-      )
-    ).toHaveLength(1)
   })
 })

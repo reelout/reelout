@@ -70,12 +70,7 @@ export async function proveSamePublication(
   let publishedTarball: Buffer
 
   try {
-    publishedTarball = await downloadPublishedTarball(
-      context,
-      plan,
-      packageManager,
-      tarballUrl
-    )
+    publishedTarball = await downloadPublishedTarball(context, tarballUrl)
   } catch (error) {
     context.logger.debug(
       `The published tarball could not be downloaded, so the publication cannot be verified: ${formatError(error)}`

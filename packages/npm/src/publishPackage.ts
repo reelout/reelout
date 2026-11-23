@@ -21,14 +21,11 @@ export interface PublishPackageOptions {
  *
  * Prepares registry authentication and constructs package manager CLI flags to
  * execute the release publish operation. Skips execution if the package is
- * private, unversioned, or missing a package name. Fails when staged
- * publishing is requested while Yarn Classic is active, which has no staging
- * support.
+ * private, unversioned, or missing a package name.
  *
  * @param context Release context containing environment, streams, and directory
  * @param plan Release plan describing the target package and release version
  * @param options Publishing flags including dry-run status, tags, and provenance
- * @throws If staged publishing is requested while Yarn Classic is active
  */
 export async function publishPackage(
   context: ReleaseContext,
@@ -43,32 +40,12 @@ export async function publishPackage(
     env: context.env,
   })
 
-  const { isNpm, isPnpm, isYarnClassic, isYarnBerry } = packageManager
-
   const commandArgs: string[] = []
 
   await using env = await prepareAuth(context, plan.package, packageManager)
 
-  switch (true) {
-    case isNpm:
-    case isPnpm:
-      if (options.stage) commandArgs.push('stage', 'publish')
-      else commandArgs.push('publish')
-      break
-    case isYarnClassic:
-      if (options.stage) {
-        throw new Error('Staged publishing is not supported by Yarn Classic.')
-      }
-
-      commandArgs.push('publish')
-      break
-    case isYarnBerry:
-      if (options.stage) commandArgs.push('npm', 'publish', '--staged')
-      else commandArgs.push('npm', 'publish')
-      break
-  }
-
-  if (options.dryRun && isYarnClassic) return
+  if (options.stage) commandArgs.push('stage', 'publish')
+  else commandArgs.push('publish')
 
   if (options.dryRun) commandArgs.push('--dry-run')
 
@@ -76,9 +53,9 @@ export async function publishPackage(
 
   if (options.access) commandArgs.push('--access', options.access)
 
-  if (options.provenance && !isYarnClassic) commandArgs.push('--provenance')
+  if (options.provenance) commandArgs.push('--provenance')
 
-  if (isPnpm) commandArgs.push('--no-git-checks')
+  if (packageManager.isPnpm) commandArgs.push('--no-git-checks')
 
   // Package manager output is extremely verbose and the package managers
   // disagree on where it goes: npm writes its whole notice block to stderr

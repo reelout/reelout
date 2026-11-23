@@ -1,0 +1,321 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Fai
+
+import '../../../test/mock/env'
+
+import type { ReleasePlan } from '@reelout/core'
+import { publishPackage } from '@reelout/yarn'
+import { afterEach, beforeEach, expect, test, vi } from 'vitest'
+import { context } from '../../../test/mock/context'
+
+const execCommand = vi.hoisted(() => vi.fn())
+const outputStreams = vi.hoisted(
+  () =>
+    [] as {
+      stdout?: NodeJS.WritableStream | undefined
+      stderr?: NodeJS.WritableStream | undefined
+    }[]
+)
+const resolvePackageManager = vi.hoisted(() => vi.fn())
+const getPackageManagerVersion = vi.hoisted(() => vi.fn())
+
+vi.mock(import('@reelout/core/util/execCommand'), () => ({
+  execCommand: (command, args, options) => {
+    outputStreams.push({ stdout: options?.stdout, stderr: options?.stderr })
+    return execCommand(command, args, { cwd: options?.cwd, env: options?.env })
+  },
+}))
+
+vi.mock(import('@reelout/npm/resolvePackageManager'), () => ({
+  resolvePackageManager,
+}))
+
+vi.mock(import('@reelout/npm/getPackageManagerVersion'), () => ({
+  getPackageManagerVersion,
+}))
+
+const plan = {
+  package: { location: '.', private: false, name: 'foo', version: '1.0.0' },
+  release: { type: 'minor', version: '1.1.0' },
+} as ReleasePlan
+
+beforeEach(() => {
+  context.env = {
+    NPM_TOKEN: 'mock-npm-token',
+  }
+})
+
+afterEach(() => {
+  vi.resetAllMocks()
+  outputStreams.length = 0
+})
+
+test('streams publish output when attached to an interactive terminal', async () => {
+  resolvePackageManager.mockResolvedValue('yarn')
+  getPackageManagerVersion.mockResolvedValue(4)
+
+  Object.assign(context.stdout, { isTTY: true })
+
+  await publishPackage(context, plan)
+
+  expect(outputStreams).toStrictEqual([
+    { stdout: context.stdout, stderr: context.stderr },
+  ])
+})
+
+test('suppresses publish output when no terminal is attached', async () => {
+  resolvePackageManager.mockResolvedValue('yarn')
+  getPackageManagerVersion.mockResolvedValue(4)
+
+  await publishPackage(context, plan)
+
+  expect(outputStreams).toStrictEqual([
+    { stdout: undefined, stderr: undefined },
+  ])
+})
+
+test('propagates publish failures instead of swallowing them', async () => {
+  resolvePackageManager.mockResolvedValue('yarn')
+  getPackageManagerVersion.mockResolvedValue(4)
+
+  execCommand.mockRejectedValue(new Error('publish failed'))
+
+  await expect(publishPackage(context, plan)).rejects.toThrow('publish failed')
+})
+
+test('skips publishing when package is marked as private', async () => {
+  await publishPackage(context, {
+    ...plan,
+    package: { ...plan.package, private: true },
+  })
+
+  expect(execCommand).not.toHaveBeenCalled()
+})
+
+test('skips publishing when package name is missing', async () => {
+  await publishPackage(context, {
+    ...plan,
+    package: { ...plan.package, name: undefined },
+  })
+
+  expect(execCommand).not.toHaveBeenCalled()
+})
+
+test('skips publishing when release plan is null', async () => {
+  await publishPackage(context, {
+    ...plan,
+    release: null,
+  })
+
+  expect(execCommand).not.toHaveBeenCalled()
+})
+
+test('skips publishing when release version is null', async () => {
+  await publishPackage(context, {
+    ...plan,
+    release: { version: null },
+  } as ReleasePlan)
+
+  expect(execCommand).not.toHaveBeenCalled()
+})
+
+test('skips publishing when dry-run option is enabled for yarn version 1', async () => {
+  resolvePackageManager.mockResolvedValue('yarn')
+  getPackageManagerVersion.mockResolvedValue(1)
+
+  await publishPackage(context, plan, { dryRun: true })
+
+  expect(execCommand).not.toHaveBeenCalled()
+})
+
+test('publishes package successfully using yarn version 1 with supported options', async () => {
+  resolvePackageManager.mockResolvedValue('yarn')
+  getPackageManagerVersion.mockResolvedValue(1)
+
+  await publishPackage(context, plan)
+  await publishPackage(context, plan, { dryRun: true })
+  await publishPackage(context, plan, { tag: 'beta' })
+  await publishPackage(context, plan, { access: 'restricted' })
+  await publishPackage(context, plan, { provenance: true })
+
+  expect(execCommand.mock.calls).toMatchInlineSnapshot(`
+    [
+      [
+        "yarn",
+        [
+          "publish",
+        ],
+        {
+          "cwd": "/repo",
+          "env": {
+            "NPM_TOKEN": "mock-npm-token",
+            "npm_config_//registry.npmjs.org/:_authToken": "mock-npm-token",
+          },
+        },
+      ],
+      [
+        "yarn",
+        [
+          "publish",
+          "--tag",
+          "beta",
+        ],
+        {
+          "cwd": "/repo",
+          "env": {
+            "NPM_TOKEN": "mock-npm-token",
+            "npm_config_//registry.npmjs.org/:_authToken": "mock-npm-token",
+          },
+        },
+      ],
+      [
+        "yarn",
+        [
+          "publish",
+          "--access",
+          "restricted",
+        ],
+        {
+          "cwd": "/repo",
+          "env": {
+            "NPM_TOKEN": "mock-npm-token",
+            "npm_config_//registry.npmjs.org/:_authToken": "mock-npm-token",
+          },
+        },
+      ],
+      [
+        "yarn",
+        [
+          "publish",
+        ],
+        {
+          "cwd": "/repo",
+          "env": {
+            "NPM_TOKEN": "mock-npm-token",
+            "npm_config_//registry.npmjs.org/:_authToken": "mock-npm-token",
+          },
+        },
+      ],
+    ]
+  `)
+})
+
+test('rejects staged publishing when yarn classic is active', async () => {
+  resolvePackageManager.mockResolvedValue('yarn')
+  getPackageManagerVersion.mockResolvedValue(1)
+
+  await expect(publishPackage(context, plan, { stage: true })).rejects.toThrow(
+    'Staged publishing is not supported by Yarn Classic.'
+  )
+
+  expect(execCommand).not.toHaveBeenCalled()
+})
+
+test('publishes package successfully using yarn version 2 or higher with npm workspace options', async () => {
+  resolvePackageManager.mockResolvedValue('yarn')
+  getPackageManagerVersion.mockResolvedValue(2)
+
+  await publishPackage(context, plan)
+  await publishPackage(context, plan, { dryRun: true })
+  await publishPackage(context, plan, { tag: 'beta' })
+  await publishPackage(context, plan, { access: 'restricted' })
+  await publishPackage(context, plan, { provenance: true, stage: true })
+  await publishPackage(context, plan, { stage: true })
+
+  expect(execCommand.mock.calls).toMatchInlineSnapshot(`
+    [
+      [
+        "yarn",
+        [
+          "npm",
+          "publish",
+        ],
+        {
+          "cwd": "/repo",
+          "env": {
+            "NPM_TOKEN": "mock-npm-token",
+            "YARN_NPM_AUTH_TOKEN": "mock-npm-token",
+          },
+        },
+      ],
+      [
+        "yarn",
+        [
+          "npm",
+          "publish",
+          "--dry-run",
+        ],
+        {
+          "cwd": "/repo",
+          "env": {
+            "NPM_TOKEN": "mock-npm-token",
+            "YARN_NPM_AUTH_TOKEN": "mock-npm-token",
+          },
+        },
+      ],
+      [
+        "yarn",
+        [
+          "npm",
+          "publish",
+          "--tag",
+          "beta",
+        ],
+        {
+          "cwd": "/repo",
+          "env": {
+            "NPM_TOKEN": "mock-npm-token",
+            "YARN_NPM_AUTH_TOKEN": "mock-npm-token",
+          },
+        },
+      ],
+      [
+        "yarn",
+        [
+          "npm",
+          "publish",
+          "--access",
+          "restricted",
+        ],
+        {
+          "cwd": "/repo",
+          "env": {
+            "NPM_TOKEN": "mock-npm-token",
+            "YARN_NPM_AUTH_TOKEN": "mock-npm-token",
+          },
+        },
+      ],
+      [
+        "yarn",
+        [
+          "npm",
+          "publish",
+          "--staged",
+          "--provenance",
+        ],
+        {
+          "cwd": "/repo",
+          "env": {
+            "NPM_TOKEN": "mock-npm-token",
+            "YARN_NPM_AUTH_TOKEN": "mock-npm-token",
+          },
+        },
+      ],
+      [
+        "yarn",
+        [
+          "npm",
+          "publish",
+          "--staged",
+        ],
+        {
+          "cwd": "/repo",
+          "env": {
+            "NPM_TOKEN": "mock-npm-token",
+            "YARN_NPM_AUTH_TOKEN": "mock-npm-token",
+          },
+        },
+      ],
+    ]
+  `)
+})

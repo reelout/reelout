@@ -1,0 +1,52 @@
+{
+  "name": "@reelout/yarn",
+  "version": "0.12.0",
+  "description": "Yarn plugin for discovering workspaces, updating manifests and dependency ranges, and publishing packages with Yarn Classic and Yarn Berry.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/reelout/reelout.git",
+    "directory": "packages/yarn"
+  },
+  "license": "MIT",
+  "type": "module",
+  "imports": {},
+  "exports": {
+    "./package.json": {
+      "default": "./package.json"
+    },
+    ".": {
+      "module": "./src/index.ts",
+      "development": "./src/index.ts",
+      "types": "./src/index.ts",
+      "default": "./dist/index.js"
+    },
+    "./*": {
+      "module": "./src/*.ts",
+      "development": "./src/*.ts",
+      "types": "./src/*.ts",
+      "default": "./dist/*.js"
+    }
+  },
+  "files": [
+    "./dist",
+    "./src"
+  ],
+  "scripts": {
+    "build": "vite build --ssr --sourcemap",
+    "dev": "vite build --ssr --watch"
+  },
+  "dependencies": {
+    "@reelout/core": "workspace:^",
+    "@reelout/github": "workspace:^",
+    "@reelout/gitlab": "workspace:^",
+    "@reelout/npm": "workspace:^",
+    "@yarnpkg/core": "catalog:",
+    "@yarnpkg/fslib": "catalog:",
+    "@yarnpkg/plugin-npm": "catalog:",
+    "consola": "catalog:",
+    "yaml": "catalog:"
+  },
+  "engines": {
+    "node": ">=24.15"
+  }
+}

@@ -61,29 +61,21 @@ export async function syncDistTag(
 
   await using env = await prepareAuth(context, plan.package, packageManager)
 
-  if (packageManager.isYarnBerry) {
-    await execCommand('yarn', ['npm', 'tag', 'add', target, tag], {
+  const registry = await resolvePublishRegistry(
+    context,
+    plan.package,
+    packageManager
+  )
+
+  await execCommand(
+    packageManager.isPnpm ? 'pnpm' : 'npm',
+    ['dist-tag', 'add', target, tag, '--registry', registry],
+    {
       cwd: packageDir,
       env: { ...context.env, ...env },
       signal: context.signal,
-    })
-  } else {
-    const registry = await resolvePublishRegistry(
-      context,
-      plan.package,
-      packageManager
-    )
-
-    await execCommand(
-      packageManager.isPnpm ? 'pnpm' : 'npm',
-      ['dist-tag', 'add', target, tag, '--registry', registry],
-      {
-        cwd: packageDir,
-        env: { ...context.env, ...env },
-        signal: context.signal,
-      }
-    )
-  }
+    }
+  )
 
   context.logger.debug(`Synced dist-tag "${tag}" to "${target}".`)
 }

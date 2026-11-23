@@ -53,10 +53,10 @@ export interface PluginOptions {
  * @remarks
  * **Lifecycle Stages:**
  * - `configure`: Leaves the plugin inactive when the working directory holds
- *   no root `package.json`. Otherwise resolves and attaches Git repository
- *   metadata from root package configuration, then verifies
- *   registry authentication, failing in strict mode or skipping the publish
- *   phase when no credentials exist.
+ *   no root `package.json` or Yarn is the active package manager. Otherwise
+ *   resolves and attaches Git repository metadata from root package
+ *   configuration, then verifies registry authentication, failing in strict
+ *   mode or skipping the publish phase when no credentials exist.
  * - `discover`: Skips discovery when the plugin is inactive. Discovers
  *   workspace member packages, filters them against the `filter` patterns,
  *   and loads package metadata into context.
@@ -78,13 +78,15 @@ export interface PluginOptions {
  *   direct publish with a staged-publishing requirement and the `stage`
  *   option does not disable the fallback, summarizing the staged
  *   publications at the end. Skips entirely when no NPM workspace was
- *   found or configure-stage verification found no registry
- *   authentication.
+ *   found, Yarn is the active package manager, or configure-stage
+ *   verification found no registry authentication.
  *
  * @param options Configuration options for NPM workspace discovery and publishing behavior.
  * @returns A release plugin configured for NPM workspace management and package publication.
  */
 const npm = (options: PluginOptions = {}): ReleasePlugin => {
+  let inactive = false
+
   let publishSkipped = false
 
   return {
@@ -94,6 +96,20 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
       if (!(await hasPackageManifest(context.cwd))) {
         context.logger.debug(
           `NPM workspace could not be found at "${context.cwd}".`
+        )
+
+        return next(context)
+      }
+
+      const packageManager = await inspectPackageManager(context.cwd, {
+        env: context.env,
+      })
+
+      if (packageManager.isYarn) {
+        inactive = true
+
+        context.logger.debug(
+          'NPM plugin is inactive: Yarn is the active package manager.'
         )
 
         return next(context)
@@ -123,7 +139,7 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
       return next(context)
     },
     discover: async (context, next) => {
-      if (!(await hasPackageManifest(context.cwd))) {
+      if (inactive || !(await hasPackageManifest(context.cwd))) {
         return next(context)
       }
 
@@ -155,7 +171,7 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
       return next(context)
     },
     write: async (context, next) => {
-      if (!(await hasPackageManifest(context.cwd))) {
+      if (inactive || !(await hasPackageManifest(context.cwd))) {
         return next(context)
       }
 
@@ -171,6 +187,14 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
       return next(context)
     },
     publish: async (context, next) => {
+      if (inactive) {
+        context.logger.debug(
+          'NPM publishing was skipped: Yarn is the active package manager.'
+        )
+
+        return next(context)
+      }
+
       if (!(await hasPackageManifest(context.cwd))) {
         context.logger.debug(
           'NPM publishing was skipped: no NPM workspace was found.'
@@ -292,8 +316,6 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
 
         if (packageManager.isPnpm) {
           stageCommand = 'pnpm stage'
-        } else if (packageManager.isYarnBerry) {
-          stageCommand = 'yarn npm stage'
         }
 
         context.logger.warn(

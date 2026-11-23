@@ -39,9 +39,8 @@ export const NOT_FOUND_PATTERN =
  * the plan's package directory, using the same authentication environment a
  * publish would use. A not-found response reports the version as absent,
  * while any other command failure propagates so authentication and network
- * problems surface before anything is published. Yarn Berry reports missing
- * versions by falling back to the latest manifest, so a manifest whose
- * version differs from the target counts as absent as well.
+ * problems surface before anything is published. A manifest whose version
+ * differs from the target counts as absent as well.
  *
  * @param context Release context containing environment and working directory
  * @param plan Release plan whose package version is probed
@@ -73,29 +72,21 @@ export async function probePublishedVersion(
   let stdout: string
 
   try {
-    if (packageManager.isYarnBerry) {
-      stdout = await execCommand('yarn', ['npm', 'info', target, '--json'], {
+    const registry = await resolvePublishRegistry(
+      context,
+      plan.package,
+      packageManager
+    )
+
+    stdout = await execCommand(
+      packageManager.isPnpm ? 'pnpm' : 'npm',
+      ['view', target, '--json', '--registry', registry],
+      {
         cwd: packageDir,
         env: { ...context.env, ...env },
         signal: context.signal,
-      })
-    } else {
-      const registry = await resolvePublishRegistry(
-        context,
-        plan.package,
-        packageManager
-      )
-
-      stdout = await execCommand(
-        packageManager.isPnpm ? 'pnpm' : 'npm',
-        ['view', target, '--json', '--registry', registry],
-        {
-          cwd: packageDir,
-          env: { ...context.env, ...env },
-          signal: context.signal,
-        }
-      )
-    }
+      }
+    )
   } catch (error) {
     if (NOT_FOUND_PATTERN.test(String(formatError(error)))) {
       return { status: 'absent' }
@@ -122,8 +113,8 @@ export async function probePublishedVersion(
  * Parse registry metadata output into a manifest object.
  *
  * Accepts the object shapes printed by `npm view` (a one-element array for a
- * concrete version query), `pnpm view`, and `yarn npm info`, and throws so
- * unexpected output never masquerades as a published or absent version.
+ * concrete version query) and `pnpm view`, and throws so unexpected output
+ * never masquerades as a published or absent version.
  *
  * @param target The package version the metadata was queried for
  * @param stdout The command output to parse

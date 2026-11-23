@@ -446,6 +446,21 @@ test('stays inactive without a root package manifest', async () => {
   })
 })
 
+test('stays inactive when Yarn is the active package manager', async () => {
+  resolvePackageManager.mockResolvedValue('yarn')
+  getPackageManagerVersion.mockResolvedValue(4)
+
+  mountPackageFixture()
+
+  context.plans = [createCompleteReleasePlan()]
+
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(loadPackages).not.toHaveBeenCalled()
+  expect(publishPackage).not.toHaveBeenCalled()
+  expect(context.outcome?.status).toBe('success')
+})
+
 test('preserves configured workspace members when workspace options are explicitly provided', async () => {
   workspace.entry = '.'
   workspace.members = ['apps/*']
@@ -2509,29 +2524,6 @@ test('names the pnpm stage commands in the staged summary', async () => {
   ).toHaveLength(1)
 })
 
-test('names the yarn npm stage commands in the staged summary', async () => {
-  provideOIDCAuth()
-
-  resolvePackageManager.mockResolvedValue('yarn')
-  getPackageManagerVersion.mockResolvedValue(4)
-
-  mountPackageFixture()
-
-  context.plans = [createCompleteReleasePlan()]
-
-  publishPackage.mockRejectedValueOnce(stageRequiredError())
-
-  await executeReleaseWorkflow(context, [plugin()])
-
-  expect(
-    warnCalls().filter((message) =>
-      message.includes(
-        'with "yarn npm stage list" and finish the release with "yarn npm stage approve <stage-id>"'
-      )
-    )
-  ).toHaveLength(1)
-})
-
 test('rethrows the stage-required rejection when the stage option disables the fallback', async () => {
   provideOIDCAuth()
 
@@ -2691,94 +2683,6 @@ test('publishes when pnpm reports the version as missing', async () => {
   await executeReleaseWorkflow(context, [plugin()])
 
   expect(publishPackage).toHaveBeenCalledTimes(1)
-})
-
-test('probes with yarn npm info and syncs with yarn npm tag when the workspace uses yarn berry', async () => {
-  provideOIDCAuth()
-
-  context.releaseChannel = 'next'
-
-  resolvePackageManager.mockResolvedValue('yarn')
-  getPackageManagerVersion.mockResolvedValue(4)
-
-  mountPackageFixture()
-
-  context.plans = [createCompleteReleasePlan()]
-
-  execCommand.mockImplementationOnce(async () => publishedManifest({}))
-
-  downloadPublishedTarball.mockResolvedValue(Buffer.from('published-tarball'))
-
-  isPackageTarballIdentical.mockReturnValue(true)
-
-  await executeReleaseWorkflow(context, [plugin()])
-
-  expect(execCommand.mock.calls).toEqual([
-    ['yarn', ['npm', 'info', 'a@1.2.3', '--json'], expect.anything()],
-    ['yarn', ['pack', '--out', expect.any(String)], expect.anything()],
-    ['yarn', ['npm', 'tag', 'add', 'a@1.2.3', 'next'], expect.anything()],
-  ])
-})
-
-test('treats yarn berry fallback metadata for a missing version as absent', async () => {
-  provideOIDCAuth()
-
-  resolvePackageManager.mockResolvedValue('yarn')
-  getPackageManagerVersion.mockResolvedValue(4)
-
-  mountPackageFixture()
-
-  context.plans = [createCompleteReleasePlan()]
-
-  execCommand.mockImplementationOnce(async () =>
-    JSON.stringify({
-      name: 'a',
-      version: '2.1.3',
-      dist: { tarball: `${NPMJS}a/-/a-2.1.3.tgz` },
-      'dist-tags': { latest: '2.1.3' },
-      versions: ['1.0.0', '2.1.3'],
-    })
-  )
-
-  await executeReleaseWorkflow(context, [plugin()])
-
-  expect(execCommand).toHaveBeenCalledTimes(1)
-  expect(publishPackage).toHaveBeenCalledTimes(1)
-})
-
-test('probes with npm view and packs with yarn pack when the workspace uses yarn classic', async () => {
-  provideOIDCAuth()
-
-  context.releaseChannel = 'next'
-
-  resolvePackageManager.mockResolvedValue('yarn')
-  getPackageManagerVersion.mockResolvedValue(1)
-
-  mountPackageFixture()
-
-  context.plans = [createCompleteReleasePlan()]
-
-  execCommand.mockImplementationOnce(async () => publishedManifest({}))
-
-  downloadPublishedTarball.mockResolvedValue(Buffer.from('published-tarball'))
-
-  isPackageTarballIdentical.mockReturnValue(true)
-
-  await executeReleaseWorkflow(context, [plugin()])
-
-  expect(execCommand.mock.calls).toEqual([
-    [
-      'npm',
-      ['view', 'a@1.2.3', '--json', '--registry', NPMJS],
-      expect.anything(),
-    ],
-    ['yarn', ['pack', '--filename', expect.any(String)], expect.anything()],
-    [
-      'npm',
-      ['dist-tag', 'add', 'a@1.2.3', 'next', '--registry', NPMJS],
-      expect.anything(),
-    ],
-  ])
 })
 
 test('probes with injected NPM_TOKEN credentials and publishes when the version is absent', async () => {

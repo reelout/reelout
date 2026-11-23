@@ -24,16 +24,21 @@ yarn add -D reelout
 ```
 
 The CLI installs these integrations as dependencies of `@reelout/config`. The
-default configuration enables every built-in plugin, and each integration
-activates only when the repository matches:
+default configuration enables every built-in plugin except the Yarn plugin, and
+each integration activates only when the repository matches:
 
-| Package           | Purpose                                                               | Activates when                        |
-| ----------------- | --------------------------------------------------------------------- | ------------------------------------- |
-| `@reelout/npm`    | Resolves the workspace, updates manifests, and publishes npm packages | The workspace root has `package.json` |
-| `@reelout/cargo`  | Resolves the Cargo workspace, updates manifests, and publishes crates | The workspace root has `Cargo.toml`   |
-| `@reelout/git`    | Creates the release commit and pushes tags                            | Always                                |
-| `@reelout/github` | Creates GitHub releases                                               | The repository is hosted on GitHub    |
-| `@reelout/gitlab` | Creates GitLab releases                                               | The repository is hosted on GitLab    |
+| Package           | Purpose                                                               | Activates when                                                                      |
+| ----------------- | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `@reelout/npm`    | Resolves the workspace, updates manifests, and publishes npm packages | The workspace root has `package.json` and npm or pnpm is the active package manager |
+| `@reelout/cargo`  | Resolves the Cargo workspace, updates manifests, and publishes crates | The workspace root has `Cargo.toml`                                                 |
+| `@reelout/git`    | Creates the release commit and pushes tags                            | Always                                                                              |
+| `@reelout/github` | Creates GitHub releases                                               | The repository is hosted on GitHub                                                  |
+| `@reelout/gitlab` | Creates GitLab releases                                               | The repository is hosted on GitLab                                                  |
+
+Yarn workspaces are supported through the opt-in `@reelout/yarn` plugin:
+install it, add `'@reelout/yarn'` to the `plugins` array in your
+[configuration](./02-config.md#plugins), and it takes over publishing — the
+npm plugin stays inactive when Yarn is the active package manager.
 
 Hosting plugins read the repository from the `origin` remote; a `repository`
 field declared in the root manifest takes precedence. Inapplicable plugins

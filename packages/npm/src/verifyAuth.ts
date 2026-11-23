@@ -96,16 +96,6 @@ async function assertRegistryAuth(
   const registry = await resolvePublishRegistry(context, pkg, packageManager)
 
   try {
-    if (packageManager.isYarnBerry) {
-      await execCommand('yarn', ['npm', 'whoami'], {
-        cwd: context.cwd,
-        env: { ...context.env, ...env },
-        signal: context.signal,
-      })
-
-      return
-    }
-
     await execCommand(
       packageManager.isPnpm ? 'pnpm' : 'npm',
       ['whoami', '--registry', registry],

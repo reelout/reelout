@@ -98,38 +98,6 @@ test('returns pnpm configuration environment variables when package manager is p
   })
 })
 
-test('returns npm configuration environment variables when package manager is classic yarn', async () => {
-  await temporaryDirectoryTask(async (cwd) => {
-    context.cwd = cwd
-
-    context.env = { NPM_TOKEN: 'mock-npm-token' }
-
-    await using env = await prepareAuth(context, pkg1, { isYarnClassic: true })
-
-    expect(env).toMatchInlineSnapshot(`
-      {
-        "npm_config_//registry.npmjs.org/:_authToken": "mock-npm-token",
-      }
-    `)
-  })
-})
-
-test('returns YARN_NPM_AUTH_TOKEN environment variable when package manager is yarn berry', async () => {
-  await temporaryDirectoryTask(async (cwd) => {
-    context.cwd = cwd
-
-    context.env = { NPM_TOKEN: 'mock-npm-token' }
-
-    await using env = await prepareAuth(context, pkg1, { isYarnBerry: true })
-
-    expect(env).toMatchInlineSnapshot(`
-      {
-        "YARN_NPM_AUTH_TOKEN": "mock-npm-token",
-      }
-    `)
-  })
-})
-
 test('persists NPM_TOKEN to fallback configuration and invokes cleanup upon disposal when no specific package manager matches', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd
