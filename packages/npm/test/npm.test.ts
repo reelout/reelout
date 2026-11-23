@@ -2524,7 +2524,7 @@ test('rethrows the stage-required rejection when the package targets another reg
   expect(publishPackage).toHaveBeenCalledTimes(1)
 })
 
-test('fails when the staged fallback publish fails', async () => {
+test('fails the release when the staged retry also fails', async () => {
   provideOIDCAuth()
 
   mountPackageFixture()

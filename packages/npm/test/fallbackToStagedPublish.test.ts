@@ -144,21 +144,26 @@ test('skips the fallback for an already staged publish', async () => {
   expect(publishPackage).not.toHaveBeenCalled()
 })
 
-test('fails when the package manager cannot stage', async () => {
-  await expect(
-    fallbackToStagedPublish(
-      context,
-      plan,
-      yarnClassicPackageManager,
-      {},
-      stageRequiredError()
-    )
-  ).rejects.toThrow('Staged publishing is not supported by Yarn Classic.')
+test('rejects when the package manager is Yarn Classic', async () => {
+  const stageRequired = stageRequiredError()
+
+  const error: unknown = await fallbackToStagedPublish(
+    context,
+    plan,
+    yarnClassicPackageManager,
+    {},
+    stageRequired
+  ).catch((err) => err)
+
+  expect(error).toMatchInlineSnapshot(
+    '[Error: Staged publishing is not supported by Yarn Classic.]'
+  )
+  expect((error as Error).cause).toBe(stageRequired)
 
   expect(publishPackage).not.toHaveBeenCalled()
 })
 
-test('skips the disabled fallback silently when the package manager cannot stage', async () => {
+test('skips the disabled fallback silently when the package manager is Yarn Classic', async () => {
   const staged = await fallbackToStagedPublish(
     context,
     plan,
