@@ -19,11 +19,13 @@ import {
  *
  * Retries the failed publish through the package manager's staged publish
  * command when the plan targets the public npm registry, warning when the
- * `stage` option explicitly disables the fallback. Fails when the active
- * package manager is Yarn Classic, which has no staging support, and
- * propagates a failing staged publish. Skips the fallback without a
- * warning when the publish was already staged or the plan targets another
- * registry, leaving the original error to the caller.
+ * `stage` option explicitly disables a fallback that enabling it would
+ * deliver. Fails when the active package manager is Yarn Classic, which
+ * has no staging support, and propagates a failing staged publish. Skips
+ * the fallback without a warning when the publish was already staged, the
+ * plan targets another registry, or the `stage` option disables a
+ * fallback Yarn Classic cannot deliver, leaving the original error to
+ * the caller.
  *
  * @param context Release context containing environment, streams, and directory
  * @param plan The complete release plan whose direct publish failed
@@ -56,11 +58,13 @@ export async function fallbackToStagedPublish(
   }
 
   if (options.stage === false) {
-    context.logger.warn(
-      colors.yellow(
-        `Staged publish fallback for "${target}" is disabled: the "stage" option is set to false. Set "stage" to true or remove the option to enable staged publishing.`
+    if (!packageManager.isYarnClassic) {
+      context.logger.warn(
+        colors.yellow(
+          `Staged publish fallback for "${target}" is disabled by the "stage" option, but the registry requires staged publishing. Set "stage" to true or remove the option to enable staged publishing.`
+        )
       )
-    )
+    }
 
     return false
   }

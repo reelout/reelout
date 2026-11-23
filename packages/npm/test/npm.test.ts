@@ -2524,7 +2524,7 @@ test('rethrows the stage-required rejection when the stage option disables the f
   expect(
     warnCalls().filter((message) =>
       message.includes(
-        'Staged publish fallback for "a@1.2.3" is disabled: the "stage" option is set to false. Set "stage" to true or remove the option to enable staged publishing.'
+        'Staged publish fallback for "a@1.2.3" is disabled by the "stage" option, but the registry requires staged publishing. Set "stage" to true or remove the option to enable staged publishing.'
       )
     )
   ).toHaveLength(1)
