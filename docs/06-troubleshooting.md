@@ -37,6 +37,7 @@ logging automatically when `RUNNER_DEBUG` or `ACTIONS_STEP_DEBUG` is truthy.
 | `The resolved version qualifier "<q>" is not a valid SemVer prerelease identifier.`                                                       | The qualifier is not a valid prerelease identifier                                                                      | Use identifiers such as `alpha`, `beta.1`, `rc.2`                                                                              |
 | `Version "<v>" must be strictly lower than preceding version "<p>".`                                                                      | A package version would move backwards                                                                                  | Correct the affected version                                                                                                   |
 | `Command '<cmd>' failed (exit code N)`                                                                                                    | An underlying `git`, `npm`, or `cargo` command failed                                                                   | Check the error output for stderr, then retry with `--debug`                                                                   |
+| `Staged publishing is not supported by Yarn Classic.`                                                                                     | Staged publishing was requested while the active package manager is Yarn 1.x, which has no staging support              | Switch to Yarn Berry, npm, or pnpm, or remove the `stage` option                                                               |
 
 ## Missing credentials
 
@@ -92,6 +93,42 @@ The check is best-effort and cannot cover every registry behavior:
 - Some registries report a restricted package like a missing one (404), so a
   restricted existing package can pass the pre-flight as new and `allowed`;
   the registry still rejects the publish.
+
+## Staged publishing
+
+npm's staged publishing holds a publication server-side until it is approved:
+`npm stage publish` (or `pnpm stage publish`, or `yarn npm publish --staged`)
+stages the package, `<package manager> stage list` reviews it, and
+`stage approve <stage-id>` finishes the release with an interactive 2FA
+prompt. Yarn Classic has no staging support and fails when staging is
+requested.
+
+The npm plugin's `stage` option selects the behavior:
+
+- **unset (default)**: packages publish directly. When the registry rejects
+  a direct publish with `E_STAGE_REQUIRED` — credentials that may only
+  stage, or a package configured to require staging — the plugin falls back
+  to staged publishing for that package and continues. The fallback applies
+  per package and only to the public npm registry; it fails the release when
+  the staged publish fails too.
+- **`true`**: every package is staged from the start; nothing goes live
+  until each staged publication is approved.
+- **`false`**: packages publish directly and the release fails when the
+  registry requires staging; no fallback is attempted.
+
+When the fallback staged packages, the run ends with a warning that lists
+them alongside the package manager's `stage list` and
+`stage approve <stage-id>` commands.
+
+Limitations:
+
+- `--dry-run` cannot preview the fallback: dry runs never reach the
+  registry's permission checks, so a dry run reports a successful direct
+  publish even when the real run would stage the package.
+- Re-running a release over an already staged version fails loudly: staged
+  versions share the published index, so the registry rejects the duplicate.
+  Approve the staged publication, or reject it with `stage reject
+<stage-id>`, then re-run.
 
 ## Cargo publishing caveats
 
@@ -191,3 +228,6 @@ These warnings are non-fatal but usually worth investigating:
 - `GitLab releases will not be created: GITLAB_TOKEN is not set.` — GitLab releases were skipped for a missing token.
 - `Skipping publish of "<name>@<version>": already published with identical content.` — the registry already holds this exact version; npm also syncs the release-channel dist-tag.
 - `Could not verify publish permission for "<name>@<version>": the registry will reject the publish if access is missing.` — publish permission could not be determined; the publish itself still runs.
+- `Falling back to staged publish of "<name>@<version>": the registry requires staged publishing.` — the registry rejected the direct publish with `E_STAGE_REQUIRED`, so the package was staged for approval instead.
+- `Staged publish fallback for "<name>@<version>" is disabled: the "stage" option is set to false.` — a stage-required rejection surfaced while the fallback was disabled; the release failed with the original error.
+- `Packages were staged instead of published: <targets>.` — the run finished, but the listed packages wait for approval; review them with `stage list` and finish with `stage approve <stage-id>`.

@@ -235,6 +235,13 @@ npm error code EPUBLISHCONFLICT
 npm error 409 Conflict - You cannot publish over the previously published versions: 1.2.3.`
   )
 
+const stageRequiredError = () =>
+  new Error(
+    `Command 'npm publish' failed (exit code 1)
+npm error code E_STAGE_REQUIRED
+npm error 403 Forbidden - direct publishing is disabled for this package: use staged publishing`
+  )
+
 const provideOIDCAuth = () => {
   context.env = { NPM_ID_TOKEN: 'mock-id-token' }
 }
@@ -2407,6 +2414,99 @@ test('rethrows non-race publish failures without re-probing', async () => {
   )
 
   expect(execCommand).toHaveBeenCalledTimes(1)
+})
+
+test('falls back to staged publishing when the registry requires staging', async () => {
+  provideOIDCAuth()
+
+  mountPackageFixture()
+
+  context.plans = [createCompleteReleasePlan()]
+
+  publishPackage.mockRejectedValueOnce(stageRequiredError())
+
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(publishPackage).toHaveBeenCalledTimes(2)
+  expect(
+    publishPackage.mock.calls.map(
+      (call) => (call[2] as { stage: boolean | undefined }).stage
+    )
+  ).toEqual([undefined, true])
+  expect(
+    warnCalls().filter((message) =>
+      message.includes('Falling back to staged publish of "a@1.2.3"')
+    )
+  ).toHaveLength(1)
+  expect(
+    warnCalls().filter((message) =>
+      message.includes('Packages were staged instead of published: "a@1.2.3"')
+    )
+  ).toHaveLength(1)
+  expect(context.outcome?.status).toBe('success')
+})
+
+test('rethrows the stage-required rejection when the stage option disables the fallback', async () => {
+  provideOIDCAuth()
+
+  mountPackageFixture()
+
+  context.plans = [createCompleteReleasePlan()]
+
+  publishPackage.mockRejectedValueOnce(stageRequiredError())
+
+  await expect(
+    executeReleaseWorkflow(context, [plugin({ stage: false })])
+  ).rejects.toThrow('E_STAGE_REQUIRED')
+
+  expect(publishPackage).toHaveBeenCalledTimes(1)
+  expect(
+    warnCalls().filter((message) =>
+      message.includes(
+        'Staged publish fallback for "a@1.2.3" is disabled: the "stage" option is set to false.'
+      )
+    )
+  ).toHaveLength(1)
+})
+
+test('rethrows the stage-required rejection when the package targets another registry', async () => {
+  provideOIDCAuth()
+
+  vol.fromJSON({
+    '/repo/a/package.json': JSON.stringify({
+      name: 'a',
+      version: '1.2.2',
+      publishConfig: { registry: 'https://registry.example.com/' },
+    }),
+  })
+
+  context.plans = [createCompleteReleasePlan()]
+
+  publishPackage.mockRejectedValueOnce(stageRequiredError())
+
+  await expect(executeReleaseWorkflow(context, [plugin()])).rejects.toThrow(
+    'E_STAGE_REQUIRED'
+  )
+
+  expect(publishPackage).toHaveBeenCalledTimes(1)
+})
+
+test('fails when the staged fallback publish fails', async () => {
+  provideOIDCAuth()
+
+  mountPackageFixture()
+
+  context.plans = [createCompleteReleasePlan()]
+
+  publishPackage
+    .mockRejectedValueOnce(stageRequiredError())
+    .mockRejectedValueOnce(new Error('staged publish failed'))
+
+  await expect(executeReleaseWorkflow(context, [plugin()])).rejects.toThrow(
+    'staged publish failed'
+  )
+
+  expect(publishPackage).toHaveBeenCalledTimes(2)
 })
 
 test('does not probe private, unnamed, unversioned, or foreign-provider plans', async () => {

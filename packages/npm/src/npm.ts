@@ -16,14 +16,19 @@ import * as gitlab from '@reelout/gitlab'
 import { colors } from 'consola/utils'
 import { version } from '../package.json'
 import { bumpPackageDependencies } from './bumpPackageDependencies'
+import { fallbackToStagedPublish } from './fallbackToStagedPublish'
 import { inspectPackageManager } from './inspectPackageManager'
-import { isCompleteReleasePlan } from './isCompleteReleasePlan'
+import {
+  isCompleteReleasePlan,
+  type CompleteReleasePlan,
+} from './isCompleteReleasePlan'
 import { isPublishOverRejection } from './isPublishOverRejection'
 import { isSameRepository } from './isSameRepository'
+import { isStageRequiredRejection } from './isStageRequiredRejection'
 import { loadPackages } from './loadPackages'
 import { PLUGIN_NAME } from './PLUGIN_NAME'
 import { probeReleasePlan } from './probeReleasePlan'
-import { publishPackage } from './publishPackage'
+import { publishPackage, type PublishPackageOptions } from './publishPackage'
 import { recoverFromPublishOverRejection } from './recoverFromPublishOverRejection'
 import { resolveGitRepositoryFromPackage } from './resolveGitRepositoryFromPackage'
 import { resolveWorkspaceMembers } from './resolveWorkspaceMembers'
@@ -61,8 +66,11 @@ export interface PluginOptions {
  *   their dist-tags) and failing on different or unverifiable content.
  *   Publishes non-private packages to NPM, enabling provenance when the
  *   manifest repository is valid, matches the context repository, and is
- *   public. Skips entirely when configure-stage verification found no
- *   registry authentication.
+ *   public. Falls back to staged publishing when the registry rejects a
+ *   direct publish with a staged-publishing requirement and the `stage`
+ *   option does not disable the fallback, summarizing the staged
+ *   publications at the end. Skips entirely when configure-stage
+ *   verification found no registry authentication.
  *
  * @param options Configuration options for NPM workspace discovery and publishing behavior.
  * @returns A release plugin configured for NPM workspace management and package publication.
@@ -193,20 +201,41 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
         }
       }
 
+      const publishOptions: PublishPackageOptions = {
+        dryRun: context.dryRun,
+        tag: context.releaseChannel,
+        access: options.access,
+        provenance,
+        stage: options.stage,
+      }
+
+      const staged: CompleteReleasePlan[] = []
+
       for (const plan of context.plans) {
         if (plan.package.provider !== PLUGIN_NAME || skipped.has(plan)) {
           continue
         }
 
         try {
-          await publishPackage(context, plan, {
-            dryRun: context.dryRun,
-            tag: context.releaseChannel,
-            access: options.access,
-            provenance,
-            stage: options.stage,
-          })
+          await publishPackage(context, plan, publishOptions)
         } catch (error) {
+          if (
+            packageManager !== undefined &&
+            isCompleteReleasePlan(plan) &&
+            isStageRequiredRejection(error) &&
+            (await fallbackToStagedPublish(
+              context,
+              plan,
+              packageManager,
+              publishOptions,
+              error
+            ))
+          ) {
+            staged.push(plan)
+
+            continue
+          }
+
           if (
             packageManager === undefined ||
             !isCompleteReleasePlan(plan) ||
@@ -222,6 +251,26 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
             error
           )
         }
+      }
+
+      if (packageManager !== undefined && staged.length > 0) {
+        const targets = staged
+          .map((plan) => `"${plan.package.name}@${plan.release.version}"`)
+          .join(', ')
+
+        let stageCommand = 'npm stage'
+
+        if (packageManager.isPnpm) {
+          stageCommand = 'pnpm stage'
+        } else if (packageManager.isYarnBerry) {
+          stageCommand = 'yarn npm stage'
+        }
+
+        context.logger.warn(
+          colors.yellow(
+            `Packages were staged instead of published: ${targets}. Review the staged publications with "${stageCommand} list" and finish the release with "${stageCommand} approve <stage-id>".`
+          )
+        )
       }
 
       return next(context)
