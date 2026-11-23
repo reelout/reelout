@@ -75,7 +75,7 @@ Hosting plugins read the repository from the `origin` remote, falling back to
 manifest URLs. A plugin that does not apply stays **inactive** for the run: it
 logs one debug line, verifies no credentials, and makes no network requests or
 file changes. Inactivity is enablement, not a skipped step, so `--strict` does
-not turn it into an error. Before the first phase, the workflow logs the
+not turn it into an error. Once configuration completes, the workflow logs the
 resulting list, for example `Active plugins: @reelout/core/analyzer, ...`.
 
 Mixed repositories activate more than one integration: a JavaScript workspace

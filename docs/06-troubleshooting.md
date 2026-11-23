@@ -171,8 +171,9 @@ formatting, with two limits:
 
 Every built-in plugin is enabled by default and activates only when the
 repository matches: npm for a root `package.json`, Cargo for a root
-`Cargo.toml`, and GitHub or GitLab for a matching Git remote. Before the first
-phase, the workflow logs the resulting `Active plugins: ...` line. Inactive
+`Cargo.toml`, and GitHub or GitLab for a matching Git remote. Once
+configuration completes, the workflow logs the resulting
+`Active plugins: ...` line. Inactive
 plugins are skipped entirely — they verify no tokens and make no requests —
 and `--strict` does not escalate inactivity.
 

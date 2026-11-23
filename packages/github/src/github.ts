@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Fai
 
 import {
+  isPluginInactive,
   markPluginInactive,
   type ReleaseContext,
   type ReleasePlugin,
@@ -43,8 +44,6 @@ const readGitHubToken = (env: ReleaseContext['env']): string | undefined => {
  * @returns A release plugin configured for GitHub release creation.
  */
 const github = (): ReleasePlugin => {
-  let active = false
-
   return {
     name: '@reelout/github',
     version,
@@ -60,8 +59,6 @@ const github = (): ReleasePlugin => {
 
         return next(context)
       }
-
-      active = true
 
       const token = readGitHubToken(context.env)
 
@@ -84,7 +81,7 @@ const github = (): ReleasePlugin => {
       return next(context)
     },
     publish: async (context, next) => {
-      if (!active) {
+      if (isPluginInactive(context, '@reelout/github')) {
         context.logger.debug(
           'GitHub publishing was skipped: the repository is not hosted on GitHub.'
         )

@@ -6,6 +6,7 @@ import '../../../test/mock/fs'
 
 import {
   executeReleaseWorkflow,
+  isPluginInactive,
   type GitCommit,
   type Package,
   type ReleasePlan,
@@ -419,6 +420,27 @@ test('resolves workspace members when defined in package.json or pnpm-workspace.
       ],
     ]
   `)
+})
+
+test('stays inactive without a root package manifest', async () => {
+  vol.fromJSON({
+    '/repo/a/package.json': JSON.stringify({ name: 'a', version: '0.0.0' }),
+  })
+
+  context.plans = [
+    {
+      package: { provider: PLUGIN_NAME, location: 'a' },
+      history: [] as GitCommit[],
+      release: { version: '1.2.3' },
+    },
+  ] as ReleasePlan[]
+
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(isPluginInactive(context, PLUGIN_NAME)).toBe(true)
+  expect(loadPackages).not.toHaveBeenCalled()
+  expect(publishPackage).not.toHaveBeenCalled()
+  expect(context.outcome?.status).toBe('success')
 })
 
 test('preserves configured workspace members when workspace options are explicitly provided', async () => {

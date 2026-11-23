@@ -39,8 +39,9 @@ Hosting plugins detect the repository from the `origin` remote, falling back
 to manifest URLs. Inapplicable plugins stay inactive: they log at debug level,
 verify no tokens, and make no requests, so a GitLab-hosted repository runs the
 GitLab plugin without any configuration. The workflow logs the active plugin
-list before the first phase. See [Plugins](./04-plugins.md#automatic-activation)
-for details and for overriding the defaults.
+list once configuration completes. See
+[Plugins](./04-plugins.md#automatic-activation) for details and for overriding
+the defaults.
 
 ## Preview a release
 

@@ -216,6 +216,21 @@ test('skips GitLab publishing and stays inactive when repository context is unav
   `)
 })
 
+test('stays inactive when the repository is hosted on GitHub', async () => {
+  context.env = { GITLAB_TOKEN: 'token' }
+
+  context.repository = createMockRepository('github')
+
+  context.plans = plans
+
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(isPluginInactive(context, '@reelout/gitlab')).toBe(true)
+  expect(context.outcome?.status).toBe('success')
+  expect(showProjectMock).not.toHaveBeenCalled()
+  expect(createReleaseMock).not.toHaveBeenCalled()
+})
+
 test('skips creating GitLab releases during dry-run mode', async () => {
   context.env = { GITLAB_TOKEN: 'token' }
 

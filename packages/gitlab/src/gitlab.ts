@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Fai
 
 import {
+  isPluginInactive,
   markPluginInactive,
   type ReleaseContext,
   type ReleasePlugin,
@@ -44,8 +45,6 @@ const readGitlabToken = (env: ReleaseContext['env']): string | undefined => {
  * @returns A release plugin configured for GitLab release creation.
  */
 const gitlab = (): ReleasePlugin => {
-  let active = false
-
   return {
     name: '@reelout/gitlab',
     version,
@@ -61,8 +60,6 @@ const gitlab = (): ReleasePlugin => {
 
         return next(context)
       }
-
-      active = true
 
       const token = readGitlabToken(context.env)
 
@@ -85,7 +82,7 @@ const gitlab = (): ReleasePlugin => {
       return next(context)
     },
     publish: async (context, next) => {
-      if (!active) {
+      if (isPluginInactive(context, '@reelout/gitlab')) {
         context.logger.debug(
           'GitLab publishing was skipped: the repository is not hosted on GitLab.'
         )

@@ -11,7 +11,12 @@ import {
 } from '@reelout/core'
 import plugin from '@reelout/github'
 import { beforeEach, expect, test, vi } from 'vitest'
-import { context, logger, repository } from '../../../test/mock/context'
+import {
+  context,
+  createMockRepository,
+  logger,
+  repository,
+} from '../../../test/mock/context'
 
 const getRepo = vi.hoisted(() => vi.fn())
 
@@ -209,6 +214,23 @@ test('skips GitHub publishing and stays inactive when repository context is unav
       ],
     ]
   `)
+})
+
+test('stays inactive when the repository is hosted on GitLab, even in strict mode', async () => {
+  context.env = { GITHUB_TOKEN: 'token' }
+
+  context.strict = true
+
+  context.repository = createMockRepository('gitlab')
+
+  context.plans = [plan]
+
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(isPluginInactive(context, '@reelout/github')).toBe(true)
+  expect(context.outcome?.status).toBe('success')
+  expect(getRepo).not.toHaveBeenCalled()
+  expect(createRelease).not.toHaveBeenCalled()
 })
 
 test('verifies the GitHub token during dry-run mode without creating releases', async () => {

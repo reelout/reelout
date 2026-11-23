@@ -155,49 +155,45 @@ import {
   type ReleasePlugin,
 } from 'reelout'
 
-const createMyPlugin = (): ReleasePlugin => {
-  let active = false
-
-  return {
-    name: 'my-plugin',
-    version: '1.0.0',
-    configure: async (context, next) => {
-      if (!appliesTo(context)) {
-        markPluginInactive(context, 'my-plugin')
-        context.logger.debug('My releases will not be created: not applicable.')
-
-        return next(context)
-      }
-
-      active = true
+const createMyPlugin = (): ReleasePlugin => ({
+  name: 'my-plugin',
+  version: '1.0.0',
+  configure: async (context, next) => {
+    if (!appliesTo(context)) {
+      markPluginInactive(context, 'my-plugin')
+      context.logger.debug('My releases will not be created: not applicable.')
 
       return next(context)
-    },
-    publish: async (context, next) => {
-      if (!active) {
-        context.logger.debug('My publishing was skipped: not applicable.')
+    }
 
-        return next(context)
-      }
+    return next(context)
+  },
+  publish: async (context, next) => {
+    if (isPluginInactive(context, 'my-plugin')) {
+      context.logger.debug('My publishing was skipped: not applicable.')
 
-      // ... perform the work
       return next(context)
-    },
-  }
-}
+    }
+
+    // ... perform the work
+    return next(context)
+  },
+})
 ```
 
 Rules:
 
 - Gate first in `configure`, before credential checks, token verification, or
   network calls.
+- Check `isPluginInactive(context, name)` in later hooks instead of keeping a
+  local flag: the workflow resets activity before each run, so local state can
+  go stale across runs.
 - Log inactivity at `debug` level. Inactivity is enablement, not a skipped
   step: never warn for it and never escalate it under `--strict`. Reserve
   warn-and-skip (or the strict throw) for a plugin that applies but lacks
   credentials.
-- `isPluginInactive(context, name)` reports the current state; the workflow
-  resets it before each run and logs an `Active plugins: ...` summary before
-  the first phase.
+- The workflow logs an `Active plugins: ...` summary once configuration
+  completes.
 
 ## Context and side-effect safety
 

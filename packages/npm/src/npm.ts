@@ -4,6 +4,7 @@
 import {
   filterPackages,
   formatError,
+  isPluginInactive,
   markPluginInactive,
   normalizeWorkspace,
   sortPackages,
@@ -83,8 +84,6 @@ export interface PluginOptions {
 const npm = (options: PluginOptions = {}): ReleasePlugin => {
   let publishSkipped = false
 
-  let active = false
-
   return {
     name: PLUGIN_NAME,
     version,
@@ -98,8 +97,6 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
 
         return next(context)
       }
-
-      active = true
 
       const repo = await resolveGitRepositoryFromPackage(context.cwd)
       context.repository = repo ?? context.repository
@@ -125,7 +122,7 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
       return next(context)
     },
     discover: async (context, next) => {
-      if (!active) {
+      if (isPluginInactive(context, PLUGIN_NAME)) {
         return next(context)
       }
 
@@ -169,7 +166,7 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
       return next(context)
     },
     publish: async (context, next) => {
-      if (!active) {
+      if (isPluginInactive(context, PLUGIN_NAME)) {
         context.logger.debug(
           'NPM publishing was skipped: no NPM workspace was found.'
         )
