@@ -2543,6 +2543,7 @@ test('rethrows the stage-required rejection when the package targets another reg
   provideOIDCAuth()
 
   vol.fromJSON({
+    '/repo/package.json': JSON.stringify({ name: 'root', version: '0.0.0' }),
     '/repo/a/package.json': JSON.stringify({
       name: 'a',
       version: '1.2.2',
