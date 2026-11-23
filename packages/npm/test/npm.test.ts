@@ -69,19 +69,19 @@ vi.mock(import('@reelout/core/util/execCommand'), () => ({
 
 vi.mock(
   import('@reelout/npm/downloadPublishedTarball'),
-  async (importOriginal) => ({
+  async (importActual) => ({
     downloadPublishedTarball: async (
       ...args: Parameters<typeof downloadPublishedTarball>
     ) =>
       downloadTarball(...args) ??
-      (await importOriginal()).downloadPublishedTarball(...args),
+      (await importActual()).downloadPublishedTarball(...args),
   })
 )
 
 vi.mock(
   import('@reelout/npm/isPackageTarballIdentical'),
-  async (importOriginal) => {
-    const actual = await importOriginal<{
+  async (importActual) => {
+    const actual = await importActual<{
       isPackageTarballIdentical: typeof isPackageTarballIdentical
     }>()
 
@@ -101,10 +101,9 @@ vi.mock(import('@reelout/npm/loadPackages'), async (importActual) => ({
   loadPackages: vi.fn((await importActual()).loadPackages),
 }))
 
-vi.mock(import('@reelout/npm/prepareAuth'), async (importOriginal) => ({
+vi.mock(import('@reelout/npm/prepareAuth'), async (importActual) => ({
   prepareAuth: async (...args: Parameters<typeof prepareAuthImpl>) =>
-    (await prepareAuth(...args)) ??
-    (await importOriginal()).prepareAuth(...args),
+    (await prepareAuth(...args)) ?? (await importActual()).prepareAuth(...args),
 }))
 
 vi.mock(import('@reelout/npm/publishPackage'), () => ({

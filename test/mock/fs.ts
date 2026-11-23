@@ -7,13 +7,13 @@ import { join } from 'node:path'
 import { ufs, type IFS } from 'unionfs'
 import { afterEach, beforeAll, vi } from 'vitest'
 
-vi.mock('node:fs', async (importOriginal) => {
-  let fs = await importOriginal<IFS>()
+vi.mock('node:fs', async (importActual) => {
+  let fs = await importActual<IFS>()
   fs = { ...fs, ...ufs }
   return { ...fs, default: fs }
 })
 
-vi.mock('node:fs/promises', async (importOriginal) => {
+vi.mock('node:fs/promises', async (importActual) => {
   ufs.promises.rm ||= async function rm(path, options = {}) {
     try {
       await ufs.promises.unlink(path)
@@ -41,7 +41,7 @@ vi.mock('node:fs/promises', async (importOriginal) => {
     }
   }
 
-  let fs = await importOriginal<IFS['promises']>()
+  let fs = await importActual<IFS['promises']>()
   fs = { ...fs, ...ufs.promises }
   return { ...fs, default: fs }
 })

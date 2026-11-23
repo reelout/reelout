@@ -9,8 +9,8 @@ import {
   initializeGitRepository,
 } from '../../../../../test/mock/git'
 
-vi.mock(import('@reelout/core/util/execGit'), async (importOriginal) => ({
-  execGit: vi.fn((await importOriginal()).execGit),
+vi.mock(import('@reelout/core/util/execGit'), async (importActual) => ({
+  execGit: vi.fn((await importActual()).execGit),
 }))
 
 beforeEach(() => {

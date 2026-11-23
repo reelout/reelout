@@ -21,15 +21,15 @@ const loadConfigMock = vi.hoisted(() => vi.fn())
 
 const loadYarnConfigMock = vi.hoisted(() => vi.fn())
 
-vi.mock(import('@reelout/npm/loadConfig'), async (importOriginal) => ({
+vi.mock(import('@reelout/npm/loadConfig'), async (importActual) => ({
   loadConfig: async (...args: Parameters<typeof loadConfigImpl>) =>
-    loadConfigMock(...args) ?? (await importOriginal()).loadConfig(...args),
+    loadConfigMock(...args) ?? (await importActual()).loadConfig(...args),
 }))
 
-vi.mock(import('@reelout/npm/loadYarnConfig'), async (importOriginal) => ({
+vi.mock(import('@reelout/npm/loadYarnConfig'), async (importActual) => ({
   loadYarnConfig: async (...args: Parameters<typeof loadYarnConfigImpl>) =>
     loadYarnConfigMock(...args) ??
-    (await importOriginal()).loadYarnConfig(...args),
+    (await importActual()).loadYarnConfig(...args),
 }))
 
 const pkg = { location: '.' } as Package

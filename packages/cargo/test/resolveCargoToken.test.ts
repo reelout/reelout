@@ -10,8 +10,8 @@ import { context } from '../../../test/mock/context'
 
 const osHome = vi.hoisted(() => ({ dir: '' }))
 
-vi.mock('node:os', async (importOriginal) => ({
-  ...(await importOriginal<Record<string, unknown>>()),
+vi.mock('node:os', async (importActual) => ({
+  ...(await importActual<Record<string, unknown>>()),
   homedir: () => osHome.dir,
 }))
 

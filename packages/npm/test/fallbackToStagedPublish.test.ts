@@ -19,8 +19,8 @@ vi.mock(import('@reelout/npm/publishPackage'), () => ({
 
 vi.mock(
   import('@reelout/npm/resolvePublishRegistry'),
-  async (importOriginal) => ({
-    ...(await importOriginal()),
+  async (importActual) => ({
+    ...(await importActual()),
     resolvePublishRegistry,
   })
 )
