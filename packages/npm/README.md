@@ -42,6 +42,17 @@ public. It uses `GITHUB_TOKEN` on GitHub or `GITLAB_TOKEN` on GitLab for this
 check. When `provenance` is `true`, npm also requires a `repository` field in
 the published `package.json` to generate provenance attestations.
 
+The `stage` option controls npm staged publishing: `true` stages every
+package for later approval instead of publishing it immediately, `false`
+publishes directly and fails when the registry requires staging, and the
+default publishes directly but falls back to staging a package when the
+registry rejects its direct publish with `E_STAGE_REQUIRED`. The fallback
+runs per package and only for the public npm registry; when packages were
+staged, the run ends with a warning that lists them alongside the package
+manager's `stage list` and `stage approve <stage-id>` commands. Approving a
+staged publication requires an interactive 2FA prompt, so it stays a manual
+step. Yarn Classic cannot stage and fails when staging is requested.
+
 Before publishing, the plugin verifies that the registry credentials grant
 publish permission for each scheduled package. It checks existing packages
 against their maintainers, new scoped packages against the user or

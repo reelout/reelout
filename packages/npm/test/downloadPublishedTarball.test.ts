@@ -6,8 +6,6 @@ import '../../../test/mock/env'
 import type { Package, ReleasePlan } from '@reelout/core'
 import type { PackageManagerInfo } from '@reelout/npm'
 import { downloadPublishedTarball } from '@reelout/npm'
-import type { loadConfig as loadConfigImpl } from '@reelout/npm/loadConfig'
-import type { loadYarnConfig as loadYarnConfigImpl } from '@reelout/npm/loadYarnConfig'
 import { writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { temporaryDirectoryTask } from 'tempy'
@@ -17,29 +15,19 @@ import { HOME_DIR } from '../../../test/mock/env'
 
 const fetchMock = vi.hoisted(() => vi.fn())
 
-const loadConfigMock = vi.hoisted(() => vi.fn())
+const loadConfig = vi.hoisted(() => vi.fn())
 
-const loadYarnConfigMock = vi.hoisted(() => vi.fn())
+const loadYarnConfig = vi.hoisted(() => vi.fn())
 
-vi.mock(import('@reelout/npm/loadConfig'), async (importOriginal) => {
-  const actual = await importOriginal<{ loadConfig: typeof loadConfigImpl }>()
+vi.mock(import('@reelout/npm/loadConfig'), async (importActual) => ({
+  loadConfig: async (...args) =>
+    loadConfig(...args) ?? (await importActual()).loadConfig(...args),
+}))
 
-  return {
-    loadConfig: (...args: Parameters<typeof loadConfigImpl>) =>
-      loadConfigMock(...args) ?? actual.loadConfig(...args),
-  }
-})
-
-vi.mock(import('@reelout/npm/loadYarnConfig'), async (importOriginal) => {
-  const actual = await importOriginal<{
-    loadYarnConfig: typeof loadYarnConfigImpl
-  }>()
-
-  return {
-    loadYarnConfig: (...args: Parameters<typeof loadYarnConfigImpl>) =>
-      loadYarnConfigMock(...args) ?? actual.loadYarnConfig(...args),
-  }
-})
+vi.mock(import('@reelout/npm/loadYarnConfig'), async (importActual) => ({
+  loadYarnConfig: async (...args) =>
+    loadYarnConfig(...args) ?? (await importActual()).loadYarnConfig(...args),
+}))
 
 const pkg = { location: '.' } as Package
 
@@ -226,7 +214,7 @@ test('falls back to NPM_TOKEN when the tarball URL has no parseable registry', a
 test('falls back to NPM_TOKEN when the npm configuration cannot be loaded', async () => {
   context.env = { NPM_TOKEN: 'mock-npm-token' }
 
-  loadConfigMock.mockRejectedValueOnce(new Error('mock config failure'))
+  loadConfig.mockRejectedValueOnce(new Error('mock config failure'))
 
   mockSuccessfulResponse('published-tarball')
 
@@ -308,7 +296,7 @@ test('sends Yarn Berry npmAuthIdent credentials as a Basic header', async () => 
 test('falls back to NPM_TOKEN when the Yarn configuration cannot be loaded', async () => {
   context.env = { NPM_TOKEN: 'mock-npm-token' }
 
-  loadYarnConfigMock.mockRejectedValueOnce(new Error('mock config failure'))
+  loadYarnConfig.mockRejectedValueOnce(new Error('mock config failure'))
 
   mockSuccessfulResponse('published-tarball')
 

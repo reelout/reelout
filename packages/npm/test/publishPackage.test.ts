@@ -363,8 +363,7 @@ test('publishes package successfully using yarn version 1 with supported options
   await publishPackage(context, plan, { dryRun: true })
   await publishPackage(context, plan, { tag: 'beta' })
   await publishPackage(context, plan, { access: 'restricted' })
-  await publishPackage(context, plan, { provenance: true, stage: true })
-  await publishPackage(context, plan, { stage: true })
+  await publishPackage(context, plan, { provenance: true })
 
   expect(execCommand.mock.calls).toMatchInlineSnapshot(`
     [
@@ -424,21 +423,19 @@ test('publishes package successfully using yarn version 1 with supported options
           },
         },
       ],
-      [
-        "yarn",
-        [
-          "publish",
-        ],
-        {
-          "cwd": "/repo",
-          "env": {
-            "NPM_TOKEN": "mock-npm-token",
-            "npm_config_//registry.npmjs.org/:_authToken": "mock-npm-token",
-          },
-        },
-      ],
     ]
   `)
+})
+
+test('rejects staged publishing when yarn classic is active', async () => {
+  resolvePackageManager.mockResolvedValue('yarn')
+  getPackageManagerVersion.mockResolvedValue(1)
+
+  await expect(publishPackage(context, plan, { stage: true })).rejects.toThrow(
+    'Staged publishing is not supported by Yarn Classic.'
+  )
+
+  expect(execCommand).not.toHaveBeenCalled()
 })
 
 test('publishes package successfully using yarn version 2 or higher with npm workspace options', async () => {

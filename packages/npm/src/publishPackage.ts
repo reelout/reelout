@@ -21,11 +21,14 @@ export interface PublishPackageOptions {
  *
  * Prepares registry authentication and constructs package manager CLI flags to
  * execute the release publish operation. Skips execution if the package is
- * private, unversioned, or missing a package name.
+ * private, unversioned, or missing a package name. Fails when staged
+ * publishing is requested while Yarn Classic is active, which has no staging
+ * support.
  *
  * @param context Release context containing environment, streams, and directory
  * @param plan Release plan describing the target package and release version
  * @param options Publishing flags including dry-run status, tags, and provenance
+ * @throws If staged publishing is requested while Yarn Classic is active
  */
 export async function publishPackage(
   context: ReleaseContext,
@@ -53,6 +56,10 @@ export async function publishPackage(
       else commandArgs.push('publish')
       break
     case isYarnClassic:
+      if (options.stage) {
+        throw new Error('Staged publishing is not supported by Yarn Classic.')
+      }
+
       commandArgs.push('publish')
       break
     case isYarnBerry:

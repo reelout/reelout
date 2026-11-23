@@ -10,11 +10,10 @@ import { context } from '../../../test/mock/context'
 
 const osHome = vi.hoisted(() => ({ dir: '' }))
 
-vi.mock('node:os', async (importOriginal) => {
-  const os = await importOriginal<Record<string, unknown>>()
-
-  return { ...os, homedir: () => osHome.dir }
-})
+vi.mock('node:os', async (importActual) => ({
+  ...(await importActual<Record<string, unknown>>()),
+  homedir: () => osHome.dir,
+}))
 
 const writeCredentials = async (home: string, credentials: string) => {
   await mkdir(path.join(home, '.cargo'), { recursive: true })

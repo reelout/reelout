@@ -12,7 +12,7 @@ import { readPackageJson } from './readPackageJson'
 
 export const DEFAULT_REGISTRY = 'https://registry.npmjs.org/'
 
-const DEFAULT_YARN_REGISTRY = 'https://registry.yarnpkg.com/'
+export const DEFAULT_YARN_REGISTRY = 'https://registry.yarnpkg.com/'
 
 /**
  * Resolve the publish registry URL for a package.
