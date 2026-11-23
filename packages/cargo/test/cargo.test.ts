@@ -3,7 +3,11 @@
 
 import '../../../test/mock/fs'
 
-import { executeReleaseWorkflow, type ReleasePlan } from '@reelout/core'
+import {
+  executeReleaseWorkflow,
+  isPluginInactive,
+  type ReleasePlan,
+} from '@reelout/core'
 import plugin, { PLUGIN_NAME } from '@reelout/cargo'
 import { vol } from 'memfs'
 import { readFile } from 'node:fs/promises'
@@ -151,6 +155,7 @@ beforeEach(() => {
 test('stays inactive without a Cargo manifest', async () => {
   await executeReleaseWorkflow(context, [plugin()])
 
+  expect(isPluginInactive(context, PLUGIN_NAME)).toBe(true)
   expect(context.repository).toBe(null)
   expect(loadCargoPackages).not.toHaveBeenCalled()
   expect(resolveCargoToken).not.toHaveBeenCalled()

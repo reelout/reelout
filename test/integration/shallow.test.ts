@@ -185,6 +185,9 @@ test('releases packages in shallow clone across varying manifests', async () => 
       expect(logger.mock.calls).toMatchInlineSnapshot(`
         [
           [
+            "Active plugins: @reelout/core/analyzer, @reelout/core/builder, @reelout/core/changelog, @reelout/npm, @reelout/git, @reelout/github",
+          ],
+          [
             "[33mPackage could not be loaded: Package version "undefined" in "packages/pkg4" is not a valid semantic version.[39m",
           ],
           [
@@ -332,6 +335,9 @@ test('releases packages in shallow clone across varying manifests', async () => 
       `)
       expect(logger.mock.calls).toMatchInlineSnapshot(`
         [
+          [
+            "Active plugins: @reelout/core/analyzer, @reelout/core/builder, @reelout/core/changelog, @reelout/npm, @reelout/git, @reelout/github",
+          ],
           [
             "[33mPackage could not be loaded: Package version "undefined" in "packages/pkg4" is not a valid semantic version.[39m",
           ],
@@ -498,6 +504,9 @@ test('releases packages in shallow clone across varying manifests', async () => 
       `)
       expect(logger.mock.calls).toMatchInlineSnapshot(`
         [
+          [
+            "Active plugins: @reelout/core/analyzer, @reelout/core/builder, @reelout/core/changelog, @reelout/npm, @reelout/git, @reelout/github",
+          ],
           [
             "[33mPackage could not be loaded: Package version "undefined" in "packages/pkg4" is not a valid semantic version.[39m",
           ],
@@ -674,6 +683,9 @@ test('releases packages in shallow clone across varying manifests', async () => 
       `)
       expect(logger.mock.calls).toMatchInlineSnapshot(`
         [
+          [
+            "Active plugins: @reelout/core/analyzer, @reelout/core/builder, @reelout/core/changelog, @reelout/npm, @reelout/git, @reelout/github",
+          ],
           [
             "[33mPackage could not be loaded: Package version "undefined" in "packages/pkg4" is not a valid semantic version.[39m",
           ],

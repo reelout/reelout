@@ -58,6 +58,36 @@ workflow completes, the exit code stays `0`, and the warnings appear in the
 console output. Throw instead of skipping when `context.strict` is `true`, so
 pipelines that require every step fail fast.
 
+## Automatic activation
+
+The default configuration includes every built-in plugin, and each integration
+decides at `configure` time whether it applies to the repository:
+
+| Plugin                            | Activates when                          |
+| --------------------------------- | --------------------------------------- |
+| npm                               | The workspace root has a `package.json` |
+| cargo                             | The workspace root has a `Cargo.toml`   |
+| github                            | The repository is hosted on GitHub      |
+| gitlab                            | The repository is hosted on GitLab      |
+| analyzer, builder, changelog, git | Always                                  |
+
+Hosting plugins read the repository from the `origin` remote, falling back to
+manifest URLs. A plugin that does not apply stays **inactive** for the run: it
+logs one debug line, verifies no credentials, and makes no network requests or
+file changes. Inactivity is enablement, not a skipped step, so `--strict` does
+not turn it into an error. Before the first phase, the workflow logs the
+resulting list, for example `Active plugins: @reelout/core/analyzer, ...`.
+
+Mixed repositories activate more than one integration: a JavaScript workspace
+that also keeps a `Cargo.toml` publishes npm packages and crates, so a missing
+`CARGO_REGISTRY_TOKEN` warns — or fails under `--strict` — even when the
+crates are incidental. Override [`plugins`](./02-config.md#plugins) to remove
+the unwanted integration in that case.
+
+Credential skipping is different: an **active** plugin that lacks its token
+logs a warning and skips its step, and `--strict` fails the run instead (see
+[Skipping steps](#skipping-steps)).
+
 ## Priorities
 
 Within each hook, middleware run from higher priority to lower priority.
@@ -139,9 +169,11 @@ export default {
     '@reelout/core/analyzer',
     '@reelout/core/builder',
     '@reelout/core/changelog',
-    ['@reelout/npm', { access: 'public', provenance: true }],
+    '@reelout/npm',
+    '@reelout/cargo',
     '@reelout/git',
     '@reelout/github',
+    '@reelout/gitlab',
     createNotifyPlugin({ webhook: 'https://example.com/hook' }),
   ],
 }

@@ -105,6 +105,9 @@ test('simulates parallel release workflows across milestone tracks', async () =>
       expect(logger.mock.calls).toMatchInlineSnapshot(`
         [
           [
+            "Active plugins: @reelout/core/analyzer, @reelout/core/builder, @reelout/core/changelog, @reelout/npm, @reelout/git, @reelout/github",
+          ],
+          [
             "Status: [32mSUCCESS[39m",
           ],
           [
@@ -158,6 +161,9 @@ test('simulates parallel release workflows across milestone tracks', async () =>
 
       expect(logger.mock.calls).toMatchInlineSnapshot(`
         [
+          [
+            "Active plugins: @reelout/core/analyzer, @reelout/core/builder, @reelout/core/changelog, @reelout/npm, @reelout/git, @reelout/github",
+          ],
           [
             "Status: [32mSUCCESS[39m",
           ],
@@ -222,6 +228,9 @@ test('simulates parallel release workflows across milestone tracks', async () =>
       expect(logger.mock.calls).toMatchInlineSnapshot(`
         [
           [
+            "Active plugins: @reelout/core/analyzer, @reelout/core/builder, @reelout/core/changelog, @reelout/npm, @reelout/git, @reelout/github",
+          ],
+          [
             "Status: [32mSUCCESS[39m",
           ],
           [
@@ -272,6 +281,9 @@ test('simulates parallel release workflows across milestone tracks', async () =>
       expect(logger.mock.calls).toMatchInlineSnapshot(`
         [
           [
+            "Active plugins: @reelout/core/analyzer, @reelout/core/builder, @reelout/core/changelog, @reelout/npm, @reelout/git, @reelout/github",
+          ],
+          [
             "Status: [32mSUCCESS[39m",
           ],
           [
@@ -311,6 +323,9 @@ test('simulates parallel release workflows across milestone tracks', async () =>
       expect(logger.mock.calls).toMatchInlineSnapshot(`
         [
           [
+            "Active plugins: @reelout/core/analyzer, @reelout/core/builder, @reelout/core/changelog, @reelout/npm, @reelout/git, @reelout/github",
+          ],
+          [
             "Status: [32mSUCCESS[39m",
           ],
           [
@@ -349,6 +364,9 @@ test('simulates parallel release workflows across milestone tracks', async () =>
 
       expect(logger.mock.calls).toMatchInlineSnapshot(`
         [
+          [
+            "Active plugins: @reelout/core/analyzer, @reelout/core/builder, @reelout/core/changelog, @reelout/npm, @reelout/git, @reelout/github",
+          ],
           [
             "Status: [32mSUCCESS[39m",
           ],
@@ -412,6 +430,9 @@ test('simulates parallel release workflows across milestone tracks', async () =>
       expect(logger.mock.calls).toMatchInlineSnapshot(`
         [
           [
+            "Active plugins: @reelout/core/analyzer, @reelout/core/builder, @reelout/core/changelog, @reelout/npm, @reelout/git, @reelout/github",
+          ],
+          [
             "Status: [32mSUCCESS[39m",
           ],
           [
@@ -454,6 +475,9 @@ test('simulates parallel release workflows across milestone tracks', async () =>
 
       expect(logger.mock.calls).toMatchInlineSnapshot(`
         [
+          [
+            "Active plugins: @reelout/core/analyzer, @reelout/core/builder, @reelout/core/changelog, @reelout/npm, @reelout/git, @reelout/github",
+          ],
           [
             "Status: [32mSUCCESS[39m",
           ],
@@ -518,6 +542,9 @@ test('simulates parallel release workflows across milestone tracks', async () =>
       expect(logger.mock.calls).toMatchInlineSnapshot(`
         [
           [
+            "Active plugins: @reelout/core/analyzer, @reelout/core/builder, @reelout/core/changelog, @reelout/npm, @reelout/git, @reelout/github",
+          ],
+          [
             "Status: [32mSUCCESS[39m",
           ],
           [
@@ -563,6 +590,9 @@ test('simulates parallel release workflows across milestone tracks', async () =>
 
       expect(logger.mock.calls).toMatchInlineSnapshot(`
         [
+          [
+            "Active plugins: @reelout/core/analyzer, @reelout/core/builder, @reelout/core/changelog, @reelout/npm, @reelout/git, @reelout/github",
+          ],
           [
             "Status: [32mSUCCESS[39m",
           ],
@@ -624,6 +654,9 @@ test('simulates parallel release workflows across milestone tracks', async () =>
 
       expect(logger.mock.calls).toMatchInlineSnapshot(`
         [
+          [
+            "Active plugins: @reelout/core/analyzer, @reelout/core/builder, @reelout/core/changelog, @reelout/npm, @reelout/git, @reelout/github",
+          ],
           [
             "Status: [32mSUCCESS[39m",
           ],

@@ -3,7 +3,11 @@
 
 import '../../../test/mock/env'
 
-import { executeReleaseWorkflow, type ReleasePlan } from '@reelout/core'
+import {
+  executeReleaseWorkflow,
+  isPluginInactive,
+  type ReleasePlan,
+} from '@reelout/core'
 import plugin from '@reelout/gitlab'
 import { beforeEach, expect, test, vi } from 'vitest'
 import {
@@ -104,6 +108,9 @@ test('skips GitLab release creation when GITLAB_TOKEN environment variable is mi
         "GitLab releases will not be created: GITLAB_TOKEN is not set.",
       ],
       [
+        "Active plugins: @reelout/gitlab",
+      ],
+      [
         "Status: [32mSUCCESS[39m",
       ],
       [
@@ -181,28 +188,29 @@ test('fails workflow execution when GITLAB_TOKEN fails verification', async () =
   `)
 })
 
-test('fails workflow execution when repository context is unavailable', async () => {
+test('skips GitLab publishing and stays inactive when repository context is unavailable', async () => {
   context.env = { GITLAB_TOKEN: 'token' }
 
   context.repository = null
 
   context.plans = plans
 
-  await expect(
-    executeReleaseWorkflow(context, [plugin()])
-  ).rejects.toMatchInlineSnapshot(
-    `[Error: A Git repository is required to create a GitLab release.]`
-  )
+  await executeReleaseWorkflow(context, [plugin()])
 
+  expect(isPluginInactive(context, '@reelout/gitlab')).toBe(true)
+  expect(context.outcome?.status).toBe('success')
   expect(createReleaseMock).not.toHaveBeenCalled()
   expect(showProjectMock).not.toHaveBeenCalled()
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
       [
-        "Status: [31mFAILURE[39m",
+        "Active plugins: (none)",
       ],
       [
-        "Release complete: [31mA Git repository is required to create a GitLab release.[39m",
+        "Status: [32mSUCCESS[39m",
+      ],
+      [
+        "Release complete: [33mNo packages are scheduled for release.[39m",
       ],
     ]
   `)
@@ -224,6 +232,9 @@ test('skips creating GitLab releases during dry-run mode', async () => {
   expect(createReleaseMock).toHaveBeenCalledTimes(0)
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
+      [
+        "Active plugins: @reelout/gitlab",
+      ],
       [
         "Status: [32mSUCCESS[39m [33m(dry run)[39m",
       ],
@@ -251,6 +262,9 @@ test('previews the GitLab release skip during dry-run mode when GITLAB_TOKEN env
     [
       [
         "GitLab releases will not be created: GITLAB_TOKEN is not set.",
+      ],
+      [
+        "Active plugins: @reelout/gitlab",
       ],
       [
         "Status: [32mSUCCESS[39m [33m(dry run)[39m",

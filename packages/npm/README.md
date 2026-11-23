@@ -18,8 +18,10 @@ This ESM-only package requires Node.js `>=24.15`.
 
 ## Usage
 
-Add the plugin to the `plugins` array in your ReelOut configuration. Pass
-options as a tuple when needed:
+The default configuration includes this plugin. It activates only when the
+workspace root has a `package.json` and stays inactive otherwise, so
+non-JavaScript repositories run it without side effects. Pass options as a
+tuple when needed:
 
 ```ts
 export default {
@@ -28,8 +30,10 @@ export default {
     '@reelout/core/builder',
     '@reelout/core/changelog',
     ['@reelout/npm', { access: 'public', provenance: true }],
+    '@reelout/cargo',
     '@reelout/git',
     '@reelout/github',
+    '@reelout/gitlab',
   ],
 }
 ```

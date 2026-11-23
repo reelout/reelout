@@ -4,6 +4,7 @@
 import {
   filterPackages,
   formatError,
+  markPluginInactive,
   sortPackages,
   type Package,
   type ReleasePlan,
@@ -103,6 +104,8 @@ const cargo = (options: PluginOptions = {}): ReleasePlugin => {
     version,
     configure: async (context, next) => {
       if (!(await hasCargoManifest(context.cwd))) {
+        markPluginInactive(context, PLUGIN_NAME)
+
         context.logger.debug(
           `Cargo workspace could not be found at "${context.cwd}".`
         )

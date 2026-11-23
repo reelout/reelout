@@ -4,6 +4,7 @@
 import {
   filterPackages,
   formatError,
+  markPluginInactive,
   normalizeWorkspace,
   sortPackages,
   type Package,
@@ -17,6 +18,7 @@ import { colors } from 'consola/utils'
 import { version } from '../package.json'
 import { bumpPackageDependencies } from './bumpPackageDependencies'
 import { fallbackToStagedPublish } from './fallbackToStagedPublish'
+import { hasPackageManifest } from './hasPackageManifest'
 import { inspectPackageManager } from './inspectPackageManager'
 import {
   isCompleteReleasePlan,
@@ -51,9 +53,11 @@ export interface PluginOptions {
  *
  * @remarks
  * **Lifecycle Stages:**
- * - `configure`: Resolves and attaches Git repository metadata from root package configuration, then verifies
+ * - `configure`: Leaves the plugin inactive when the working directory holds
+ *   no root `package.json`. Otherwise resolves and attaches Git repository
+ *   metadata from root package configuration, then verifies
  *   registry authentication, failing in strict mode or skipping the publish phase when no credentials exist.
- * - `discover`: Discovers workspace member packages, filters them against the `filter` patterns, and loads package metadata into context.
+ * - `discover`: Skips discovery when the plugin is inactive. Discovers workspace member packages, filters them against the `filter` patterns, and loads package metadata into context.
  * - `write`: Bumps internal workspace dependency versions in `package.json` files (skipped in dry-run).
  * - `publish`: For OIDC-authenticated npm or pnpm releases targeting the
  *   public npm registry, verifies trusted publishing through the registry's
@@ -69,8 +73,9 @@ export interface PluginOptions {
  *   public. Falls back to staged publishing when the registry rejects a
  *   direct publish with a staged-publishing requirement and the `stage`
  *   option does not disable the fallback, summarizing the staged
- *   publications at the end. Skips entirely when configure-stage
- *   verification found no registry authentication.
+ *   publications at the end. Skips entirely when no NPM workspace was
+ *   found or configure-stage verification found no registry
+ *   authentication.
  *
  * @param options Configuration options for NPM workspace discovery and publishing behavior.
  * @returns A release plugin configured for NPM workspace management and package publication.
@@ -78,10 +83,24 @@ export interface PluginOptions {
 const npm = (options: PluginOptions = {}): ReleasePlugin => {
   let publishSkipped = false
 
+  let active = false
+
   return {
     name: PLUGIN_NAME,
     version,
     configure: async (context, next) => {
+      if (!(await hasPackageManifest(context.cwd))) {
+        markPluginInactive(context, PLUGIN_NAME)
+
+        context.logger.debug(
+          `NPM workspace could not be found at "${context.cwd}".`
+        )
+
+        return next(context)
+      }
+
+      active = true
+
       const repo = await resolveGitRepositoryFromPackage(context.cwd)
       context.repository = repo ?? context.repository
 
@@ -106,6 +125,10 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
       return next(context)
     },
     discover: async (context, next) => {
+      if (!active) {
+        return next(context)
+      }
+
       const packages: Package[] = []
 
       const workspace = normalizeWorkspace(context.cwd, options.workspace)
@@ -146,6 +169,14 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
       return next(context)
     },
     publish: async (context, next) => {
+      if (!active) {
+        context.logger.debug(
+          'NPM publishing was skipped: no NPM workspace was found.'
+        )
+
+        return next(context)
+      }
+
       if (publishSkipped) {
         context.logger.debug(
           'NPM publishing was skipped: no registry authentication was found.'

@@ -5,6 +5,7 @@ import '../../../test/mock/env'
 
 import {
   executeReleaseWorkflow,
+  isPluginInactive,
   type ReleasePlan,
   type Tag,
 } from '@reelout/core'
@@ -83,6 +84,9 @@ test('skips GitHub release creation when GITHUB_TOKEN is missing', async () => {
     [
       [
         "GitHub releases will not be created: GITHUB_TOKEN is not set.",
+      ],
+      [
+        "Active plugins: @reelout/github",
       ],
       [
         "Status: [32mSUCCESS[39m",
@@ -178,26 +182,30 @@ test('fails workflow execution when the GitHub token is invalid during dry-run',
   expect(createRelease).not.toHaveBeenCalled()
 })
 
-test('fails workflow execution when repository context is unavailable', async () => {
+test('skips GitHub publishing and stays inactive when repository context is unavailable', async () => {
   context.env = { GITHUB_TOKEN: 'token' }
 
   context.plans = [plan]
 
-  await expect(
-    executeReleaseWorkflow(context, [plugin()])
-  ).rejects.toMatchInlineSnapshot(
-    '[Error: A Git repository is required to create a GitHub release.]'
-  )
+  await executeReleaseWorkflow(context, [plugin()])
 
+  expect(isPluginInactive(context, '@reelout/github')).toBe(true)
+  expect(context.outcome?.status).toBe('success')
   expect(createRelease).not.toHaveBeenCalled()
   expect(getRepo).not.toHaveBeenCalled()
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
       [
-        "Status: [31mFAILURE[39m",
+        "Active plugins: (none)",
       ],
       [
-        "Release complete: [31mA Git repository is required to create a GitHub release.[39m",
+        "Status: [32mSUCCESS[39m",
+      ],
+      [
+        "Release complete: [1m[32m1 released[39m[22m [90m(0)[39m
+
+    [44m a [49m[42m 1.0.0 ← 1.0.0 [49m[90m patch [39m
+    ",
       ],
     ]
   `)
@@ -233,6 +241,9 @@ test('previews the GitHub release skip during dry-run mode when GITHUB_TOKEN is 
     [
       [
         "GitHub releases will not be created: GITHUB_TOKEN is not set.",
+      ],
+      [
+        "Active plugins: @reelout/github",
       ],
       [
         "Status: [32mSUCCESS[39m [33m(dry run)[39m",

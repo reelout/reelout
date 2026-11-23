@@ -167,6 +167,28 @@ formatting, with two limits:
   requirements such as `^1.0, <2.0` are rewritten to the leading comparator
   alone.
 
+## Plugin activation
+
+Every built-in plugin is enabled by default and activates only when the
+repository matches: npm for a root `package.json`, Cargo for a root
+`Cargo.toml`, and GitHub or GitLab for a matching Git remote. Before the first
+phase, the workflow logs the resulting `Active plugins: ...` line. Inactive
+plugins are skipped entirely — they verify no tokens and make no requests —
+and `--strict` does not escalate inactivity.
+
+Run with `--debug` to see why a plugin is inactive:
+
+- `NPM workspace could not be found at "<path>".`
+- `Cargo workspace could not be found at "<path>".`
+- `GitHub releases will not be created: the repository is not hosted on GitHub.`
+- `GitLab releases will not be created: the repository is not hosted on GitLab.`
+
+Mixed repositories activate more than one integration: a JavaScript workspace
+that also keeps a `Cargo.toml` publishes crates in addition to packages, so a
+missing `CARGO_REGISTRY_TOKEN` warns — or fails under `--strict` — even when
+the crates are incidental. Override [`plugins`](./02-config.md#plugins) to
+remove the unwanted integration.
+
 ## A plugin could not be resolved
 
 If ReelOut cannot resolve a plugin's string specifier, the release fails with a

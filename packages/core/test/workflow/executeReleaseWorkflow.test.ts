@@ -121,6 +121,9 @@ test('executes all workflow hooks with empty release plans when no packages are 
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
       [
+        "Active plugins: plugin",
+      ],
+      [
         "Status: [32mSUCCESS[39m",
       ],
       [
@@ -174,6 +177,9 @@ test('forwards discovered packages to finalize hook context when package discove
   ])
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
+      [
+        "Active plugins: plugin",
+      ],
       [
         "Status: [32mSUCCESS[39m",
       ],
@@ -273,6 +279,9 @@ test('prints release summary report when packages are scheduled for release', as
   ])
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
+      [
+        "Active plugins: plugin",
+      ],
       [
         "Status: [32mSUCCESS[39m",
       ],
@@ -376,6 +385,9 @@ test('prints directory labels in the release summary when scheduled packages are
   ])
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
+      [
+        "Active plugins: plugin",
+      ],
       [
         "Status: [32mSUCCESS[39m",
       ],
@@ -653,6 +665,9 @@ test('runs finalize after reverse-onion rollbacks when a phase hook throws', asy
   })
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
+      [
+        "Active plugins: plugin",
+      ],
       [
         "Status: [31mFAILURE[39m",
       ],
@@ -943,6 +958,9 @@ test('logs middleware execution durations in development mode', async () => {
     [
       [
         "[90m[configure][39m plugin",
+      ],
+      [
+        "Active plugins: plugin",
       ],
       [
         "[90m[discover][39m plugin",

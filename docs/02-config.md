@@ -39,8 +39,10 @@ export default {
     '@reelout/core/builder',
     '@reelout/core/changelog',
     '@reelout/npm',
+    '@reelout/cargo',
     '@reelout/git',
     '@reelout/github',
+    '@reelout/gitlab',
   ],
 } satisfies ReleaseConfig
 ```
@@ -120,9 +122,13 @@ their prerelease qualifier and release channel.
 ### `plugins`
 
 An ordered list of plugins to run during the release. By default, ReelOut runs
-the analyzer, builder, and changelog plugins, followed by npm publishing, Git
-operations, and GitHub releases. Add `'@reelout/cargo'` to the list to publish
-Cargo workspace crates to crates.io in addition to npm packages.
+every built-in plugin: the analyzer, builder, and changelog, followed by npm
+and Cargo publishing, Git operations, and GitHub and GitLab releases. Each
+integration activates only when the repository matches — npm needs a root
+`package.json`, Cargo a root `Cargo.toml`, and the hosting plugins a matching
+Git remote — so a typical GitHub-hosted npm monorepo needs no `plugins` entry
+at all. Inapplicable plugins stay inactive for the run; see
+[Automatic activation](./04-plugins.md#automatic-activation).
 
 Entries can be module specifiers, plugin factories or objects, or tuples that
 pass options to a plugin factory:
@@ -144,14 +150,14 @@ details.
 
 ## Defaults and merging
 
-ReelOut's default configuration targets an npm monorepo hosted on GitHub:
+ReelOut's default configuration targets monorepos hosted on GitHub or GitLab:
 
-| Option       | Default                                                                                                  |
-| ------------ | -------------------------------------------------------------------------------------------------------- |
-| `author`     | The `github-actions[bot]` identity                                                                       |
-| `classifier` | Breaking changes → `major` (→ `minor` on `0.x`); `feat` → `minor`; `fix`, `perf`, and `revert` → `patch` |
-| `rules`      | `alpha`, `beta`, and `next` branches use matching qualifiers and channels                                |
-| `plugins`    | Analyzer, builder, changelog, npm, Git, and GitHub plugins, in that order                                |
+| Option       | Default                                                                                                                   |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| `author`     | The `github-actions[bot]` identity                                                                                        |
+| `classifier` | Breaking changes → `major` (→ `minor` on `0.x`); `feat` → `minor`; `fix`, `perf`, and `revert` → `patch`                  |
+| `rules`      | `alpha`, `beta`, and `next` branches use matching qualifiers and channels                                                 |
+| `plugins`    | All built-in plugins: analyzer, builder, changelog, npm, cargo, Git, GitHub, and GitLab — inapplicable ones stay inactive |
 
 ReelOut merges user configuration over these defaults at the top level.
 Unspecified values retain their defaults; a supplied array replaces the

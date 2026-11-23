@@ -2,3 +2,4 @@
 // Copyright (c) 2026 Fai
 
 export * from './HookDispatcher'
+export * from './pluginActivity'

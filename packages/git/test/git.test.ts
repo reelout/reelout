@@ -177,6 +177,9 @@ test('fails workflow execution when git remote is not configured', async () => {
     expect(logger.mock.calls).toMatchInlineSnapshot(`
       [
         [
+          "Active plugins: @reelout/git",
+        ],
+        [
           "Status: [31mFAILURE[39m",
         ],
         [

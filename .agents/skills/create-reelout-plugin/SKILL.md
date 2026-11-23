@@ -141,6 +141,64 @@ const middleware = async (context, next) => {
   warning after the report; it does not stop other `finalize` middleware or
   change the workflow outcome.
 
+## Repository-scoped activation
+
+A plugin that applies only to some repositories should detect applicability in
+`configure` and stay inactive for the rest of the run. ReelOut's built-in npm,
+Cargo, GitHub, and GitLab plugins follow this pattern using helpers exported
+from `reelout`:
+
+```ts
+import {
+  isPluginInactive,
+  markPluginInactive,
+  type ReleasePlugin,
+} from 'reelout'
+
+const createMyPlugin = (): ReleasePlugin => {
+  let active = false
+
+  return {
+    name: 'my-plugin',
+    version: '1.0.0',
+    configure: async (context, next) => {
+      if (!appliesTo(context)) {
+        markPluginInactive(context, 'my-plugin')
+        context.logger.debug('My releases will not be created: not applicable.')
+
+        return next(context)
+      }
+
+      active = true
+
+      return next(context)
+    },
+    publish: async (context, next) => {
+      if (!active) {
+        context.logger.debug('My publishing was skipped: not applicable.')
+
+        return next(context)
+      }
+
+      // ... perform the work
+      return next(context)
+    },
+  }
+}
+```
+
+Rules:
+
+- Gate first in `configure`, before credential checks, token verification, or
+  network calls.
+- Log inactivity at `debug` level. Inactivity is enablement, not a skipped
+  step: never warn for it and never escalate it under `--strict`. Reserve
+  warn-and-skip (or the strict throw) for a plugin that applies but lacks
+  credentials.
+- `isPluginInactive(context, name)` reports the current state; the workflow
+  resets it before each run and logs an `Active plugins: ...` summary before
+  the first phase.
+
 ## Context and side-effect safety
 
 Middleware receives a mutable `ReleaseContext`. Commonly used fields:

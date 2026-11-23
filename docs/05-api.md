@@ -101,7 +101,7 @@ The re-exported packages expose the workflow's building blocks, which you can us
 
 - **Versioning** — `bumpVersion`, `generateGitTagName`, `generateReleaseCommitMessage`, `buildReleaseNotes`
 - **Git** — `parseGitCommit`, `pushGitChanges`, `restoreFullGitHistory`, `readGitHistory`
-- **Plugin system** — `HookDispatcher`, `Interceptor`, `Priority`, `RELEASE_HOOK_NAMES`, `createPlugin`
+- **Plugin system** — `HookDispatcher`, `Interceptor`, `Priority`, `RELEASE_HOOK_NAMES`, `createPlugin`, `isPluginInactive`, `markPluginInactive`, `resetPluginActivity`
 - **npm** (from `@reelout/npm`) — `readPackageJson`, `writePackageJson`, `resolveWorkspaceMembers`, `prepareAuth`, `publishPackage`
 
 Browse the full surface in the [API reference](https://reelout.overview.vercel.app/).
