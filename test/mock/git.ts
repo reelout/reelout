@@ -46,7 +46,7 @@ vi.mock(
     const { readGitHistory } = await importActual()
 
     return {
-      readGitHistory: (...args: Parameters<typeof readGitHistory>) => {
+      readGitHistory: (...args) => {
         args[1] = { ...args[1], pageSize: 1 }
         return readGitHistory(...args)
       },

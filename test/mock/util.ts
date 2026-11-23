@@ -10,7 +10,7 @@ vi.mock(import('@reelout/core/util/readJson'), async (importActual) => {
   const { readJson } = await importActual()
 
   return {
-    readJson: async (...args: Parameters<typeof readJson>) => {
+    readJson: async (...args) => {
       try {
         return await readJson(...args)
       } catch (err) {
