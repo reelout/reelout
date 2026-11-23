@@ -234,6 +234,7 @@ const provideOIDCAuth = () => {
 
 function mountPackageFixture(): void {
   vol.fromJSON({
+    '/repo/package.json': JSON.stringify({ name: 'root', version: '0.0.0' }),
     '/repo/a/package.json': JSON.stringify({ name: 'a', version: '1.2.2' }),
     '/repo/b/package.json': JSON.stringify({ name: 'b', version: '2.0.0' }),
     '/repo/c/package.json': JSON.stringify({ name: 'c', version: '3.0.0' }),
@@ -354,6 +355,10 @@ test('overrides repository context with manifest configuration when package mani
 test('resolves workspace members when defined in package.json or pnpm-workspace.yaml', async () => {
   const plugins = [plugin({ workspace })]
 
+  vol.fromJSON({
+    '/repo/package.json': JSON.stringify({ name: 'root', version: '0.0.0' }),
+  })
+
   vi.mocked(loadPackages).mockClear()
 
   await executeReleaseWorkflow(context, plugins)
@@ -414,6 +419,31 @@ test('resolves workspace members when defined in package.json or pnpm-workspace.
       ],
     ]
   `)
+})
+
+test('stays inactive without a root package manifest', async () => {
+  vol.fromJSON({
+    '/repo/a/package.json': JSON.stringify({ name: 'a', version: '0.0.0' }),
+  })
+
+  context.plans = [
+    {
+      package: { name: 'a', provider: PLUGIN_NAME, location: 'a' },
+      history: [] as GitCommit[],
+      release: { version: '1.2.3' },
+    },
+  ] as ReleasePlan[]
+
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(loadPackages).not.toHaveBeenCalled()
+  expect(publishPackage).not.toHaveBeenCalled()
+  expect(context.outcome?.status).toBe('success')
+
+  expect(JSON.parse(await readFile('/repo/a/package.json', 'utf8'))).toEqual({
+    name: 'a',
+    version: '0.0.0',
+  })
 })
 
 test('preserves configured workspace members when workspace options are explicitly provided', async () => {
@@ -611,6 +641,7 @@ test('updates dependency versions in package manifests when release plans are pr
   workspace.members = ['*']
 
   vol.fromJSON({
+    '/repo/package.json': JSON.stringify({ name: 'root', version: '0.0.0' }),
     '/repo/a/package.json': JSON.stringify({
       name: 'a',
       version: '1.0.0',
@@ -710,6 +741,7 @@ test('updates dependency versions in package manifests when release plans are pr
       "version": "3.1.0"
     }
     ",
+      "/repo/package.json": "{"name":"root","version":"0.0.0"}",
     }
   `)
 })
@@ -720,13 +752,19 @@ test('does not modify package manifests when dry-run mode is enabled', async () 
   using _dryRun = vi.spyOn(context, 'dryRun', 'get').mockReturnValue(true)
 
   vol.fromJSON({
+    '/repo/package.json': JSON.stringify({ name: 'root', version: '0.0.0' }),
     '/repo/a/package.json': JSON.stringify({ name: 'a', version: '0.0.0' }),
     '/repo/b/package.json': JSON.stringify({ name: 'b', version: '0.0.0' }),
   })
 
   context.plans = [
     {
-      package: { location: 'a', version: '1.2.2' },
+      package: {
+        name: 'a',
+        provider: PLUGIN_NAME,
+        location: 'a',
+        version: '1.2.2',
+      },
       history: [] as GitCommit[],
       release: { version: '1.2.3' },
     },
@@ -740,21 +778,19 @@ test('does not modify package manifests when dry-run mode is enabled', async () 
   await executeReleaseWorkflow(context, [plugin()])
 
   expect(vol.toJSON()).toEqual({
+    '/repo/package.json': JSON.stringify({ name: 'root', version: '0.0.0' }),
     '/repo/a/package.json': JSON.stringify({ name: 'a', version: '0.0.0' }),
     '/repo/b/package.json': JSON.stringify({ name: 'b', version: '0.0.0' }),
   })
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
       [
-        "[33mPackage could not be loaded: JSON file at "[1m/repo/package.json[22m" could not be read.[39m",
-      ],
-      [
         "Status: [32mSUCCESS[39m [33m(dry run)[39m",
       ],
       [
-        "Release complete: [1m[32m1 released[39m[22m [90m(0)[39m
+        "Release complete: [1m[32m1 released[39m[22m [90m(1)[39m
 
-    [90m ./a [39m[42m 1.2.3 ← 1.2.2 [49m
+    [44m a [49m[42m 1.2.3 ← 1.2.2 [49m
     ",
       ],
     ]
@@ -763,6 +799,7 @@ test('does not modify package manifests when dry-run mode is enabled', async () 
 
 test('does not modify package manifests when owned by another provider', async () => {
   vol.fromJSON({
+    '/repo/package.json': JSON.stringify({ name: 'root', version: '0.0.0' }),
     '/repo/a/package.json': JSON.stringify({
       name: 'a',
       version: '1.0.0',
@@ -777,6 +814,7 @@ test('does not modify package manifests when owned by another provider', async (
   context.plans = [
     {
       package: {
+        name: 'a',
         provider: PLUGIN_NAME,
         location: 'a',
         version: '1.0.0',
@@ -787,6 +825,7 @@ test('does not modify package manifests when owned by another provider', async (
     },
     {
       package: {
+        name: 'b',
         provider: '@reelout/cargo',
         location: 'b',
         version: '1.0.0',
@@ -801,8 +840,16 @@ test('does not modify package manifests when owned by another provider', async (
 
   expect(vol.toJSON()).toMatchInlineSnapshot(`
     {
-      "/repo/a/package.json": "{"name":"a","version":"1.0.0","devDependencies":{"b":"^1.0.0"}}",
+      "/repo/a/package.json": "{
+      "name": "a",
+      "version": "1.0.1",
+      "devDependencies": {
+        "b": "^1.0.0"
+      }
+    }
+    ",
       "/repo/b/package.json": "{"name":"b","version":"1.0.0"}",
+      "/repo/package.json": "{"name":"root","version":"0.0.0"}",
     }
   `)
 })
@@ -811,6 +858,7 @@ test('does not publish packages when owned by another provider', async () => {
   await provideAmbientAuth()
 
   vol.fromJSON({
+    '/repo/package.json': JSON.stringify({ name: 'root', version: '0.0.0' }),
     '/repo/a/package.json': JSON.stringify({ name: 'a', version: '0.0.0' }),
     '/repo/b/package.json': JSON.stringify({ name: 'b', version: '0.0.0' }),
   })
@@ -876,6 +924,7 @@ test('skips authentication and publishing when packages are private', async () =
   prepareAuth.mockRejectedValue(new Error('Auth token is missing.'))
 
   vol.fromJSON({
+    '/repo/package.json': JSON.stringify({ name: 'root', version: '0.0.0' }),
     '/repo/a/package.json': JSON.stringify({ name: 'a', version: '0.0.0' }),
     '/repo/b/package.json': JSON.stringify({ name: 'b', version: '0.0.0' }),
   })
@@ -900,13 +949,10 @@ test('skips authentication and publishing when packages are private', async () =
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
       [
-        "[33mPackage could not be loaded: JSON file at "[1m/repo/package.json[22m" could not be read.[39m",
-      ],
-      [
         "Status: [32mSUCCESS[39m",
       ],
       [
-        "Release complete: [1m[32m2 released[39m[22m [90m(0)[39m
+        "Release complete: [1m[32m2 released[39m[22m [90m(1)[39m
 
     [90m ./a [39m[42m 1.2.3 ← 1.2.2 [49m
 
@@ -923,6 +969,7 @@ test('forwards dryRun flag to publisher when dry-run mode is enabled', async () 
   using _dryRun = vi.spyOn(context, 'dryRun', 'get').mockReturnValue(true)
 
   vol.fromJSON({
+    '/repo/package.json': JSON.stringify({ name: 'root', version: '0.0.0' }),
     '/repo/a/package.json': JSON.stringify({ name: 'a', version: '0.0.0' }),
     '/repo/b/package.json': JSON.stringify({ name: 'b', version: '0.0.0' }),
   })
@@ -992,13 +1039,10 @@ test('forwards dryRun flag to publisher when dry-run mode is enabled', async () 
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
       [
-        "[33mPackage could not be loaded: JSON file at "[1m/repo/package.json[22m" could not be read.[39m",
-      ],
-      [
         "Status: [32mSUCCESS[39m [33m(dry run)[39m",
       ],
       [
-        "Release complete: [1m[32m2 released[39m[22m [90m(0)[39m
+        "Release complete: [1m[32m2 released[39m[22m [90m(1)[39m
 
     [90m ./a [39m[42m 1.2.3 ← 1.2.2 [49m
 
@@ -1015,6 +1059,7 @@ test('forwards access, provenance, and stage options to publisher when explicitl
   using _ = vi.spyOn(context, 'releaseChannel', 'get').mockReturnValue('beta')
 
   vol.fromJSON({
+    '/repo/package.json': JSON.stringify({ name: 'root', version: '0.0.0' }),
     '/repo/a/package.json': JSON.stringify({ name: 'a', version: '0.0.0' }),
     '/repo/b/package.json': JSON.stringify({ name: 'b', version: '0.0.0' }),
   })
@@ -1527,6 +1572,7 @@ test('rejects workflow execution when auth token setup fails', async () => {
   prepareAuth.mockRejectedValue(new Error('Auth token is missing.'))
 
   vol.fromJSON({
+    '/repo/package.json': JSON.stringify({ name: 'root', version: '0.0.0' }),
     '/repo/a/package.json': JSON.stringify({ name: 'a', version: '0.0.0' }),
     '/repo/b/package.json': JSON.stringify({ name: 'b', version: '0.0.0' }),
   })
@@ -1553,9 +1599,6 @@ test('rejects workflow execution when auth token setup fails', async () => {
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
       [
-        "[33mPackage could not be loaded: JSON file at "[1m/repo/package.json[22m" could not be read.[39m",
-      ],
-      [
         "Status: [31mFAILURE[39m",
       ],
       [
@@ -1567,6 +1610,7 @@ test('rejects workflow execution when auth token setup fails', async () => {
 
 test('skips publishing when registry authentication is unavailable', async () => {
   vol.fromJSON({
+    '/repo/package.json': JSON.stringify({ name: 'root', version: '0.0.0' }),
     '/repo/a/package.json': JSON.stringify({ name: 'a', version: '0.0.0' }),
     '/repo/b/package.json': JSON.stringify({ name: 'b', version: '0.0.0' }),
   })
@@ -1604,6 +1648,7 @@ test('fails fast before publishing when registry authentication is unavailable i
   context.strict = true
 
   vol.fromJSON({
+    '/repo/package.json': JSON.stringify({ name: 'root', version: '0.0.0' }),
     '/repo/a/package.json': JSON.stringify({ name: 'a', version: '0.0.0' }),
   })
 
@@ -1620,6 +1665,7 @@ test('fails fast before publishing when registry authentication is unavailable i
   )
 
   expect(vol.toJSON()).toEqual({
+    '/repo/package.json': JSON.stringify({ name: 'root', version: '0.0.0' }),
     '/repo/a/package.json': JSON.stringify({ name: 'a', version: '0.0.0' }),
   })
   expect(publishPackage).toHaveBeenCalledTimes(0)
@@ -1634,6 +1680,7 @@ test('rejects workflow execution when registry authentication verification fails
   )
 
   vol.fromJSON({
+    '/repo/package.json': JSON.stringify({ name: 'root', version: '0.0.0' }),
     '/repo/a/package.json': JSON.stringify({ name: 'a', version: '0.0.0' }),
   })
 
@@ -1657,6 +1704,7 @@ test('verifies NPM_TOKEN with a whoami pre-flight before publishing', async () =
   context.env = { NPM_TOKEN: 'mock-npm-token' }
 
   vol.fromJSON({
+    '/repo/package.json': JSON.stringify({ name: 'root', version: '0.0.0' }),
     '/repo/a/package.json': JSON.stringify({ name: 'a', version: '0.0.0' }),
   })
 
@@ -1690,6 +1738,7 @@ test('verifies ambient registry credentials with a whoami pre-flight before publ
   await provideAmbientAuth()
 
   vol.fromJSON({
+    '/repo/package.json': JSON.stringify({ name: 'root', version: '0.0.0' }),
     '/repo/a/package.json': JSON.stringify({ name: 'a', version: '0.0.0' }),
   })
 
@@ -1721,6 +1770,7 @@ test('rejects workflow execution when ambient registry credentials fail verifica
   )
 
   vol.fromJSON({
+    '/repo/package.json': JSON.stringify({ name: 'root', version: '0.0.0' }),
     '/repo/a/package.json': JSON.stringify({ name: 'a', version: '0.0.0' }),
   })
 
@@ -1743,6 +1793,7 @@ test('publishes without a whoami pre-flight when NPM_ID_TOKEN is available', asy
   context.env = { NPM_ID_TOKEN: 'mock-id-token' }
 
   vol.fromJSON({
+    '/repo/package.json': JSON.stringify({ name: 'root', version: '0.0.0' }),
     '/repo/a/package.json': JSON.stringify({ name: 'a', version: '0.0.0' }),
   })
 
@@ -1801,6 +1852,7 @@ test('previews the authentication skip identically in dry-run mode', async () =>
   using _dryRun = vi.spyOn(context, 'dryRun', 'get').mockReturnValue(true)
 
   vol.fromJSON({
+    '/repo/package.json': JSON.stringify({ name: 'root', version: '0.0.0' }),
     '/repo/a/package.json': JSON.stringify({ name: 'a', version: '0.0.0' }),
   })
 
@@ -1834,6 +1886,7 @@ test('publishes without a whoami pre-flight when GitHub Actions OIDC tokens are 
   }
 
   vol.fromJSON({
+    '/repo/package.json': JSON.stringify({ name: 'root', version: '0.0.0' }),
     '/repo/a/package.json': JSON.stringify({ name: 'a', version: '0.0.0' }),
   })
 
@@ -2506,6 +2559,7 @@ test('rethrows the stage-required rejection when the package targets another reg
   provideOIDCAuth()
 
   vol.fromJSON({
+    '/repo/package.json': JSON.stringify({ name: 'root', version: '0.0.0' }),
     '/repo/a/package.json': JSON.stringify({
       name: 'a',
       version: '1.2.2',

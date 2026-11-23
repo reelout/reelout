@@ -141,6 +141,56 @@ const middleware = async (context, next) => {
   warning after the report; it does not stop other `finalize` middleware or
   change the workflow outcome.
 
+## Repository-scoped activation
+
+A plugin that applies only to some repositories should detect applicability
+with a cheap, stable predicate and check it directly in every hook that acts.
+ReelOut's built-in npm, GitHub, and GitLab plugins follow this stateless
+pattern:
+
+```ts
+import type { ReleasePlugin } from 'reelout'
+
+const appliesTo = (context: ReleaseContext): boolean =>
+  context.repository?.host === 'my-host'
+
+const createMyPlugin = (): ReleasePlugin => ({
+  name: 'my-plugin',
+  version: '1.0.0',
+  configure: async (context, next) => {
+    if (!appliesTo(context)) {
+      context.logger.debug('My releases will not be created: not applicable.')
+
+      return next(context)
+    }
+
+    return next(context)
+  },
+  publish: async (context, next) => {
+    if (!appliesTo(context)) {
+      context.logger.debug('My publishing was skipped: not applicable.')
+
+      return next(context)
+    }
+
+    // ... perform the work
+    return next(context)
+  },
+})
+```
+
+Rules:
+
+- Gate first in `configure`, before credential checks, token verification, or
+  network calls.
+- Re-check the same predicate in each later hook instead of keeping local or
+  context-level state: the condition is cheap and stable for the duration of
+  a run, and stateless gates cannot go stale across runs.
+- Log inactivity at `debug` level. Inactivity is enablement, not a skipped
+  step: never warn for it and never escalate it under `--strict`. Reserve
+  warn-and-skip (or the strict throw) for a plugin that applies but lacks
+  credentials.
+
 ## Context and side-effect safety
 
 Middleware receives a mutable `ReleaseContext`. Commonly used fields:

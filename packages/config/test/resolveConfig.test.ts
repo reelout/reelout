@@ -45,6 +45,8 @@ test('resolves default configuration when configuration file is absent', async (
         [expect.any(Function), undefined],
         [expect.any(Function), undefined],
         [expect.any(Function), undefined],
+        [expect.any(Function), undefined],
+        [expect.any(Function), undefined],
       ],
     })
 
@@ -53,8 +55,10 @@ test('resolves default configuration when configuration file is absent', async (
       expect.objectContaining({ name: '@reelout/core/builder' }),
       expect.objectContaining({ name: '@reelout/core/changelog' }),
       expect.objectContaining({ name: '@reelout/npm' }),
+      expect.objectContaining({ name: '@reelout/cargo' }),
       expect.objectContaining({ name: '@reelout/git' }),
       expect.objectContaining({ name: '@reelout/github' }),
+      expect.objectContaining({ name: '@reelout/gitlab' }),
     ])
   })
 })

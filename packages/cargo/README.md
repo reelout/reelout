@@ -19,8 +19,10 @@ This ESM-only package requires Node.js `>=24.15`.
 
 ## Usage
 
-Add the plugin to the `plugins` array in your ReelOut configuration. Pass
-options as a tuple when needed:
+The default configuration includes this plugin. It activates only when the
+workspace root has a `Cargo.toml` and stays inactive otherwise, so
+non-Rust repositories run it without side effects. Pass options as a tuple
+when needed:
 
 ```ts
 export default {
@@ -28,9 +30,11 @@ export default {
     '@reelout/core/analyzer',
     '@reelout/core/builder',
     '@reelout/core/changelog',
+    '@reelout/npm',
     ['@reelout/cargo', { allowDirty: true }],
     '@reelout/git',
     '@reelout/github',
+    '@reelout/gitlab',
   ],
 }
 ```

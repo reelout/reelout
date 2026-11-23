@@ -25,15 +25,18 @@ const readGitlabToken = (env: ReleaseContext['env']): string | undefined => {
  *
  * @remarks
  * **Lifecycle Stages:**
- * - `configure`: Checks the `GITLAB_TOKEN` environment variable. A missing token
- *   skips GitLab release creation with a warning — or throws under strict mode —
- *   and a provided token is verified against the release project so an invalid
- *   token fails before any mutation. Skips the pre-flight when repository
- *   context is unavailable. Runs under dry-run.
- * - `publish`: Creates GitLab releases in reverse alphabetical package order (ensuring the root package release
- *   is created last), overwriting existing releases for the same tag. Automatically rolls back if subsequent
- *   publishing stages fail: releases created by this run are deleted, and overwritten releases are restored
- *   to their original content.
+ * - `configure`: Leaves the plugin inactive when no GitLab-hosted repository
+ *   was detected. Otherwise verifies the `GITLAB_TOKEN` environment variable:
+ *   a missing token skips the plugin's `publish` step with a warning — or
+ *   fails the run in strict mode — and a provided token is verified against
+ *   the release repository so an invalid token fails before any mutation,
+ *   including under dry-run.
+ * - `publish`: Skips release creation when the plugin is inactive. Creates
+ *   GitLab releases in reverse alphabetical package order (ensuring the root
+ *   package release is created last), overwriting the name and notes of any
+ *   existing release for a planned tag. Automatically rolls back when
+ *   subsequent publishing stages fail: releases created by this run are
+ *   deleted and overwritten releases are restored to their original content.
  *
  * @returns A release plugin configured for GitLab release creation.
  */
@@ -41,6 +44,16 @@ const gitlab = (): ReleasePlugin => ({
   name: '@reelout/gitlab',
   version,
   configure: async (context, next) => {
+    const repository = context.repository
+
+    if (repository?.host !== 'gitlab') {
+      context.logger.debug(
+        'GitLab releases will not be created: no GitLab-hosted repository was detected.'
+      )
+
+      return next(context)
+    }
+
     const token = readGitlabToken(context.env)
 
     if (!token) {
@@ -57,17 +70,17 @@ const gitlab = (): ReleasePlugin => ({
       return next(context)
     }
 
-    if (context.repository) {
-      await verifyToken(token, context.repository)
-    }
+    await verifyToken(token, repository)
 
     return next(context)
   },
   publish: async (context, next) => {
-    if (!context.repository) {
-      throw new Error(
-        'A Git repository is required to create a GitLab release.'
+    if (context.repository?.host !== 'gitlab') {
+      context.logger.debug(
+        'GitLab publishing was skipped: no GitLab-hosted repository was detected.'
       )
+
+      return next(context)
     }
 
     const token = readGitlabToken(context.env)

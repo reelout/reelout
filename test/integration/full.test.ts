@@ -92,9 +92,6 @@ test('runs workflow without packages', async () => {
       expect(logger.mock.calls).toMatchInlineSnapshot(`
         [
           [
-            "[33mPackage could not be loaded: JSON file at "[1m<cwd>/package.json[22m" could not be read.[39m",
-          ],
-          [
             "Status: [32mSUCCESS[39m",
           ],
           [

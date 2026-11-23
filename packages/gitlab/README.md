@@ -18,7 +18,11 @@ This ESM-only package requires Node.js `>=24.15`.
 
 ## Usage
 
-Add the plugin to the `plugins` array in your ReelOut configuration:
+The default configuration includes this plugin. It activates only when the
+repository is hosted on GitLab — read from the `origin` remote, or from the
+root manifest's `repository` field when it declares one — and stays inactive
+otherwise, so a GitHub-hosted repository runs it without side effects.
+Reference it explicitly in the `plugins` array to pin or reorder it:
 
 ```ts
 export default {
@@ -27,7 +31,9 @@ export default {
     '@reelout/core/builder',
     '@reelout/core/changelog',
     '@reelout/npm',
+    '@reelout/cargo',
     '@reelout/git',
+    '@reelout/github',
     '@reelout/gitlab',
   ],
 }

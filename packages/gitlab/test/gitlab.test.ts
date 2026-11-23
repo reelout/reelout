@@ -181,31 +181,44 @@ test('fails workflow execution when GITLAB_TOKEN fails verification', async () =
   `)
 })
 
-test('fails workflow execution when repository context is unavailable', async () => {
+test('skips GitLab publishing and stays inactive when repository context is unavailable', async () => {
   context.env = { GITLAB_TOKEN: 'token' }
 
   context.repository = null
 
   context.plans = plans
 
-  await expect(
-    executeReleaseWorkflow(context, [plugin()])
-  ).rejects.toMatchInlineSnapshot(
-    `[Error: A Git repository is required to create a GitLab release.]`
-  )
+  await executeReleaseWorkflow(context, [plugin()])
 
+  expect(context.outcome?.status).toBe('success')
   expect(createReleaseMock).not.toHaveBeenCalled()
   expect(showProjectMock).not.toHaveBeenCalled()
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
       [
-        "Status: [31mFAILURE[39m",
+        "Status: [32mSUCCESS[39m",
       ],
       [
-        "Release complete: [31mA Git repository is required to create a GitLab release.[39m",
+        "Release complete: [33mNo packages are scheduled for release.[39m",
       ],
     ]
   `)
+})
+
+test('stays inactive when the repository is hosted on GitHub, even in strict mode', async () => {
+  context.env = { GITLAB_TOKEN: 'token' }
+
+  context.strict = true
+
+  context.repository = createMockRepository('github')
+
+  context.plans = plans
+
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(context.outcome?.status).toBe('success')
+  expect(showProjectMock).not.toHaveBeenCalled()
+  expect(createReleaseMock).not.toHaveBeenCalled()
 })
 
 test('skips creating GitLab releases during dry-run mode', async () => {

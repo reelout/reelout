@@ -25,14 +25,18 @@ const readGitHubToken = (env: ReleaseContext['env']): string | undefined => {
  *
  * @remarks
  * **Lifecycle Stages:**
- * - `configure`: Verifies the `GITHUB_TOKEN` environment variable is present and
- *   able to access the release repository. Skips the pre-flight when repository
- *   context is unavailable. In strict mode a missing token fails the run;
- *   otherwise the plugin's `publish` step is skipped and a warning is logged.
- * - `publish`: Creates GitHub releases in reverse alphabetical package order (ensuring the root
- *   package release is created last). Overwrites the name and notes of an existing release for a
- *   planned tag. Automatically rolls back — restoring overwritten releases and deleting created
- *   ones — if subsequent publishing stages fail.
+ * - `configure`: Leaves the plugin inactive when no GitHub-hosted repository
+ *   was detected. Otherwise verifies the `GITHUB_TOKEN` environment variable:
+ *   a missing token skips the plugin's `publish` step with a warning — or
+ *   fails the run in strict mode — and a provided token is verified against
+ *   the release repository so an invalid token fails before any mutation,
+ *   including under dry-run.
+ * - `publish`: Skips release creation when the plugin is inactive. Creates
+ *   GitHub releases in reverse alphabetical package order (ensuring the root
+ *   package release is created last), overwriting the name and notes of any
+ *   existing release for a planned tag. Automatically rolls back when
+ *   subsequent publishing stages fail: releases created by this run are
+ *   deleted and overwritten releases are restored to their original content.
  *
  * @returns A release plugin configured for GitHub release creation.
  */
@@ -40,6 +44,16 @@ const github = (): ReleasePlugin => ({
   name: '@reelout/github',
   version,
   configure: async (context, next) => {
+    const repository = context.repository
+
+    if (repository?.host !== 'github') {
+      context.logger.debug(
+        'GitHub releases will not be created: no GitHub-hosted repository was detected.'
+      )
+
+      return next(context)
+    }
+
     const token = readGitHubToken(context.env)
 
     if (!token) {
@@ -56,17 +70,17 @@ const github = (): ReleasePlugin => ({
       return next(context)
     }
 
-    if (context.repository) {
-      await verifyToken(token, context.repository)
-    }
+    await verifyToken(token, repository)
 
     return next(context)
   },
   publish: async (context, next) => {
-    if (!context.repository) {
-      throw new Error(
-        'A Git repository is required to create a GitHub release.'
+    if (context.repository?.host !== 'github') {
+      context.logger.debug(
+        'GitHub publishing was skipped: no GitHub-hosted repository was detected.'
       )
+
+      return next(context)
     }
 
     const token = readGitHubToken(context.env)

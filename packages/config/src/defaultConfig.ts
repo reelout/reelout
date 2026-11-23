@@ -29,7 +29,9 @@ export const defaultConfig = Object.freeze({
     '@reelout/core/builder', // Build the release artifacts.
     '@reelout/core/changelog', // Generate and write changelog entries for each release.
     '@reelout/npm', // Update package manifests and publish packages to npm.
+    '@reelout/cargo', // Update crate manifests and publish crates to crates.io.
     '@reelout/git', // Create release commits and tags, then push them.
     '@reelout/github', // Create GitHub releases from finalized plans.
+    '@reelout/gitlab', // Create GitLab releases from finalized plans.
   ],
 } satisfies Required<ReleaseConfig>)

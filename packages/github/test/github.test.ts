@@ -10,7 +10,12 @@ import {
 } from '@reelout/core'
 import plugin from '@reelout/github'
 import { beforeEach, expect, test, vi } from 'vitest'
-import { context, logger, repository } from '../../../test/mock/context'
+import {
+  context,
+  createMockRepository,
+  logger,
+  repository,
+} from '../../../test/mock/context'
 
 const getRepo = vi.hoisted(() => vi.fn())
 
@@ -178,29 +183,47 @@ test('fails workflow execution when the GitHub token is invalid during dry-run',
   expect(createRelease).not.toHaveBeenCalled()
 })
 
-test('fails workflow execution when repository context is unavailable', async () => {
+test('skips GitHub publishing and stays inactive when repository context is unavailable', async () => {
   context.env = { GITHUB_TOKEN: 'token' }
+
+  context.repository = null
 
   context.plans = [plan]
 
-  await expect(
-    executeReleaseWorkflow(context, [plugin()])
-  ).rejects.toMatchInlineSnapshot(
-    '[Error: A Git repository is required to create a GitHub release.]'
-  )
+  await executeReleaseWorkflow(context, [plugin()])
 
+  expect(context.outcome?.status).toBe('success')
   expect(createRelease).not.toHaveBeenCalled()
   expect(getRepo).not.toHaveBeenCalled()
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
       [
-        "Status: [31mFAILURE[39m",
+        "Status: [32mSUCCESS[39m",
       ],
       [
-        "Release complete: [31mA Git repository is required to create a GitHub release.[39m",
+        "Release complete: [1m[32m1 released[39m[22m [90m(0)[39m
+
+    [44m a [49m[42m 1.0.0 ← 1.0.0 [49m[90m patch [39m
+    ",
       ],
     ]
   `)
+})
+
+test('stays inactive when the repository is hosted on GitLab, even in strict mode', async () => {
+  context.env = { GITHUB_TOKEN: 'token' }
+
+  context.strict = true
+
+  context.repository = createMockRepository('gitlab')
+
+  context.plans = [plan]
+
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(context.outcome?.status).toBe('success')
+  expect(getRepo).not.toHaveBeenCalled()
+  expect(createRelease).not.toHaveBeenCalled()
 })
 
 test('verifies the GitHub token during dry-run mode without creating releases', async () => {

@@ -24,20 +24,23 @@ yarn add -D reelout
 ```
 
 The CLI installs these integrations as dependencies of `@reelout/config`. The
-default configuration enables the npm, Git, and GitHub plugins; use the GitLab
-plugin instead of GitHub when needed:
+default configuration enables every built-in plugin, and each integration
+activates only when the repository matches:
 
-| Package           | Purpose                                                               |
-| ----------------- | --------------------------------------------------------------------- |
-| `@reelout/npm`    | Resolves the workspace, updates manifests, and publishes npm packages |
-| `@reelout/cargo`  | Resolves the Cargo workspace, updates manifests, and publishes crates |
-| `@reelout/git`    | Creates the release commit and pushes tags                            |
-| `@reelout/github` | Creates GitHub releases                                               |
-| `@reelout/gitlab` | Creates GitLab releases                                               |
+| Package           | Purpose                                                               | Activates when                        |
+| ----------------- | --------------------------------------------------------------------- | ------------------------------------- |
+| `@reelout/npm`    | Resolves the workspace, updates manifests, and publishes npm packages | The workspace root has `package.json` |
+| `@reelout/cargo`  | Resolves the Cargo workspace, updates manifests, and publishes crates | The workspace root has `Cargo.toml`   |
+| `@reelout/git`    | Creates the release commit and pushes tags                            | Always                                |
+| `@reelout/github` | Creates GitHub releases                                               | The repository is hosted on GitHub    |
+| `@reelout/gitlab` | Creates GitLab releases                                               | The repository is hosted on GitLab    |
 
-The default plugin list uses GitHub. To publish GitLab releases instead,
-replace `@reelout/github` with `@reelout/gitlab` in your
-[configuration](./02-config.md#plugins).
+Hosting plugins read the repository from the `origin` remote; a `repository`
+field declared in the root manifest takes precedence. Inapplicable plugins
+stay inactive: they log at debug level, verify no tokens, and make no
+requests, so a GitLab-hosted repository runs the GitLab plugin without any
+configuration. See [Plugins](./04-plugins.md#automatic-activation) for
+details and for overriding the defaults.
 
 ## Preview a release
 

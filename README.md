@@ -14,6 +14,9 @@ publish packages through an extensible plugin system.
 - Calculates independent release plans for workspace packages.
 - Uses Conventional Commits to determine `major`, `minor`, and `patch` releases.
 - Supports prerelease branches and configurable release channels.
+- Zero-config: every built-in plugin is enabled by default and activates
+  automatically — npm and Cargo by root manifest, GitHub or GitLab releases by
+  repository host.
 - Extends the workflow with plugins for changelogs, npm and crates.io
   publishing, Git tags, and GitHub or GitLab releases.
 - Provides a dry run so you can inspect a release before publishing.
@@ -46,7 +49,9 @@ npx reelout
 
 With the default plugins, ReelOut analyzes commits, updates package versions and
 changelogs, creates a release commit and tags, publishes eligible packages to
-npm, and creates a GitHub release. See
+npm or crates.io, and creates a GitHub or GitLab release matching the
+repository host — each integration activating only when the repository calls
+for it. See
 [Getting Started](./docs/01-getting-started.md) for prerequisites and details.
 
 ## CLI
