@@ -76,8 +76,6 @@ field declared in the root manifest takes precedence. A plugin that does not
 apply stays **inactive** for the run: it logs one debug line, verifies no
 credentials, and makes no network requests or file changes. Inactivity is
 enablement, not a skipped step, so `--strict` does not turn it into an error.
-Once configuration completes, the workflow logs the resulting list, for
-example `Active plugins: @reelout/core/analyzer, ...`.
 
 Mixed repositories activate more than one integration: a JavaScript workspace
 that also keeps a `Cargo.toml` publishes npm packages and crates, so a missing

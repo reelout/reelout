@@ -48,8 +48,6 @@ const gitlab = (): ReleasePlugin => {
       const repository = context.repository
 
       if (repository?.host !== 'gitlab') {
-        context.inactivePlugins.add('@reelout/gitlab')
-
         context.logger.debug(
           'GitLab releases will not be created: the repository is not hosted on GitLab.'
         )
@@ -78,18 +76,12 @@ const gitlab = (): ReleasePlugin => {
       return next(context)
     },
     publish: async (context, next) => {
-      if (context.inactivePlugins.has('@reelout/gitlab')) {
+      if (context.repository?.host !== 'gitlab') {
         context.logger.debug(
           'GitLab publishing was skipped: the repository is not hosted on GitLab.'
         )
 
         return next(context)
-      }
-
-      if (!context.repository) {
-        throw new Error(
-          'A Git repository is required to create a GitLab release.'
-        )
       }
 
       const token = readGitlabToken(context.env)

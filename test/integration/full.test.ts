@@ -92,9 +92,6 @@ test('runs workflow without packages', async () => {
       expect(logger.mock.calls).toMatchInlineSnapshot(`
         [
           [
-            "Active plugins: @reelout/core/analyzer, @reelout/core/builder, @reelout/core/changelog, @reelout/git, @reelout/github",
-          ],
-          [
             "Status: [32mSUCCESS[39m",
           ],
           [
@@ -140,9 +137,6 @@ test('runs workflow with an empty package.json', async () => {
       expect(await getGitTags(cwd)).toEqual([])
       expect(logger.mock.calls).toMatchInlineSnapshot(`
         [
-          [
-            "Active plugins: @reelout/core/analyzer, @reelout/core/builder, @reelout/core/changelog, @reelout/npm, @reelout/git, @reelout/github",
-          ],
           [
             "[33mPackage could not be loaded: Package version "undefined" in "." is not a valid semantic version.[39m",
           ],
@@ -202,9 +196,6 @@ test('releases the root package', async () => {
       `)
       expect(logger.mock.calls).toMatchInlineSnapshot(`
         [
-          [
-            "Active plugins: @reelout/core/analyzer, @reelout/core/builder, @reelout/core/changelog, @reelout/npm, @reelout/git, @reelout/github",
-          ],
           [
             "Status: [32mSUCCESS[39m",
           ],
@@ -318,9 +309,6 @@ test('releases workspace packages', async () => {
       expect(logger.mock.calls).toMatchInlineSnapshot(`
         [
           [
-            "Active plugins: @reelout/core/analyzer, @reelout/core/builder, @reelout/core/changelog, @reelout/npm, @reelout/git, @reelout/github",
-          ],
-          [
             "[33mPackage could not be loaded: Package version "undefined" in "packages/pkg4" is not a valid semantic version.[39m",
           ],
           [
@@ -433,9 +421,6 @@ test('prints a dry-run report for workspace releases', async () => {
       expect(await getGitTags(cwd)).toEqual([])
       expect(logger.mock.calls).toMatchInlineSnapshot(`
         [
-          [
-            "Active plugins: @reelout/core/analyzer, @reelout/core/builder, @reelout/core/changelog, @reelout/npm, @reelout/git, @reelout/github",
-          ],
           [
             "[33mPackage could not be loaded: Package version "undefined" in "packages/pkg4" is not a valid semantic version.[39m",
           ],
@@ -554,9 +539,6 @@ test('releases workspace packages when the pnpm workspace manifest changes', asy
       `)
       expect(logger.mock.calls).toMatchInlineSnapshot(`
         [
-          [
-            "Active plugins: @reelout/core/analyzer, @reelout/core/builder, @reelout/core/changelog, @reelout/npm, @reelout/git, @reelout/github",
-          ],
           [
             "Status: [32mSUCCESS[39m",
           ],

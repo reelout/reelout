@@ -90,9 +90,6 @@ test('skips GitHub release creation when GITHUB_TOKEN is missing', async () => {
         "GitHub releases will not be created: GITHUB_TOKEN is not set.",
       ],
       [
-        "Active plugins: @reelout/github",
-      ],
-      [
         "Status: [32mSUCCESS[39m",
       ],
       [
@@ -193,15 +190,11 @@ test('skips GitHub publishing and stays inactive when repository context is unav
 
   await executeReleaseWorkflow(context, [plugin()])
 
-  expect(context.inactivePlugins.has('@reelout/github')).toBe(true)
   expect(context.outcome?.status).toBe('success')
   expect(createRelease).not.toHaveBeenCalled()
   expect(getRepo).not.toHaveBeenCalled()
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
-      [
-        "Active plugins: (none)",
-      ],
       [
         "Status: [32mSUCCESS[39m",
       ],
@@ -226,7 +219,6 @@ test('stays inactive when the repository is hosted on GitLab, even in strict mod
 
   await executeReleaseWorkflow(context, [plugin()])
 
-  expect(context.inactivePlugins.has('@reelout/github')).toBe(true)
   expect(context.outcome?.status).toBe('success')
   expect(getRepo).not.toHaveBeenCalled()
   expect(createRelease).not.toHaveBeenCalled()
@@ -262,9 +254,6 @@ test('previews the GitHub release skip during dry-run mode when GITHUB_TOKEN is 
     [
       [
         "GitHub releases will not be created: GITHUB_TOKEN is not set.",
-      ],
-      [
-        "Active plugins: @reelout/github",
       ],
       [
         "Status: [32mSUCCESS[39m [33m(dry run)[39m",

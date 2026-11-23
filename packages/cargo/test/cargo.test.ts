@@ -151,7 +151,6 @@ beforeEach(() => {
 test('stays inactive without a Cargo manifest', async () => {
   await executeReleaseWorkflow(context, [plugin()])
 
-  expect(context.inactivePlugins.has(PLUGIN_NAME)).toBe(true)
   expect(context.repository).toBe(null)
   expect(loadCargoPackages).not.toHaveBeenCalled()
   expect(resolveCargoToken).not.toHaveBeenCalled()

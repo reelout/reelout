@@ -55,16 +55,10 @@ test('returns empty plans when repository has no commits', async () => {
     expect(logger.mock.calls).toMatchInlineSnapshot(`
       [
         [
-          "Active plugins: @reelout/core/analyzer",
-        ],
-        [
           "Status: [32mSUCCESS[39m",
         ],
         [
           "Release complete: [33mNo packages are scheduled for release.[39m",
-        ],
-        [
-          "Active plugins: @reelout/core/analyzer",
         ],
         [
           "Status: [32mSUCCESS[39m",
@@ -168,9 +162,6 @@ test('derives release plans for packages missing an explicit version', async () 
     `)
     expect(logger.mock.calls).toMatchInlineSnapshot(`
       [
-        [
-          "Active plugins: @reelout/core/analyzer",
-        ],
         [
           "Status: [32mSUCCESS[39m",
         ],
@@ -429,9 +420,6 @@ test('treats a tag that does not point at a package commit as unverified', async
     expect(logger.mock.calls).toMatchInlineSnapshot(`
       [
         [
-          "Active plugins: @reelout/core/analyzer",
-        ],
-        [
           "Status: [32mSUCCESS[39m",
         ],
         [
@@ -659,9 +647,6 @@ test('preserves pre-existing release plans and formats changelog entries', async
     `)
     expect(logger.mock.calls).toMatchInlineSnapshot(`
       [
-        [
-          "Active plugins: @reelout/core/analyzer",
-        ],
         [
           "Status: [32mSUCCESS[39m",
         ],

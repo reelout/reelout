@@ -105,35 +105,11 @@ function hookLabel(hook: ReleaseHookName, plugin: string): string {
 }
 
 /**
- * Log the plugins that are active for a release workflow.
- *
- * Filters out the plugins marked inactive during configuration and prints
- * the remaining names as a single summary line.
- *
- * @param context Release execution context carrying the logger
- * @param plugins List of release plugins executed by the workflow
- */
-function logActivePlugins(
-  context: ReleaseContext,
-  plugins: readonly ReleasePlugin[]
-): void {
-  const active = plugins
-    .filter((plugin) => !context.inactivePlugins.has(plugin.name))
-    .map((plugin) => plugin.name)
-
-  context.logger.info(
-    `Active plugins: ${active.length > 0 ? active.join(', ') : '(none)'}`
-  )
-}
-
-/**
  * Execute the complete release workflow across all configured plugins.
  *
- * Resets the context's plugin activity tracking, runs each lifecycle phase
- * sequentially, dispatching plugin hooks in onion order based on declared
- * priority, and checks the abort signal before each phase. When the
- * `discover` phase starts, an info summary lists the plugins that remain
- * active after configuration. Each dispatched middleware runs through a
+ * Runs each lifecycle phase sequentially, dispatching plugin hooks in onion
+ * order based on declared priority, and checks the abort signal before each
+ * phase. Each dispatched middleware runs through a
  * single constructor interceptor that also attributes failures to the owning
  * hook and plugin,
  * collects middleware failures, and rescues `finalize` errors so the
@@ -157,8 +133,6 @@ export async function executeReleaseWorkflow(
   plugins: readonly ReleasePlugin[]
 ): Promise<void> {
   context.outcome = null
-
-  context.inactivePlugins.clear()
 
   const isSilent = import.meta.env.MODE === 'test'
 
@@ -264,8 +238,6 @@ export async function executeReleaseWorkflow(
     if (hook === 'finalize') return await dispatch(index + 1, context)
 
     throwIfCancelled(context)
-
-    if (hook === 'discover') logActivePlugins(context, plugins)
 
     return await dispatcher.dispatch(hook, context, (context) =>
       dispatch(index + 1, context)

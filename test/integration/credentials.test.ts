@@ -189,9 +189,6 @@ test('skips npm publishing and GitHub releases while completing the release when
             "GitHub releases will not be created: GITHUB_TOKEN is not set.",
           ],
           [
-            "Active plugins: @reelout/core/analyzer, @reelout/core/builder, @reelout/core/changelog, @reelout/npm, @reelout/git, @reelout/github",
-          ],
-          [
             "Status: [32mSUCCESS[39m",
           ],
           [
@@ -311,9 +308,6 @@ test('previews missing credentials without side effects in dry-run', async () =>
             "GitHub releases will not be created: GITHUB_TOKEN is not set.",
           ],
           [
-            "Active plugins: @reelout/core/analyzer, @reelout/core/builder, @reelout/core/changelog, @reelout/npm, @reelout/git, @reelout/github",
-          ],
-          [
             "Status: [32mSUCCESS[39m [33m(dry run)[39m",
           ],
           [
@@ -383,9 +377,6 @@ test('completes an already published npm plan with a synced dist-tag and no publ
       `)
       expect(logger.mock.calls).toMatchInlineSnapshot(`
         [
-          [
-            "Active plugins: @reelout/core/analyzer, @reelout/core/builder, @reelout/core/changelog, @reelout/npm, @reelout/git, @reelout/github",
-          ],
           [
             "[33mCould not verify publish permission for "pkg@0.1.0": the registry will reject the publish if access is missing.[39m",
           ],

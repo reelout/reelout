@@ -562,9 +562,6 @@ test('skips writing changelog files to disk in dry-run mode', async () => {
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
       [
-        "Active plugins: @reelout/core/changelog",
-      ],
-      [
         "Status: [32mSUCCESS[39m [33m(dry run)[39m",
       ],
       [
@@ -600,9 +597,6 @@ test('writes generated changelog files to disk for each release plan', async () 
   `)
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
-      [
-        "Active plugins: @reelout/core/changelog",
-      ],
       [
         "Status: [32mSUCCESS[39m",
       ],

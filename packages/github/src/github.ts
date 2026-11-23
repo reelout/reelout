@@ -47,8 +47,6 @@ const github = (): ReleasePlugin => {
       const repository = context.repository
 
       if (repository?.host !== 'github') {
-        context.inactivePlugins.add('@reelout/github')
-
         context.logger.debug(
           'GitHub releases will not be created: the repository is not hosted on GitHub.'
         )
@@ -77,18 +75,12 @@ const github = (): ReleasePlugin => {
       return next(context)
     },
     publish: async (context, next) => {
-      if (context.inactivePlugins.has('@reelout/github')) {
+      if (context.repository?.host !== 'github') {
         context.logger.debug(
           'GitHub publishing was skipped: the repository is not hosted on GitHub.'
         )
 
         return next(context)
-      }
-
-      if (!context.repository) {
-        throw new Error(
-          'A Git repository is required to create a GitHub release.'
-        )
       }
 
       const token = readGitHubToken(context.env)

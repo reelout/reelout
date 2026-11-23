@@ -195,7 +195,6 @@ test('populates context with default configuration, plugins, and metadata upon s
       packages: [],
       plans: [],
       outcome: null,
-      inactivePlugins: new Set(),
     })
   })
 }, 15_000)

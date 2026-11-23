@@ -78,9 +78,6 @@ test('skips release metadata generation when plan release is null', async () => 
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
       [
-        "Active plugins: @reelout/core/builder",
-      ],
-      [
         "Status: [32mSUCCESS[39m",
       ],
       [
@@ -147,9 +144,6 @@ test('logs warning and omits release version when package version is invalid sem
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
       [
-        "Active plugins: @reelout/core/builder",
-      ],
-      [
         "[33mVersion could not be determined for package at "[1mpkg1[22m": Version "x.y.z" is not a valid semantic version.[39m",
       ],
       [
@@ -215,9 +209,6 @@ test('bumps package version to next major semver when release type is major', as
   `)
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
-      [
-        "Active plugins: @reelout/core/builder",
-      ],
       [
         "[33mTag could not be determined for package at "[1mpkg2[22m": Package name is required to build a tag name.[39m",
       ],
@@ -287,9 +278,6 @@ test('bumps package version to next minor semver when release type is minor', as
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
       [
-        "Active plugins: @reelout/core/builder",
-      ],
-      [
         "[33mTag could not be determined for package at "[1mpkg2[22m": Package name is required to build a tag name.[39m",
       ],
       [
@@ -357,9 +345,6 @@ test('bumps package version to next patch semver when release type is patch', as
   `)
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
-      [
-        "Active plugins: @reelout/core/builder",
-      ],
       [
         "[33mTag could not be determined for package at "[1mpkg2[22m": Package name is required to build a tag name.[39m",
       ],
@@ -429,9 +414,6 @@ test('graduates prerelease to stable major version when release type is major', 
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
       [
-        "Active plugins: @reelout/core/builder",
-      ],
-      [
         "[33mTag could not be determined for package at "[1mpkg2[22m": Package name is required to build a tag name.[39m",
       ],
       [
@@ -500,9 +482,6 @@ test('graduates prerelease to stable minor version when release type is minor', 
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
       [
-        "Active plugins: @reelout/core/builder",
-      ],
-      [
         "[33mTag could not be determined for package at "[1mpkg2[22m": Package name is required to build a tag name.[39m",
       ],
       [
@@ -570,9 +549,6 @@ test('graduates prerelease to stable patch version when release type is patch', 
   `)
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
-      [
-        "Active plugins: @reelout/core/builder",
-      ],
       [
         "[33mTag could not be determined for package at "[1mpkg2[22m": Package name is required to build a tag name.[39m",
       ],
@@ -659,9 +635,6 @@ test('applies prerelease qualifier to bumped version when versionQualifier is se
   `)
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
-      [
-        "Active plugins: @reelout/core/builder",
-      ],
       [
         "Status: [32mSUCCESS[39m",
       ],
@@ -754,9 +727,6 @@ test('advances prerelease to next minor track when bumping minor version with em
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
       [
-        "Active plugins: @reelout/core/builder",
-      ],
-      [
         "Status: [32mSUCCESS[39m",
       ],
       [
@@ -833,9 +803,6 @@ test('logs warning and omits tag creation when non-entry package lacks a name', 
   `)
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
-      [
-        "Active plugins: @reelout/core/builder",
-      ],
       [
         "[33mTag could not be determined for package at "[1mpkg2[22m": Package name is required to build a tag name.[39m",
       ],
@@ -920,9 +887,6 @@ test('attaches root tag to entry package and package-prefixed tag to non-entry p
   `)
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
-      [
-        "Active plugins: @reelout/core/builder",
-      ],
       [
         "Status: [32mSUCCESS[39m",
       ],
@@ -1055,9 +1019,6 @@ test('populates tag message with formatted release notes when plan history conta
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
       [
-        "Active plugins: @reelout/core/builder",
-      ],
-      [
         "Status: [32mSUCCESS[39m",
       ],
       [
@@ -1150,9 +1111,6 @@ test('leaves tag message undefined when release notes generation throws an error
   `)
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
-      [
-        "Active plugins: @reelout/core/builder",
-      ],
       [
         "Status: [32mSUCCESS[39m",
       ],

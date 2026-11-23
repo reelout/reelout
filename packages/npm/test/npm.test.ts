@@ -436,7 +436,6 @@ test('stays inactive without a root package manifest', async () => {
 
   await executeReleaseWorkflow(context, [plugin()])
 
-  expect(context.inactivePlugins.has(PLUGIN_NAME)).toBe(true)
   expect(loadPackages).not.toHaveBeenCalled()
   expect(publishPackage).not.toHaveBeenCalled()
   expect(context.outcome?.status).toBe('success')
@@ -557,9 +556,6 @@ test('discovers valid packages and logs warnings when encountering invalid manif
   `)
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
-      [
-        "Active plugins: @reelout/npm",
-      ],
       [
         "[33mPackage could not be loaded: Package version "null" in "packages/baz" is not a valid semantic version.[39m",
       ],
@@ -777,9 +773,6 @@ test('does not modify package manifests when dry-run mode is enabled', async () 
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
       [
-        "Active plugins: @reelout/npm",
-      ],
-      [
         "Status: [32mSUCCESS[39m [33m(dry run)[39m",
       ],
       [
@@ -933,9 +926,6 @@ test('skips authentication and publishing when packages are private', async () =
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
       [
-        "Active plugins: @reelout/npm",
-      ],
-      [
         "Status: [32mSUCCESS[39m",
       ],
       [
@@ -1025,9 +1015,6 @@ test('forwards dryRun flag to publisher when dry-run mode is enabled', async () 
   `)
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
-      [
-        "Active plugins: @reelout/npm",
-      ],
       [
         "Status: [32mSUCCESS[39m [33m(dry run)[39m",
       ],
@@ -1588,9 +1575,6 @@ test('rejects workflow execution when auth token setup fails', async () => {
   expect(publishPackage).toHaveBeenCalledTimes(1)
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
-      [
-        "Active plugins: @reelout/npm",
-      ],
       [
         "Status: [31mFAILURE[39m",
       ],

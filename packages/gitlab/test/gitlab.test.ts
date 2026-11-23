@@ -104,9 +104,6 @@ test('skips GitLab release creation when GITLAB_TOKEN environment variable is mi
         "GitLab releases will not be created: GITLAB_TOKEN is not set.",
       ],
       [
-        "Active plugins: @reelout/gitlab",
-      ],
-      [
         "Status: [32mSUCCESS[39m",
       ],
       [
@@ -193,15 +190,11 @@ test('skips GitLab publishing and stays inactive when repository context is unav
 
   await executeReleaseWorkflow(context, [plugin()])
 
-  expect(context.inactivePlugins.has('@reelout/gitlab')).toBe(true)
   expect(context.outcome?.status).toBe('success')
   expect(createReleaseMock).not.toHaveBeenCalled()
   expect(showProjectMock).not.toHaveBeenCalled()
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
-      [
-        "Active plugins: (none)",
-      ],
       [
         "Status: [32mSUCCESS[39m",
       ],
@@ -223,7 +216,6 @@ test('stays inactive when the repository is hosted on GitHub, even in strict mod
 
   await executeReleaseWorkflow(context, [plugin()])
 
-  expect(context.inactivePlugins.has('@reelout/gitlab')).toBe(true)
   expect(context.outcome?.status).toBe('success')
   expect(showProjectMock).not.toHaveBeenCalled()
   expect(createReleaseMock).not.toHaveBeenCalled()
@@ -245,9 +237,6 @@ test('skips creating GitLab releases during dry-run mode', async () => {
   expect(createReleaseMock).toHaveBeenCalledTimes(0)
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
-      [
-        "Active plugins: @reelout/gitlab",
-      ],
       [
         "Status: [32mSUCCESS[39m [33m(dry run)[39m",
       ],
@@ -275,9 +264,6 @@ test('previews the GitLab release skip during dry-run mode when GITLAB_TOKEN env
     [
       [
         "GitLab releases will not be created: GITLAB_TOKEN is not set.",
-      ],
-      [
-        "Active plugins: @reelout/gitlab",
       ],
       [
         "Status: [32mSUCCESS[39m [33m(dry run)[39m",

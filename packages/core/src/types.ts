@@ -182,7 +182,6 @@ export interface ReleaseContext<P extends Package = Package> {
   packages: P[]
   plans: ReleasePlan<P>[]
   outcome: ReleaseOutcome | null
-  inactivePlugins: Set<string>
 }
 
 export interface Workspace {
