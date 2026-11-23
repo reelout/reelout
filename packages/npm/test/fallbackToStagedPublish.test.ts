@@ -19,11 +19,10 @@ vi.mock(import('@reelout/npm/publishPackage'), () => ({
 
 vi.mock(
   import('@reelout/npm/resolvePublishRegistry'),
-  async (importOriginal) => {
-    const actual = await importOriginal()
-
-    return { ...actual, resolvePublishRegistry }
-  }
+  async (importOriginal) => ({
+    ...(await importOriginal()),
+    resolvePublishRegistry,
+  })
 )
 
 const npmPackageManager: PackageManagerInfo = {
