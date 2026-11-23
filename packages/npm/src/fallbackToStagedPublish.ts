@@ -21,9 +21,9 @@ import {
  * command when the plan targets the public npm registry, warning when the
  * `stage` option explicitly disables the fallback. Fails when the active
  * package manager is Yarn Classic, which has no staging support, and
- * propagates a failing staged publish. Skips the fallback when the publish
- * was already staged or the plan targets another registry, leaving the
- * original error to the caller.
+ * propagates a failing staged publish. Skips the fallback without a
+ * warning when the publish was already staged or the plan targets another
+ * registry, leaving the original error to the caller.
  *
  * @param context Release context containing environment, streams, and directory
  * @param plan The complete release plan whose direct publish failed
@@ -43,6 +43,18 @@ export async function fallbackToStagedPublish(
 ): Promise<boolean> {
   const target = `${plan.package.name}@${plan.release.version}`
 
+  if (options.stage === true) {
+    return false
+  }
+
+  const registry = normalizeRegistry(
+    await resolvePublishRegistry(context, plan.package, packageManager)
+  )
+
+  if (registry !== DEFAULT_REGISTRY && registry !== DEFAULT_YARN_REGISTRY) {
+    return false
+  }
+
   if (options.stage === false) {
     context.logger.warn(
       colors.yellow(
@@ -53,22 +65,10 @@ export async function fallbackToStagedPublish(
     return false
   }
 
-  if (options.stage === true) {
-    return false
-  }
-
   if (packageManager.isYarnClassic) {
     throw new Error('Staged publishing is not supported by Yarn Classic.', {
       cause: originalError,
     })
-  }
-
-  const registry = normalizeRegistry(
-    await resolvePublishRegistry(context, plan.package, packageManager)
-  )
-
-  if (registry !== DEFAULT_REGISTRY && registry !== DEFAULT_YARN_REGISTRY) {
-    return false
   }
 
   context.logger.debug(

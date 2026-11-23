@@ -174,6 +174,22 @@ test('skips the fallback when the package targets another registry', async () =>
   expect(publishPackage).not.toHaveBeenCalled()
 })
 
+test('skips the disabled fallback silently when the package targets another registry', async () => {
+  resolvePublishRegistry.mockResolvedValue('https://registry.example.com/')
+
+  const staged = await fallbackToStagedPublish(
+    context,
+    plan,
+    npmPackageManager,
+    { stage: false },
+    stageRequiredError()
+  )
+
+  expect(staged).toBe(false)
+  expect(publishPackage).not.toHaveBeenCalled()
+  expect(warnCalls()).toHaveLength(0)
+})
+
 test('propagates staged publish failures', async () => {
   publishPackage.mockRejectedValue(new Error('staged publish failed'))
 

@@ -9,7 +9,7 @@ const STAGE_REQUIRED_REJECTION_PATTERN = /E_STAGE_REQUIRED/i
  *
  * Matches the `E_STAGE_REQUIRED` error code the public npm registry answers
  * a direct publish with when the configured credentials may only stage
- * publications.
+ * publications or the package is configured to require staged publishing.
  *
  * @param error The error thrown by a publish command
  * @returns True when the error reports a staged-publishing requirement,
