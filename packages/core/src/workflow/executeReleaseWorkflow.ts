@@ -109,9 +109,8 @@ function hookLabel(hook: ReleaseHookName, plugin: string): string {
  *
  * Runs each lifecycle phase sequentially, dispatching plugin hooks in onion
  * order based on declared priority, and checks the abort signal before each
- * phase. Each dispatched middleware runs through a
- * single constructor interceptor that also attributes failures to the owning
- * hook and plugin,
+ * phase. Each dispatched middleware runs through a single constructor
+ * interceptor that also attributes failures to the owning hook and plugin,
  * collects middleware failures, and rescues `finalize` errors so the
  * remaining `finalize` middleware still runs. Outside `test` mode the
  * interceptor logs every middleware's exclusive duration — its wall-clock

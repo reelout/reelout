@@ -179,8 +179,8 @@ Run with `--debug` to see why a plugin is inactive:
 
 - `NPM workspace could not be found at "<path>".`
 - `Cargo workspace could not be found at "<path>".`
-- `GitHub releases will not be created: the repository is not hosted on GitHub.`
-- `GitLab releases will not be created: the repository is not hosted on GitLab.`
+- `GitHub releases will not be created: no GitHub-hosted repository was detected.`
+- `GitLab releases will not be created: no GitLab-hosted repository was detected.`
 
 Mixed repositories activate more than one integration: a JavaScript workspace
 that also keeps a `Cargo.toml` publishes crates in addition to packages, so a

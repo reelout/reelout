@@ -25,104 +25,102 @@ const readGitlabToken = (env: ReleaseContext['env']): string | undefined => {
  *
  * @remarks
  * **Lifecycle Stages:**
- * - `configure`: Leaves the plugin inactive when the repository is not hosted
- *   on GitLab. Otherwise checks the `GITLAB_TOKEN` environment variable. A
- *   missing token skips GitLab release creation with a warning — or throws
- *   under strict mode — and a provided token is verified against the release
- *   project so an invalid token fails before any mutation. Runs under
- *   dry-run.
+ * - `configure`: Leaves the plugin inactive when no GitLab-hosted repository
+ *   was detected. Otherwise verifies the `GITLAB_TOKEN` environment variable:
+ *   a missing token skips the plugin's `publish` step with a warning — or
+ *   fails the run in strict mode — and a provided token is verified against
+ *   the release repository so an invalid token fails before any mutation,
+ *   including under dry-run.
  * - `publish`: Skips release creation when the plugin is inactive. Creates
- *   GitLab releases in reverse alphabetical package order (ensuring the
- *   root package release is created last), overwriting existing releases
- *   for the same tag. Automatically rolls back if subsequent publishing
- *   stages fail: releases created by this run are deleted, and overwritten
- *   releases are restored to their original content.
+ *   GitLab releases in reverse alphabetical package order (ensuring the root
+ *   package release is created last), overwriting the name and notes of any
+ *   existing release for a planned tag. Automatically rolls back when
+ *   subsequent publishing stages fail: releases created by this run are
+ *   deleted and overwritten releases are restored to their original content.
  *
  * @returns A release plugin configured for GitLab release creation.
  */
-const gitlab = (): ReleasePlugin => {
-  return {
-    name: '@reelout/gitlab',
-    version,
-    configure: async (context, next) => {
-      const repository = context.repository
+const gitlab = (): ReleasePlugin => ({
+  name: '@reelout/gitlab',
+  version,
+  configure: async (context, next) => {
+    const repository = context.repository
 
-      if (repository?.host !== 'gitlab') {
-        context.logger.debug(
-          'GitLab releases will not be created: the repository is not hosted on GitLab.'
-        )
-
-        return next(context)
-      }
-
-      const token = readGitlabToken(context.env)
-
-      if (!token) {
-        if (context.strict) {
-          throw new Error(
-            'The GITLAB_TOKEN environment variable is required in strict mode.'
-          )
-        }
-
-        context.logger.warn(
-          'GitLab releases will not be created: GITLAB_TOKEN is not set.'
-        )
-
-        return next(context)
-      }
-
-      await verifyToken(token, repository)
-
-      return next(context)
-    },
-    publish: async (context, next) => {
-      if (context.repository?.host !== 'gitlab') {
-        context.logger.debug(
-          'GitLab publishing was skipped: the repository is not hosted on GitLab.'
-        )
-
-        return next(context)
-      }
-
-      const token = readGitlabToken(context.env)
-
-      if (!token) {
-        return next(context)
-      }
-
-      if (context.dryRun) {
-        context.logger.debug('[DRY RUN] GitLab releases will not be created.')
-        return next(context)
-      }
-
-      const plans = context.plans.toSorted((a, b) =>
-        (a.package.name || '').localeCompare(b.package.name || '')
+    if (repository?.host !== 'gitlab') {
+      context.logger.debug(
+        'GitLab releases will not be created: no GitLab-hosted repository was detected.'
       )
 
-      const repository = context.repository
+      return next(context)
+    }
 
-      const rollbacks: ReleaseRollback[] = []
+    const token = readGitlabToken(context.env)
 
-      // Create releases in reverse order
-      // so that the root package release is created last,
-      // as it is often the most important one.
-      for (const plan of plans.toReversed()) {
-        const rollback = await createRelease(context, plan, token, repository)
-
-        if (rollback) {
-          rollbacks.push(rollback)
-        }
+    if (!token) {
+      if (context.strict) {
+        throw new Error(
+          'The GITLAB_TOKEN environment variable is required in strict mode.'
+        )
       }
 
-      try {
-        return await next(context)
-      } catch (err) {
-        await Promise.allSettled(rollbacks.map((rollback) => rollback()))
+      context.logger.warn(
+        'GitLab releases will not be created: GITLAB_TOKEN is not set.'
+      )
 
-        throw err
+      return next(context)
+    }
+
+    await verifyToken(token, repository)
+
+    return next(context)
+  },
+  publish: async (context, next) => {
+    if (context.repository?.host !== 'gitlab') {
+      context.logger.debug(
+        'GitLab publishing was skipped: no GitLab-hosted repository was detected.'
+      )
+
+      return next(context)
+    }
+
+    const token = readGitlabToken(context.env)
+
+    if (!token) {
+      return next(context)
+    }
+
+    if (context.dryRun) {
+      context.logger.debug('[DRY RUN] GitLab releases will not be created.')
+      return next(context)
+    }
+
+    const plans = context.plans.toSorted((a, b) =>
+      (a.package.name || '').localeCompare(b.package.name || '')
+    )
+
+    const repository = context.repository
+
+    const rollbacks: ReleaseRollback[] = []
+
+    // Create releases in reverse order
+    // so that the root package release is created last,
+    // as it is often the most important one.
+    for (const plan of plans.toReversed()) {
+      const rollback = await createRelease(context, plan, token, repository)
+
+      if (rollback) {
+        rollbacks.push(rollback)
       }
-    },
-  }
-}
+    }
+
+    try {
+      return await next(context)
+    } catch (err) {
+      await Promise.allSettled(rollbacks.map((rollback) => rollback()))
+
+      throw err
+    }
+  },
+})
 
 export default gitlab

@@ -186,6 +186,8 @@ test('fails workflow execution when the GitHub token is invalid during dry-run',
 test('skips GitHub publishing and stays inactive when repository context is unavailable', async () => {
   context.env = { GITHUB_TOKEN: 'token' }
 
+  context.repository = null
+
   context.plans = [plan]
 
   await executeReleaseWorkflow(context, [plugin()])

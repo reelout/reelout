@@ -428,7 +428,7 @@ test('stays inactive without a root package manifest', async () => {
 
   context.plans = [
     {
-      package: { provider: PLUGIN_NAME, location: 'a' },
+      package: { name: 'a', provider: PLUGIN_NAME, location: 'a' },
       history: [] as GitCommit[],
       release: { version: '1.2.3' },
     },
@@ -439,6 +439,11 @@ test('stays inactive without a root package manifest', async () => {
   expect(loadPackages).not.toHaveBeenCalled()
   expect(publishPackage).not.toHaveBeenCalled()
   expect(context.outcome?.status).toBe('success')
+
+  expect(JSON.parse(await readFile('/repo/a/package.json', 'utf8'))).toEqual({
+    name: 'a',
+    version: '0.0.0',
+  })
 })
 
 test('preserves configured workspace members when workspace options are explicitly provided', async () => {
@@ -636,6 +641,7 @@ test('updates dependency versions in package manifests when release plans are pr
   workspace.members = ['*']
 
   vol.fromJSON({
+    '/repo/package.json': JSON.stringify({ name: 'root', version: '0.0.0' }),
     '/repo/a/package.json': JSON.stringify({
       name: 'a',
       version: '1.0.0',
@@ -735,6 +741,7 @@ test('updates dependency versions in package manifests when release plans are pr
       "version": "3.1.0"
     }
     ",
+      "/repo/package.json": "{"name":"root","version":"0.0.0"}",
     }
   `)
 })

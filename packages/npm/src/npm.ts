@@ -60,7 +60,9 @@ export interface PluginOptions {
  * - `discover`: Skips discovery when the plugin is inactive. Discovers
  *   workspace member packages, filters them against the `filter` patterns,
  *   and loads package metadata into context.
- * - `write`: Bumps internal workspace dependency versions in `package.json` files (skipped in dry-run).
+ * - `write`: Skips manifest updates when the plugin is inactive. Bumps
+ *   internal workspace dependency versions in `package.json` files (skipped
+ *   in dry-run).
  * - `publish`: For OIDC-authenticated npm or pnpm releases targeting the
  *   public npm registry, verifies trusted publishing through the registry's
  *   token exchange before anything is published, failing when the registry
@@ -153,6 +155,10 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
       return next(context)
     },
     write: async (context, next) => {
+      if (!(await hasPackageManifest(context.cwd))) {
+        return next(context)
+      }
+
       if (context.dryRun) {
         context.logger.debug('[DRY RUN] Package files will not be updated.')
       } else {
