@@ -17,9 +17,6 @@ import plugin, {
   PLUGIN_NAME,
   writePackageJson,
 } from '@reelout/npm'
-import type { downloadPublishedTarball } from '@reelout/npm/downloadPublishedTarball'
-import type { isPackageTarballIdentical } from '@reelout/npm/isPackageTarballIdentical'
-import type { prepareAuth as prepareAuthImpl } from '@reelout/npm/prepareAuth'
 import { vol } from 'memfs'
 import { createHash } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
@@ -53,9 +50,9 @@ const isGitHubRepositoryPublic = vi.hoisted(() => vi.fn())
 
 const isGitLabRepositoryPublic = vi.hoisted(() => vi.fn())
 
-const isIdentical = vi.hoisted(() => vi.fn())
+const isPackageTarballIdentical = vi.hoisted(() => vi.fn())
 
-const downloadTarball = vi.hoisted(() => vi.fn())
+const downloadPublishedTarball = vi.hoisted(() => vi.fn())
 
 const resolvePackageManager = vi.hoisted(() => vi.fn())
 
@@ -70,10 +67,8 @@ vi.mock(import('@reelout/core/util/execCommand'), () => ({
 vi.mock(
   import('@reelout/npm/downloadPublishedTarball'),
   async (importActual) => ({
-    downloadPublishedTarball: async (
-      ...args: Parameters<typeof downloadPublishedTarball>
-    ) =>
-      downloadTarball(...args) ??
+    downloadPublishedTarball: async (...args) =>
+      downloadPublishedTarball(...args) ??
       (await importActual()).downloadPublishedTarball(...args),
   })
 )
@@ -81,13 +76,11 @@ vi.mock(
 vi.mock(
   import('@reelout/npm/isPackageTarballIdentical'),
   async (importActual) => {
-    const actual = await importActual<{
-      isPackageTarballIdentical: typeof isPackageTarballIdentical
-    }>()
+    const actual = await importActual()
 
     return {
-      isPackageTarballIdentical: (published: Buffer, local: Buffer) =>
-        isIdentical(published, local) ??
+      isPackageTarballIdentical: (published, local) =>
+        isPackageTarballIdentical(published, local) ??
         actual.isPackageTarballIdentical(published, local),
     }
   }
@@ -102,7 +95,7 @@ vi.mock(import('@reelout/npm/loadPackages'), async (importActual) => ({
 }))
 
 vi.mock(import('@reelout/npm/prepareAuth'), async (importActual) => ({
-  prepareAuth: async (...args: Parameters<typeof prepareAuthImpl>) =>
+  prepareAuth: async (...args) =>
     (await prepareAuth(...args)) ?? (await importActual()).prepareAuth(...args),
 }))
 
@@ -323,7 +316,7 @@ beforeEach(() => {
     }
   )
 
-  downloadTarball.mockRejectedValue(
+  downloadPublishedTarball.mockRejectedValue(
     new Error('downloadPublishedTarball was not configured for this test')
   )
 })
@@ -1905,9 +1898,9 @@ test('skips the publish and syncs the dist-tag when the registry already has an 
 
   execCommand.mockImplementationOnce(async () => publishedManifest())
 
-  downloadTarball.mockResolvedValue(Buffer.from('published-tarball'))
+  downloadPublishedTarball.mockResolvedValue(Buffer.from('published-tarball'))
 
-  isIdentical.mockReturnValue(true)
+  isPackageTarballIdentical.mockReturnValue(true)
 
   await executeReleaseWorkflow(context, [plugin()])
 
@@ -1940,7 +1933,7 @@ test('skips the publish and syncs the dist-tag when the registry already has an 
       },
     ],
   ])
-  expect(downloadTarball).toHaveBeenCalledTimes(1)
+  expect(downloadPublishedTarball).toHaveBeenCalledTimes(1)
   expect(publishPackage).toHaveBeenCalledTimes(0)
   expect(
     warnCalls().filter((message) =>
@@ -1963,9 +1956,9 @@ test('does not run a dist-tag command when the channel tag already points at the
     publishedManifest({ next: '1.2.3' })
   )
 
-  downloadTarball.mockResolvedValue(Buffer.from('published-tarball'))
+  downloadPublishedTarball.mockResolvedValue(Buffer.from('published-tarball'))
 
-  isIdentical.mockReturnValue(true)
+  isPackageTarballIdentical.mockReturnValue(true)
 
   await executeReleaseWorkflow(context, [plugin()])
 
@@ -1993,9 +1986,9 @@ test('syncs the default latest dist-tag when no release channel is set', async (
 
   execCommand.mockImplementationOnce(async () => publishedManifest())
 
-  downloadTarball.mockResolvedValue(Buffer.from('published-tarball'))
+  downloadPublishedTarball.mockResolvedValue(Buffer.from('published-tarball'))
 
-  isIdentical.mockReturnValue(true)
+  isPackageTarballIdentical.mockReturnValue(true)
 
   await executeReleaseWorkflow(context, [plugin()])
 
@@ -2017,9 +2010,9 @@ test('skips the publish of an identical version reported as a one-element array'
     JSON.stringify([JSON.parse(publishedManifest())])
   )
 
-  downloadTarball.mockResolvedValue(Buffer.from('published-tarball'))
+  downloadPublishedTarball.mockResolvedValue(Buffer.from('published-tarball'))
 
-  isIdentical.mockReturnValue(true)
+  isPackageTarballIdentical.mockReturnValue(true)
 
   await executeReleaseWorkflow(context, [plugin()])
 
@@ -2047,8 +2040,8 @@ test('skips downloading the published tarball when its recorded integrity matche
 
   await executeReleaseWorkflow(context, [plugin()])
 
-  expect(downloadTarball).toHaveBeenCalledTimes(0)
-  expect(isIdentical).toHaveBeenCalledTimes(0)
+  expect(downloadPublishedTarball).toHaveBeenCalledTimes(0)
+  expect(isPackageTarballIdentical).toHaveBeenCalledTimes(0)
   expect(publishPackage).toHaveBeenCalledTimes(0)
   expect(
     warnCalls().filter((message) =>
@@ -2072,14 +2065,14 @@ test('compares content after download when the recorded integrity does not match
     )
   )
 
-  downloadTarball.mockResolvedValue(Buffer.from('published-tarball'))
+  downloadPublishedTarball.mockResolvedValue(Buffer.from('published-tarball'))
 
-  isIdentical.mockReturnValue(true)
+  isPackageTarballIdentical.mockReturnValue(true)
 
   await executeReleaseWorkflow(context, [plugin()])
 
-  expect(downloadTarball).toHaveBeenCalledTimes(1)
-  expect(isIdentical).toHaveBeenCalledTimes(1)
+  expect(downloadPublishedTarball).toHaveBeenCalledTimes(1)
+  expect(isPackageTarballIdentical).toHaveBeenCalledTimes(1)
   expect(publishPackage).toHaveBeenCalledTimes(0)
   expect(
     warnCalls().filter((message) =>
@@ -2101,9 +2094,9 @@ test('rejects before any publish when the registry version content cannot be ver
 
   execCommand.mockImplementationOnce(async () => publishedManifest())
 
-  downloadTarball.mockResolvedValue(Buffer.from('published-tarball'))
+  downloadPublishedTarball.mockResolvedValue(Buffer.from('published-tarball'))
 
-  isIdentical.mockReturnValueOnce(false)
+  isPackageTarballIdentical.mockReturnValueOnce(false)
 
   await expect(executeReleaseWorkflow(context, [plugin()])).rejects.toThrow(
     'Version "a@1.2.3" was not published: the registry already has this version and its content could not be verified as identical.'
@@ -2132,7 +2125,7 @@ test('rejects before any publish when the published manifest lacks a tarball URL
     'Version "a@1.2.3" was not published: the registry already has this version and its content could not be verified as identical.'
   )
 
-  expect(downloadTarball).toHaveBeenCalledTimes(0)
+  expect(downloadPublishedTarball).toHaveBeenCalledTimes(0)
   expect(publishPackage).toHaveBeenCalledTimes(0)
 })
 
@@ -2145,7 +2138,9 @@ test('rejects before any publish when the published tarball cannot be downloaded
 
   execCommand.mockImplementationOnce(async () => publishedManifest())
 
-  downloadTarball.mockRejectedValueOnce(new Error('network unreachable'))
+  downloadPublishedTarball.mockRejectedValueOnce(
+    new Error('network unreachable')
+  )
 
   await expect(executeReleaseWorkflow(context, [plugin()])).rejects.toThrow(
     'Version "a@1.2.3" was not published: the registry already has this version and its content could not be verified as identical.'
@@ -2167,7 +2162,7 @@ test('rejects before any publish when the local tarball cannot be packed', async
       throw new Error("Command 'npm pack' failed (exit code 1)")
     })
 
-  downloadTarball.mockResolvedValue(Buffer.from('published-tarball'))
+  downloadPublishedTarball.mockResolvedValue(Buffer.from('published-tarball'))
 
   await expect(executeReleaseWorkflow(context, [plugin()])).rejects.toThrow(
     'Version "a@1.2.3" was not published: the registry already has this version and its content could not be verified as identical.'
@@ -2240,9 +2235,9 @@ test('previews identical-version skips in dry-run without publishing or syncing 
 
   execCommand.mockImplementationOnce(async () => publishedManifest())
 
-  downloadTarball.mockResolvedValue(Buffer.from('published-tarball'))
+  downloadPublishedTarball.mockResolvedValue(Buffer.from('published-tarball'))
 
-  isIdentical.mockReturnValue(true)
+  isPackageTarballIdentical.mockReturnValue(true)
 
   await executeReleaseWorkflow(context, [plugin()])
 
@@ -2282,9 +2277,9 @@ test('treats a mid-publish publish-over rejection with identical content as publ
     })
     .mockImplementationOnce(async () => publishedManifest({}))
 
-  downloadTarball.mockResolvedValue(Buffer.from('published-tarball'))
+  downloadPublishedTarball.mockResolvedValue(Buffer.from('published-tarball'))
 
-  isIdentical.mockReturnValue(true)
+  isPackageTarballIdentical.mockReturnValue(true)
 
   publishPackage.mockRejectedValueOnce(publishOverError())
 
@@ -2334,9 +2329,9 @@ test('rethrows the original publish error when the mid-publish race published di
     })
     .mockImplementationOnce(async () => publishedManifest())
 
-  downloadTarball.mockResolvedValue(Buffer.from('published-tarball'))
+  downloadPublishedTarball.mockResolvedValue(Buffer.from('published-tarball'))
 
-  isIdentical.mockReturnValueOnce(false)
+  isPackageTarballIdentical.mockReturnValueOnce(false)
 
   publishPackage.mockRejectedValueOnce(publishOverError())
 
@@ -2548,9 +2543,9 @@ test('probes with pnpm view and syncs the dist-tag when the workspace uses pnpm'
 
   execCommand.mockImplementationOnce(async () => publishedManifest({}))
 
-  downloadTarball.mockResolvedValue(Buffer.from('published-tarball'))
+  downloadPublishedTarball.mockResolvedValue(Buffer.from('published-tarball'))
 
-  isIdentical.mockReturnValue(true)
+  isPackageTarballIdentical.mockReturnValue(true)
 
   await executeReleaseWorkflow(context, [plugin()])
 
@@ -2613,9 +2608,9 @@ test('probes with yarn npm info and syncs with yarn npm tag when the workspace u
 
   execCommand.mockImplementationOnce(async () => publishedManifest({}))
 
-  downloadTarball.mockResolvedValue(Buffer.from('published-tarball'))
+  downloadPublishedTarball.mockResolvedValue(Buffer.from('published-tarball'))
 
-  isIdentical.mockReturnValue(true)
+  isPackageTarballIdentical.mockReturnValue(true)
 
   await executeReleaseWorkflow(context, [plugin()])
 
@@ -2666,9 +2661,9 @@ test('probes with npm view and packs with yarn pack when the workspace uses yarn
 
   execCommand.mockImplementationOnce(async () => publishedManifest({}))
 
-  downloadTarball.mockResolvedValue(Buffer.from('published-tarball'))
+  downloadPublishedTarball.mockResolvedValue(Buffer.from('published-tarball'))
 
-  isIdentical.mockReturnValue(true)
+  isPackageTarballIdentical.mockReturnValue(true)
 
   await executeReleaseWorkflow(context, [plugin()])
 
@@ -2757,7 +2752,7 @@ test('skips the publish after comparing real fixture tarballs end to end', async
 
   execCommand.mockImplementationOnce(async () => publishedManifest({}))
 
-  downloadTarball.mockResolvedValue(publishedTarball)
+  downloadPublishedTarball.mockResolvedValue(publishedTarball)
 
   execCommand.mockImplementationOnce(
     async (command: string, args: readonly string[]) => {
@@ -2798,7 +2793,7 @@ test('rejects before any publish when real fixture tarball content differs', asy
 
   execCommand.mockImplementationOnce(async () => publishedManifest({}))
 
-  downloadTarball.mockResolvedValue(publishedTarball)
+  downloadPublishedTarball.mockResolvedValue(publishedTarball)
 
   execCommand.mockImplementationOnce(
     async (command: string, args: readonly string[]) => {
