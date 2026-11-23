@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.8.1](https://github.com/reelout/reelout/compare/%40reelout%2Fcontext%400.8.0...%40reelout%2Fcontext%400.8.1) (2026-11-23)
+
+### Features
+
+- **npm:** fall back to staged publishing when the registry requires staging ([#32](https://github.com/reelout/reelout/issues/32)) ([33b44ab](https://github.com/reelout/reelout/commit/33b44ab02bc54b0e39cb536ade05e4608873256b))
+
 ## [0.8.0](https://github.com/reelout/reelout/compare/%40reelout%2Fcontext%400.7.2...%40reelout%2Fcontext%400.8.0) (2026-11-22)
 
 ### Features

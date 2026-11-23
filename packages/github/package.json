@@ -1,6 +1,6 @@
 {
   "name": "@reelout/github",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "GitHub plugin for publishing releases from ReelOut release plans.",
   "repository": {
     "type": "git",
