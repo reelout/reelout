@@ -35,8 +35,9 @@ activates only when the repository matches:
 | `@reelout/github` | Creates GitHub releases                                               | The repository is hosted on GitHub    |
 | `@reelout/gitlab` | Creates GitLab releases                                               | The repository is hosted on GitLab    |
 
-Hosting plugins detect the repository from the `origin` remote, falling back
-to manifest URLs. Inapplicable plugins stay inactive: they log at debug level,
+Hosting plugins read the repository from the `origin` remote; a `repository`
+field declared in the root manifest takes precedence. Inapplicable plugins
+stay inactive: they log at debug level,
 verify no tokens, and make no requests, so a GitLab-hosted repository runs the
 GitLab plugin without any configuration. The workflow logs the active plugin
 list once configuration completes. See

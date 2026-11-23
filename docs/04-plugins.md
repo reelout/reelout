@@ -71,8 +71,9 @@ decides at `configure` time whether it applies to the repository:
 | gitlab                            | The repository is hosted on GitLab      |
 | analyzer, builder, changelog, git | Always                                  |
 
-Hosting plugins read the repository from the `origin` remote, falling back to
-manifest URLs. A plugin that does not apply stays **inactive** for the run: it
+Hosting plugins read the repository from the `origin` remote; a `repository`
+field declared in the root manifest takes precedence. A plugin that does not
+apply stays **inactive** for the run: it
 logs one debug line, verifies no credentials, and makes no network requests or
 file changes. Inactivity is enablement, not a skipped step, so `--strict` does
 not turn it into an error. Once configuration completes, the workflow logs the

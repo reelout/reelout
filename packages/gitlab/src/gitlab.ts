@@ -37,10 +37,11 @@ const readGitlabToken = (env: ReleaseContext['env']): string | undefined => {
  *   project so an invalid token fails before any mutation. Runs under
  *   dry-run.
  * - `publish`: Skips release creation when the plugin is inactive. Creates
- *   GitLab releases in reverse alphabetical package order (ensuring the root package release
- *   is created last), overwriting existing releases for the same tag. Automatically rolls back if subsequent
- *   publishing stages fail: releases created by this run are deleted, and overwritten releases are restored
- *   to their original content.
+ *   GitLab releases in reverse alphabetical package order (ensuring the
+ *   root package release is created last), overwriting existing releases
+ *   for the same tag. Automatically rolls back if subsequent publishing
+ *   stages fail: releases created by this run are deleted, and overwritten
+ *   releases are restored to their original content.
  *
  * @returns A release plugin configured for GitLab release creation.
  */

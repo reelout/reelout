@@ -57,8 +57,11 @@ export interface PluginOptions {
  * - `configure`: Leaves the plugin inactive when the working directory holds
  *   no root `package.json`. Otherwise resolves and attaches Git repository
  *   metadata from root package configuration, then verifies
- *   registry authentication, failing in strict mode or skipping the publish phase when no credentials exist.
- * - `discover`: Skips discovery when the plugin is inactive. Discovers workspace member packages, filters them against the `filter` patterns, and loads package metadata into context.
+ *   registry authentication, failing in strict mode or skipping the publish
+ *   phase when no credentials exist.
+ * - `discover`: Skips discovery when the plugin is inactive. Discovers
+ *   workspace member packages, filters them against the `filter` patterns,
+ *   and loads package metadata into context.
  * - `write`: Bumps internal workspace dependency versions in `package.json` files (skipped in dry-run).
  * - `publish`: For OIDC-authenticated npm or pnpm releases targeting the
  *   public npm registry, verifies trusted publishing through the registry's

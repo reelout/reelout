@@ -216,8 +216,10 @@ test('skips GitLab publishing and stays inactive when repository context is unav
   `)
 })
 
-test('stays inactive when the repository is hosted on GitHub', async () => {
+test('stays inactive when the repository is hosted on GitHub, even in strict mode', async () => {
   context.env = { GITLAB_TOKEN: 'token' }
+
+  context.strict = true
 
   context.repository = createMockRepository('github')
 
