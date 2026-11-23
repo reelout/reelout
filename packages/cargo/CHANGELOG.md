@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.0](https://github.com/reelout/reelout/compare/%40reelout%2Fcargo%400.2.0...%40reelout%2Fcargo%400.3.0) (2026-11-23)
+
+### Features
+
+- enable all built-in plugins by default ([#33](https://github.com/reelout/reelout/issues/33)) ([f3f8895](https://github.com/reelout/reelout/commit/f3f889597ef14c96cda8cba8478e1790130e8345))
+
 ## [0.2.0](https://github.com/reelout/reelout/compare/%40reelout%2Fcargo%400.1.0...%40reelout%2Fcargo%400.2.0) (2026-11-23)
 
 ### Features

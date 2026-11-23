@@ -1,6 +1,6 @@
 {
   "name": "reelout",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "description": "Plugin-driven release automation for monorepos, with built-in npm and Cargo support.",
   "keywords": [
     "release",

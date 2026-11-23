@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.13.0](https://github.com/reelout/reelout/compare/%40reelout%2Fnpm%400.12.0...%40reelout%2Fnpm%400.13.0) (2026-11-23)
+
+### Features
+
+- enable all built-in plugins by default ([#33](https://github.com/reelout/reelout/issues/33)) ([f3f8895](https://github.com/reelout/reelout/commit/f3f889597ef14c96cda8cba8478e1790130e8345))
+
 ## [0.12.0](https://github.com/reelout/reelout/compare/%40reelout%2Fnpm%400.11.0...%40reelout%2Fnpm%400.12.0) (2026-11-23)
 
 ### Features

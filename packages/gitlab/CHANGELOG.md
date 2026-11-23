@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.8.0](https://github.com/reelout/reelout/compare/%40reelout%2Fgitlab%400.7.1...%40reelout%2Fgitlab%400.8.0) (2026-11-23)
+
+### Features
+
+- enable all built-in plugins by default ([#33](https://github.com/reelout/reelout/issues/33)) ([f3f8895](https://github.com/reelout/reelout/commit/f3f889597ef14c96cda8cba8478e1790130e8345))
+
 ## [0.7.1](https://github.com/reelout/reelout/compare/%40reelout%2Fgitlab%400.7.0...%40reelout%2Fgitlab%400.7.1) (2026-11-23)
 
 ### Features

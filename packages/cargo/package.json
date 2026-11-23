@@ -1,6 +1,6 @@
 {
   "name": "@reelout/cargo",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Cargo plugin for discovering workspaces, updating manifests and dependency requirements, refreshing the lockfile, and publishing crates.",
   "repository": {
     "type": "git",
