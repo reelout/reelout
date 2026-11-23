@@ -1,12 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
-import {
-  isPluginInactive,
-  markPluginInactive,
-  type ReleaseContext,
-  type ReleasePlugin,
-} from '@reelout/core'
+import type { ReleaseContext, ReleasePlugin } from '@reelout/core'
 import { version } from '../package.json'
 import { createRelease, type ReleaseRollback } from './createRelease'
 import { verifyToken } from './verifyToken'
@@ -52,7 +47,7 @@ const github = (): ReleasePlugin => {
       const repository = context.repository
 
       if (repository?.host !== 'github') {
-        markPluginInactive(context, '@reelout/github')
+        context.inactivePlugins.add('@reelout/github')
 
         context.logger.debug(
           'GitHub releases will not be created: the repository is not hosted on GitHub.'
@@ -82,7 +77,7 @@ const github = (): ReleasePlugin => {
       return next(context)
     },
     publish: async (context, next) => {
-      if (isPluginInactive(context, '@reelout/github')) {
+      if (context.inactivePlugins.has('@reelout/github')) {
         context.logger.debug(
           'GitHub publishing was skipped: the repository is not hosted on GitHub.'
         )

@@ -145,22 +145,18 @@ const middleware = async (context, next) => {
 
 A plugin that applies only to some repositories should detect applicability in
 `configure` and stay inactive for the rest of the run. ReelOut's built-in npm,
-Cargo, GitHub, and GitLab plugins follow this pattern using helpers exported
-from `reelout`:
+Cargo, GitHub, and GitLab plugins follow this pattern by recording inactivity
+on the release context:
 
 ```ts
-import {
-  isPluginInactive,
-  markPluginInactive,
-  type ReleasePlugin,
-} from 'reelout'
+import type { ReleasePlugin } from 'reelout'
 
 const createMyPlugin = (): ReleasePlugin => ({
   name: 'my-plugin',
   version: '1.0.0',
   configure: async (context, next) => {
     if (!appliesTo(context)) {
-      markPluginInactive(context, 'my-plugin')
+      context.inactivePlugins.add('my-plugin')
       context.logger.debug('My releases will not be created: not applicable.')
 
       return next(context)
@@ -169,7 +165,7 @@ const createMyPlugin = (): ReleasePlugin => ({
     return next(context)
   },
   publish: async (context, next) => {
-    if (isPluginInactive(context, 'my-plugin')) {
+    if (context.inactivePlugins.has('my-plugin')) {
       context.logger.debug('My publishing was skipped: not applicable.')
 
       return next(context)
@@ -185,9 +181,9 @@ Rules:
 
 - Gate first in `configure`, before credential checks, token verification, or
   network calls.
-- Check `isPluginInactive(context, name)` in later hooks instead of keeping a
-  local flag: the workflow resets activity before each run, so local state can
-  go stale across runs.
+- Check `context.inactivePlugins` in later hooks instead of keeping a local
+  flag: the workflow clears the set before each run, so local state can go
+  stale across runs.
 - Log inactivity at `debug` level. Inactivity is enablement, not a skipped
   step: never warn for it and never escalate it under `--strict`. Reserve
   warn-and-skip (or the strict throw) for a plugin that applies but lacks
@@ -208,6 +204,7 @@ Middleware receives a mutable `ReleaseContext`. Commonly used fields:
 | `dryRun`                                                   | Whether the workflow must avoid real side effects                                                         |
 | `packages`, `plans`                                        | Resolved packages and their `ReleasePlan`s; `plan.release` is `null` until a release is derived and built |
 | `outcome`                                                  | `ReleaseOutcome \| null`; set before `finalize`, with status, error, and failing phase                    |
+| `inactivePlugins`                                          | `Set<string>` of plugin names that will not act this run; cleared by the workflow before each run         |
 | `type`, `versionQualifier`, `releaseChannel`, `allowEmpty` | Resolved CLI overrides                                                                                    |
 
 Apply these rules to all middleware:

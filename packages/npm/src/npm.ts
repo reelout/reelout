@@ -4,8 +4,6 @@
 import {
   filterPackages,
   formatError,
-  isPluginInactive,
-  markPluginInactive,
   normalizeWorkspace,
   sortPackages,
   type Package,
@@ -92,7 +90,7 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
     version,
     configure: async (context, next) => {
       if (!(await hasPackageManifest(context.cwd))) {
-        markPluginInactive(context, PLUGIN_NAME)
+        context.inactivePlugins.add(PLUGIN_NAME)
 
         context.logger.debug(
           `NPM workspace could not be found at "${context.cwd}".`
@@ -125,7 +123,7 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
       return next(context)
     },
     discover: async (context, next) => {
-      if (isPluginInactive(context, PLUGIN_NAME)) {
+      if (context.inactivePlugins.has(PLUGIN_NAME)) {
         return next(context)
       }
 
@@ -169,7 +167,7 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
       return next(context)
     },
     publish: async (context, next) => {
-      if (isPluginInactive(context, PLUGIN_NAME)) {
+      if (context.inactivePlugins.has(PLUGIN_NAME)) {
         context.logger.debug(
           'NPM publishing was skipped: no NPM workspace was found.'
         )

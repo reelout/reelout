@@ -6,7 +6,6 @@ import '../../../test/mock/fs'
 
 import {
   executeReleaseWorkflow,
-  isPluginInactive,
   type GitCommit,
   type Package,
   type ReleasePlan,
@@ -437,7 +436,7 @@ test('stays inactive without a root package manifest', async () => {
 
   await executeReleaseWorkflow(context, [plugin()])
 
-  expect(isPluginInactive(context, PLUGIN_NAME)).toBe(true)
+  expect(context.inactivePlugins.has(PLUGIN_NAME)).toBe(true)
   expect(loadPackages).not.toHaveBeenCalled()
   expect(publishPackage).not.toHaveBeenCalled()
   expect(context.outcome?.status).toBe('success')

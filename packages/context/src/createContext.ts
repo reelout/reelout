@@ -131,5 +131,6 @@ export async function createContext(
     packages: [],
     plans: [],
     outcome: null,
+    inactivePlugins: new Set(),
   }
 }

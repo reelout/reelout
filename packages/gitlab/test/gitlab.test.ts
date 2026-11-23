@@ -3,11 +3,7 @@
 
 import '../../../test/mock/env'
 
-import {
-  executeReleaseWorkflow,
-  isPluginInactive,
-  type ReleasePlan,
-} from '@reelout/core'
+import { executeReleaseWorkflow, type ReleasePlan } from '@reelout/core'
 import plugin from '@reelout/gitlab'
 import { beforeEach, expect, test, vi } from 'vitest'
 import {
@@ -197,7 +193,7 @@ test('skips GitLab publishing and stays inactive when repository context is unav
 
   await executeReleaseWorkflow(context, [plugin()])
 
-  expect(isPluginInactive(context, '@reelout/gitlab')).toBe(true)
+  expect(context.inactivePlugins.has('@reelout/gitlab')).toBe(true)
   expect(context.outcome?.status).toBe('success')
   expect(createReleaseMock).not.toHaveBeenCalled()
   expect(showProjectMock).not.toHaveBeenCalled()
@@ -227,7 +223,7 @@ test('stays inactive when the repository is hosted on GitHub, even in strict mod
 
   await executeReleaseWorkflow(context, [plugin()])
 
-  expect(isPluginInactive(context, '@reelout/gitlab')).toBe(true)
+  expect(context.inactivePlugins.has('@reelout/gitlab')).toBe(true)
   expect(context.outcome?.status).toBe('success')
   expect(showProjectMock).not.toHaveBeenCalled()
   expect(createReleaseMock).not.toHaveBeenCalled()

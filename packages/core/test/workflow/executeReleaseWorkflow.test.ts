@@ -133,6 +133,15 @@ test('executes all workflow hooks with empty release plans when no packages are 
   `)
 })
 
+test('clears inactive plugin marks from a previous run when the context is reused', async () => {
+  context.inactivePlugins.add('plugin')
+
+  await executeReleaseWorkflow(context, plugins)
+
+  expect(context.inactivePlugins.has('plugin')).toBe(false)
+  expect(logger.mock.calls[0]).toEqual(['Active plugins: plugin'])
+})
+
 test('forwards discovered packages to finalize hook context when package discovery succeeds', async () => {
   plugin.discover.mockImplementation((ctx, next) => {
     ctx.packages = [{ name: 'foo' }, { name: 'bar' }] as Package[]

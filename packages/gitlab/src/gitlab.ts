@@ -1,12 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
-import {
-  isPluginInactive,
-  markPluginInactive,
-  type ReleaseContext,
-  type ReleasePlugin,
-} from '@reelout/core'
+import type { ReleaseContext, ReleasePlugin } from '@reelout/core'
 import { version } from '../package.json'
 import { createRelease, type ReleaseRollback } from './createRelease'
 import { verifyToken } from './verifyToken'
@@ -53,7 +48,7 @@ const gitlab = (): ReleasePlugin => {
       const repository = context.repository
 
       if (repository?.host !== 'gitlab') {
-        markPluginInactive(context, '@reelout/gitlab')
+        context.inactivePlugins.add('@reelout/gitlab')
 
         context.logger.debug(
           'GitLab releases will not be created: the repository is not hosted on GitLab.'
@@ -83,7 +78,7 @@ const gitlab = (): ReleasePlugin => {
       return next(context)
     },
     publish: async (context, next) => {
-      if (isPluginInactive(context, '@reelout/gitlab')) {
+      if (context.inactivePlugins.has('@reelout/gitlab')) {
         context.logger.debug(
           'GitLab publishing was skipped: the repository is not hosted on GitLab.'
         )

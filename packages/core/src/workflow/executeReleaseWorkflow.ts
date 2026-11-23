@@ -2,12 +2,7 @@
 // Copyright (c) 2026 Fai
 
 import { RELEASE_HOOK_NAMES } from '#config'
-import {
-  HookDispatcher,
-  isPluginInactive,
-  resetPluginActivity,
-  type Middleware,
-} from '#plugin'
+import { HookDispatcher, type Middleware } from '#plugin'
 import type {
   ReleaseContext,
   ReleaseHookDefinition,
@@ -123,7 +118,7 @@ function logActivePlugins(
   plugins: readonly ReleasePlugin[]
 ): void {
   const active = plugins
-    .filter((plugin) => !isPluginInactive(context, plugin.name))
+    .filter((plugin) => !context.inactivePlugins.has(plugin.name))
     .map((plugin) => plugin.name)
 
   context.logger.info(
@@ -163,7 +158,7 @@ export async function executeReleaseWorkflow(
 ): Promise<void> {
   context.outcome = null
 
-  resetPluginActivity(context)
+  context.inactivePlugins.clear()
 
   const isSilent = import.meta.env.MODE === 'test'
 
