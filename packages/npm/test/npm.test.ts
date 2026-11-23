@@ -759,7 +759,12 @@ test('does not modify package manifests when dry-run mode is enabled', async () 
 
   context.plans = [
     {
-      package: { location: 'a', version: '1.2.2' },
+      package: {
+        name: 'a',
+        provider: PLUGIN_NAME,
+        location: 'a',
+        version: '1.2.2',
+      },
       history: [] as GitCommit[],
       release: { version: '1.2.3' },
     },
@@ -785,7 +790,7 @@ test('does not modify package manifests when dry-run mode is enabled', async () 
       [
         "Release complete: [1m[32m1 released[39m[22m [90m(1)[39m
 
-    [90m ./a [39m[42m 1.2.3 ← 1.2.2 [49m
+    [44m a [49m[42m 1.2.3 ← 1.2.2 [49m
     ",
       ],
     ]
