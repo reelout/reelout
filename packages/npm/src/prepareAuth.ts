@@ -15,8 +15,8 @@ export interface Env extends Readonly<NodeJS.ProcessEnv>, AsyncDisposable {}
  * Verifies authentication state and applies environment overrides: Yarn Berry
  * receives `YARN_NPM_AUTH_TOKEN`, pnpm receives `pnpm_config_<authTokenKey>`,
  * and every other package manager receives `npm_config_<authTokenKey>`.
- * Returns an async disposable environment object that cleans up temporary
- * credentials upon disposal.
+ * Returns an async disposable environment object carrying the credential
+ * overrides; nothing is persisted, so disposal is a no-op.
  *
  * @param context Release context containing environment and working directory
  * @param pkg Target package metadata object
