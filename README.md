@@ -14,11 +14,12 @@ publish packages through an extensible plugin system.
 - Calculates independent release plans for workspace packages.
 - Uses Conventional Commits to determine `major`, `minor`, and `patch` releases.
 - Supports prerelease branches and configurable release channels.
-- Zero-config: every built-in plugin is enabled by default and activates
+- Zero-config: every default plugin is enabled by default and activates
   automatically — npm and Cargo by root manifest, GitHub or GitLab releases by
-  repository host.
-- Extends the workflow with plugins for changelogs, npm and crates.io
-  publishing, Git tags, and GitHub or GitLab releases.
+  repository host. Yarn workspaces publish through the opt-in `@reelout/yarn`
+  plugin.
+- Extends the workflow with plugins for changelogs, npm and Yarn publishing,
+  crates.io publishing, Git tags, and GitHub or GitLab releases.
 - Provides a dry run so you can inspect a release before publishing.
 
 ## Installation

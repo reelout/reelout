@@ -13,7 +13,8 @@ import { HOME_DIR } from '../../../test/mock/env'
 
 const pkg1 = { location: '.' } as Package
 const pkg2 = { location: '.', name: '@scope/name' } as Package
-const yarn2 = { isYarnBerry: true } as PackageManagerInfo
+const yarn1 = { isYarn: true, isYarnClassic: true } as PackageManagerInfo
+const yarn2 = { isYarn: true, isYarnBerry: true } as PackageManagerInfo
 const NPMJS = 'https://registry.npmjs.org/'
 const YARNPKG = 'https://registry.yarnpkg.com/'
 const GITHUB = 'https://npm.pkg.github.com/'
@@ -38,6 +39,16 @@ test('returns true when GitHub Actions ID token request URL and token environmen
     context.cwd = cwd
 
     expect(await hasAuth(context, pkg1, {})).toBe(true)
+  })
+})
+
+test('returns false when OIDC environment variables are the only credentials and Yarn is active', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_ID_TOKEN: 'mock-id-token' }
+
+    expect(await hasAuth(context, pkg1, yarn1)).toBe(false)
+    expect(await hasAuth(context, pkg1, yarn2)).toBe(false)
   })
 })
 
@@ -218,6 +229,30 @@ test('returns true when scoped package scope mapping matches a registry with a v
     )
 
     expect(await hasAuth(context, pkg2, {})).toBe(true)
+  })
+})
+
+test('returns false when Yarn Classic .npmrc configuration file is empty', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+
+    const npmrc = path.join(cwd, '.npmrc')
+
+    await writeFile(npmrc, '')
+
+    expect(await hasAuth(context, pkg1, yarn1)).toBe(false)
+  })
+})
+
+test('returns true when Yarn Classic .npmrc defines an authentication token for the registry', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+
+    const npmrc = path.join(cwd, '.npmrc')
+
+    await writeFile(npmrc, '//registry.npmjs.org/:_authToken=${NPM_TOKEN}')
+
+    expect(await hasAuth(context, pkg1, yarn1)).toBe(true)
   })
 })
 

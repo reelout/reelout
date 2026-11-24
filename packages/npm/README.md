@@ -19,9 +19,10 @@ This ESM-only package requires Node.js `>=24.15`.
 ## Usage
 
 The default configuration includes this plugin. It activates only when the
-workspace root has a `package.json` and stays inactive otherwise, so
-non-JavaScript repositories run it without side effects. Pass options as a
-tuple when needed:
+workspace root has a `package.json` and npm or pnpm is the active package
+manager, and stays inactive otherwise, so non-JavaScript repositories and
+Yarn workspaces run it without side effects. Pass options as a tuple when
+needed:
 
 ```ts
 export default {
@@ -55,7 +56,7 @@ runs per package and only for the public npm registry; when packages were
 staged, the run ends with a warning that lists them alongside the package
 manager's `stage list` and `stage approve <stage-id>` commands. Approving a
 staged publication requires an interactive 2FA prompt, so it stays a manual
-step. Yarn Classic cannot stage and fails when staging is requested.
+step.
 
 Before publishing, the plugin verifies that the registry credentials grant
 publish permission for each scheduled package. It checks existing packages

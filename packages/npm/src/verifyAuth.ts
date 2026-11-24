@@ -29,41 +29,45 @@ export type AuthKind = 'none' | 'oidc' | 'token'
 /**
  * Verify that registry authentication is available for a release.
  *
- * Classifies the configured authentication as `token` when `NPM_TOKEN` or
- * ambient registry credentials exist, `oidc` when OIDC environment tokens
- * exist, and `none` when no credentials are configured. Token-shaped
+ * Classifies the configured authentication as `oidc` when OIDC environment
+ * tokens exist — taking precedence over `NPM_TOKEN` and ambient registry
+ * credentials, mirroring the package managers' own preference — `token` when
+ * `NPM_TOKEN` or ambient registry credentials exist, and `none` when no
+ * credentials are configured. Yarn releases never classify as `oidc`: the
+ * registry offers no OIDC exchange for Yarn, so their OIDC environment
+ * tokens are ignored and token-shaped credentials decide. Token-shaped
  * credentials are validated with a `whoami` pre-flight against the publish
  * registry so expired tokens fail before packages are published; OIDC
  * tokens are trusted without verification.
  *
  * @param context Release context containing environment and working directory
+ * @param packageManager Information about the active package manager, inspected from the working directory when omitted
  * @returns The detected authentication kind
  */
-export async function verifyAuth(context: ReleaseContext): Promise<AuthKind> {
+export async function verifyAuth(
+  context: ReleaseContext,
+  packageManager?: PackageManagerInfo
+): Promise<AuthKind> {
   const rootPackage = { location: '.', name: undefined } as Package
 
+  const manager =
+    packageManager ??
+    (await inspectPackageManager(context.cwd, { env: context.env }))
+
+  if (!manager.isYarn && hasOIDCAuth(context.env)) {
+    return 'oidc'
+  }
+
   if (context.env.NPM_TOKEN?.trim()) {
-    const packageManager = await inspectPackageManager(context.cwd, {
-      env: context.env,
-    })
+    await using env = await prepareAuth(context, rootPackage, manager)
 
-    await using env = await prepareAuth(context, rootPackage, packageManager)
-
-    await assertRegistryAuth(context, rootPackage, packageManager, env)
+    await assertRegistryAuth(context, rootPackage, manager, env)
 
     return 'token'
   }
 
-  if (hasOIDCAuth(context.env)) {
-    return 'oidc'
-  }
-
-  const packageManager = await inspectPackageManager(context.cwd, {
-    env: context.env,
-  })
-
-  if (await hasAuth(context, rootPackage, packageManager)) {
-    await assertRegistryAuth(context, rootPackage, packageManager)
+  if (await hasAuth(context, rootPackage, manager)) {
+    await assertRegistryAuth(context, rootPackage, manager)
 
     return 'token'
   }

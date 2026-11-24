@@ -17,8 +17,11 @@ import { resolvePublishRegistry } from './resolvePublishRegistry'
 /**
  * Determine whether authentication credentials exist for a package registry.
  *
- * Checks OIDC environment tokens, scope-level settings, registry configs,
- * and standard auth credentials to verify registry access.
+ * Checks OIDC environment tokens for npm and pnpm releases, scope-level
+ * settings, registry configs, and standard auth credentials to verify
+ * registry access. Yarn releases skip the OIDC check: the registry offers
+ * no OIDC exchange for Yarn, so OIDC environment tokens never count as
+ * Yarn credentials.
  *
  * @param context Release context containing environment and working directory
  * @param pkg Target package metadata object
@@ -30,7 +33,7 @@ export async function hasAuth(
   pkg: Package,
   packageManager: Partial<PackageManagerInfo>
 ): Promise<boolean> {
-  if (hasOIDCAuth(context.env)) {
+  if (!packageManager.isYarn && hasOIDCAuth(context.env)) {
     return true
   }
 

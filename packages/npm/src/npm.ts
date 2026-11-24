@@ -11,27 +11,19 @@ import {
   type ReleasePlugin,
   type Workspace,
 } from '@reelout/core'
-import * as github from '@reelout/github'
-import * as gitlab from '@reelout/gitlab'
 import { colors } from 'consola/utils'
 import { version } from '../package.json'
 import { bumpPackageDependencies } from './bumpPackageDependencies'
-import { fallbackToStagedPublish } from './fallbackToStagedPublish'
 import { hasPackageManifest } from './hasPackageManifest'
 import { inspectPackageManager } from './inspectPackageManager'
-import {
-  isCompleteReleasePlan,
-  type CompleteReleasePlan,
-} from './isCompleteReleasePlan'
-import { isPublishOverRejection } from './isPublishOverRejection'
-import { isSameRepository } from './isSameRepository'
-import { isStageRequiredRejection } from './isStageRequiredRejection'
+import { isCompleteReleasePlan } from './isCompleteReleasePlan'
 import { loadPackages } from './loadPackages'
 import { PLUGIN_NAME } from './PLUGIN_NAME'
 import { probeReleasePlan } from './probeReleasePlan'
-import { publishPackage, type PublishPackageOptions } from './publishPackage'
-import { recoverFromPublishOverRejection } from './recoverFromPublishOverRejection'
+import type { PublishPackageOptions } from './publishPackage'
+import { publishPlans } from './publishPlans'
 import { resolveGitRepositoryFromPackage } from './resolveGitRepositoryFromPackage'
+import { resolveProvenance } from './resolveProvenance'
 import { resolveWorkspaceMembers } from './resolveWorkspaceMembers'
 import type { PublishAccess } from './types'
 import { verifyPublishAccess } from './verifyPublishAccess'
@@ -53,10 +45,10 @@ export interface PluginOptions {
  * @remarks
  * **Lifecycle Stages:**
  * - `configure`: Leaves the plugin inactive when the working directory holds
- *   no root `package.json`. Otherwise resolves and attaches Git repository
- *   metadata from root package configuration, then verifies
- *   registry authentication, failing in strict mode or skipping the publish
- *   phase when no credentials exist.
+ *   no root `package.json` or Yarn is the active package manager. Otherwise
+ *   resolves and attaches Git repository metadata from root package
+ *   configuration, then verifies registry authentication, failing in strict
+ *   mode or skipping the publish phase when no credentials exist.
  * - `discover`: Skips discovery when the plugin is inactive. Discovers
  *   workspace member packages, filters them against the `filter` patterns,
  *   and loads package metadata into context.
@@ -78,13 +70,15 @@ export interface PluginOptions {
  *   direct publish with a staged-publishing requirement and the `stage`
  *   option does not disable the fallback, summarizing the staged
  *   publications at the end. Skips entirely when no NPM workspace was
- *   found or configure-stage verification found no registry
- *   authentication.
+ *   found, Yarn is the active package manager, or configure-stage
+ *   verification found no registry authentication.
  *
  * @param options Configuration options for NPM workspace discovery and publishing behavior.
  * @returns A release plugin configured for NPM workspace management and package publication.
  */
 const npm = (options: PluginOptions = {}): ReleasePlugin => {
+  let inactive = false
+
   let publishSkipped = false
 
   return {
@@ -99,10 +93,24 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
         return next(context)
       }
 
+      const packageManager = await inspectPackageManager(context.cwd, {
+        env: context.env,
+      })
+
+      if (packageManager.isYarn) {
+        inactive = true
+
+        context.logger.debug(
+          'NPM plugin is inactive: Yarn is the active package manager.'
+        )
+
+        return next(context)
+      }
+
       const repo = await resolveGitRepositoryFromPackage(context.cwd)
       context.repository = repo ?? context.repository
 
-      const authKind = await verifyAuth(context)
+      const authKind = await verifyAuth(context, packageManager)
 
       if (authKind === 'none') {
         if (context.strict) {
@@ -123,7 +131,7 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
       return next(context)
     },
     discover: async (context, next) => {
-      if (!(await hasPackageManifest(context.cwd))) {
+      if (inactive || !(await hasPackageManifest(context.cwd))) {
         return next(context)
       }
 
@@ -155,7 +163,7 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
       return next(context)
     },
     write: async (context, next) => {
-      if (!(await hasPackageManifest(context.cwd))) {
+      if (inactive || !(await hasPackageManifest(context.cwd))) {
         return next(context)
       }
 
@@ -171,6 +179,14 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
       return next(context)
     },
     publish: async (context, next) => {
+      if (inactive) {
+        context.logger.debug(
+          'NPM plugin is inactive: Yarn is the active package manager.'
+        )
+
+        return next(context)
+      }
+
       if (!(await hasPackageManifest(context.cwd))) {
         context.logger.debug(
           'NPM publishing was skipped: no NPM workspace was found.'
@@ -187,35 +203,11 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
         return next(context)
       }
 
-      let { provenance } = options
+      const provenance = await resolveProvenance(context, options.provenance)
 
-      try {
-        if (provenance == null) {
-          const repo = await resolveGitRepositoryFromPackage(context.cwd)
-
-          if (
-            repo &&
-            context.repository &&
-            isSameRepository(repo, context.repository)
-          ) {
-            if (repo.host === 'github' && context.env.GITHUB_TOKEN) {
-              provenance = await github.isRepositoryPublic(
-                context.env.GITHUB_TOKEN,
-                repo
-              )
-            }
-
-            if (repo.host === 'gitlab' && context.env.GITLAB_TOKEN) {
-              provenance = await gitlab.isRepositoryPublic(
-                context.env.GITLAB_TOKEN,
-                repo
-              )
-            }
-          }
-        }
-      } catch {}
-
-      const publishable = context.plans.filter(isCompleteReleasePlan)
+      const publishable = context.plans.filter((plan) =>
+        isCompleteReleasePlan(plan)
+      )
 
       const packageManager =
         publishable.length > 0
@@ -242,46 +234,13 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
         stage: options.stage,
       }
 
-      const staged: CompleteReleasePlan[] = []
-
-      for (const plan of context.plans) {
-        if (plan.package.provider !== PLUGIN_NAME || skipped.has(plan)) {
-          continue
-        }
-
-        try {
-          await publishPackage(context, plan, publishOptions)
-        } catch (error) {
-          if (packageManager === undefined || !isCompleteReleasePlan(plan)) {
-            throw error
-          }
-
-          if (isStageRequiredRejection(error)) {
-            if (
-              await fallbackToStagedPublish(
-                context,
-                plan,
-                packageManager,
-                publishOptions,
-                error
-              )
-            ) {
-              staged.push(plan)
-            } else {
-              throw error
-            }
-          } else if (isPublishOverRejection(error)) {
-            await recoverFromPublishOverRejection(
-              context,
-              plan,
-              packageManager,
-              error
-            )
-          } else {
-            throw error
-          }
-        }
-      }
+      const staged = await publishPlans(
+        context,
+        PLUGIN_NAME,
+        packageManager,
+        publishOptions,
+        skipped
+      )
 
       if (packageManager !== undefined && staged.length > 0) {
         const targets = staged
@@ -292,8 +251,6 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
 
         if (packageManager.isPnpm) {
           stageCommand = 'pnpm stage'
-        } else if (packageManager.isYarnBerry) {
-          stageCommand = 'yarn npm stage'
         }
 
         context.logger.warn(

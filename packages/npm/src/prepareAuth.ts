@@ -5,18 +5,18 @@ import type { Package, ReleaseContext } from '@reelout/core'
 import { getAuthTokenKey } from './getAuthTokenKey'
 import { hasAuth } from './hasAuth'
 import type { PackageManagerInfo } from './inspectPackageManager'
-import { loadConfig } from './loadConfig'
 import { resolvePublishRegistry } from './resolvePublishRegistry'
-import { saveConfigSafely } from './saveConfigSafely'
 
 export interface Env extends Readonly<NodeJS.ProcessEnv>, AsyncDisposable {}
 
 /**
  * Configure target registry authentication tokens in the runtime environment.
  *
- * Verifies authentication state and applies environment overrides or persists
- * credentials to user configuration files. Returns an async disposable
- * environment object that cleans up temporary credentials upon disposal.
+ * Verifies authentication state and applies environment overrides: Yarn Berry
+ * receives `YARN_NPM_AUTH_TOKEN`, pnpm receives `pnpm_config_<authTokenKey>`,
+ * and every other package manager receives `npm_config_<authTokenKey>`.
+ * Returns an async disposable environment object carrying the credential
+ * overrides; nothing is persisted, so disposal is a no-op.
  *
  * @param context Release context containing environment and working directory
  * @param pkg Target package metadata object
@@ -32,15 +32,13 @@ export async function prepareAuth(
 
   if (!token) return
 
-  const config = await loadConfig(context.cwd, { env: context.env })
-
   if (await hasAuth(context, pkg, packageManager)) return
 
   const registry = await resolvePublishRegistry(context, pkg, packageManager)
 
-  if (packageManager.isNpm) {
+  if (packageManager.isYarnBerry) {
     return conceal<Env>({
-      [`npm_config_${getAuthTokenKey(registry)}`]: token,
+      YARN_NPM_AUTH_TOKEN: token,
       async [Symbol.asyncDispose]() {},
     })
   }
@@ -52,28 +50,9 @@ export async function prepareAuth(
     })
   }
 
-  if (packageManager.isYarnClassic) {
-    return conceal<Env>({
-      [`npm_config_${getAuthTokenKey(registry)}`]: token,
-      async [Symbol.asyncDispose]() {},
-    })
-  }
-
-  if (packageManager.isYarnBerry) {
-    return conceal<Env>({
-      YARN_NPM_AUTH_TOKEN: token,
-      async [Symbol.asyncDispose]() {},
-    })
-  }
-
-  config.setCredentialsByURI(registry, { token })
-  await saveConfigSafely(config, 'user')
-
   return conceal<Env>({
-    async [Symbol.asyncDispose]() {
-      config.clearCredentialsByURI(registry)
-      await saveConfigSafely(config, 'user')
-    },
+    [`npm_config_${getAuthTokenKey(registry)}`]: token,
+    async [Symbol.asyncDispose]() {},
   })
 }
 

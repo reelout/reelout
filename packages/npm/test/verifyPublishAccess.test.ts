@@ -993,6 +993,58 @@ test('warns for every package without running commands when only OIDC tokens are
   })
 })
 
+test('warns without running commands when NPM_TOKEN and OIDC tokens are both available', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = {
+      NPM_TOKEN: 'mock-npm-token',
+      NPM_ID_TOKEN: 'mock-id-token',
+    }
+
+    const plan = createPlan({ name: 'a' })
+
+    const verdicts = await verifyPublishAccess(
+      context,
+      [plan],
+      createPackageManager('npm')
+    )
+
+    expect(verdicts.get(plan)).toBe('unknown')
+    expect(execCommand).not.toHaveBeenCalled()
+    expect(warnCalls()).toHaveLength(1)
+  })
+})
+
+test('verifies the injected token when NPM_TOKEN and OIDC tokens are both available and Yarn is active', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = {
+      NPM_TOKEN: 'mock-npm-token',
+      NPM_ID_TOKEN: 'mock-id-token',
+    }
+
+    const plan = createPlan({ name: 'a' })
+
+    mockRegistry({
+      whoami: 'mock-user',
+      packument: maintainedBy('mock-user'),
+    })
+
+    const verdicts = await verifyPublishAccess(
+      context,
+      [plan],
+      createPackageManager('yarn', true)
+    )
+
+    expect(verdicts.get(plan)).toBe('allowed')
+
+    expect(execCommand.mock.calls.map((call) => [call[0], call[1]])).toEqual([
+      ['yarn', ['npm', 'info', 'a', '--json']],
+      ['yarn', ['npm', 'whoami']],
+    ])
+  })
+})
+
 test('warns without running commands when no registry credentials are available', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd
@@ -1249,6 +1301,33 @@ test('probes with yarn npm info and resolves the identity with yarn npm whoami f
   })
 })
 
+test('probes with npm view and resolves the identity with npm whoami for Yarn Classic', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_TOKEN: 'mock-npm-token' }
+
+    const plan = createPlan({ name: 'a' })
+
+    mockRegistry({
+      whoami: 'mock-user',
+      packument: maintainedBy('mock-user'),
+    })
+
+    const verdicts = await verifyPublishAccess(
+      context,
+      [plan],
+      createPackageManager('yarn')
+    )
+
+    expect(verdicts.get(plan)).toBe('allowed')
+
+    expect(execCommand.mock.calls.map((call) => [call[0], call[1]])).toEqual([
+      ['npm', ['view', 'a', '--json', '--registry', NPMJS]],
+      ['npm', ['whoami', '--registry', NPMJS]],
+    ])
+  })
+})
+
 test('allows a new unscoped package when Yarn Berry reports it as missing', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd
@@ -1267,6 +1346,28 @@ Response Code: 404`
       context,
       [plan],
       createPackageManager('yarn', true)
+    )
+
+    expect(verdicts.get(plan)).toBe('allowed')
+    expect(execCommand).toHaveBeenCalledTimes(1)
+  })
+})
+
+test('allows a new unscoped package when Yarn Classic reports it as missing', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_TOKEN: 'mock-npm-token' }
+
+    const plan = createPlan({ name: 'a' })
+
+    mockRegistry({
+      packument: notFoundError('a'),
+    })
+
+    const verdicts = await verifyPublishAccess(
+      context,
+      [plan],
+      createPackageManager('yarn')
     )
 
     expect(verdicts.get(plan)).toBe('allowed')

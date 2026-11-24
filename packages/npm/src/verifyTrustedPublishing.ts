@@ -27,12 +27,13 @@ const TRUSTED_PUBLISHING_AUDIENCE = 'npm:registry.npmjs.org'
  * package against the public npm registry's trusted-publishing endpoint and
  * discards the exchanged token: the check only confirms that the registry
  * would issue one, while the publish itself authenticates through the
- * package manager's own OIDC support. Runs only when no `NPM_TOKEN` is
- * configured, OIDC environment tokens exist, the package manager is npm or
- * pnpm, and at least one complete plan targets the public npm registry;
- * every other combination is skipped without verification. Fails the
- * release when the identity token cannot be retrieved or an exchange is
- * rejected, before a single package is published.
+ * package manager's own OIDC support. Runs when OIDC environment tokens
+ * exist — even alongside an `NPM_TOKEN`, which the OIDC authentication
+ * takes precedence over — the package manager is npm or pnpm, and at least
+ * one complete plan targets the public npm registry; every other
+ * combination is skipped without verification. Fails the release when the
+ * identity token cannot be retrieved or an exchange is rejected, before a
+ * single package is published.
  *
  * @param context Release context containing environment and working directory
  * @param plans Release plans to verify
@@ -46,10 +47,6 @@ export async function verifyTrustedPublishing(
   plans: readonly ReleasePlan[],
   packageManager: PackageManagerInfo
 ): Promise<void> {
-  if (context.env.NPM_TOKEN?.trim()) {
-    return
-  }
-
   if (!hasOIDCAuth(context.env)) {
     return
   }

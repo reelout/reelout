@@ -91,8 +91,40 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-test('skips verification when NPM_TOKEN is configured', async () => {
-  context.env = { NPM_TOKEN: 'mock-npm-token', NPM_ID_TOKEN: 'mock-id-token' }
+test('verifies trusted publishing when NPM_TOKEN is also configured', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = {
+      NPM_TOKEN: 'mock-npm-token',
+      NPM_ID_TOKEN: 'mock-id-token',
+    }
+
+    mockExchange()
+
+    await verifyTrustedPublishing(
+      context,
+      [createPlan({ name: 'a' })],
+      createPackageManager('npm')
+    )
+
+    expect(fetchMock.mock.calls).toEqual([
+      [
+        exchangeEndpoint('a'),
+        {
+          method: 'POST',
+          headers: { authorization: 'Bearer mock-id-token' },
+        },
+      ],
+    ])
+
+    expect(infoMessages()).toEqual([
+      'Trusted publishing verified for "a@1.2.3".',
+    ])
+  })
+})
+
+test('skips verification when NPM_TOKEN is configured without OIDC tokens', async () => {
+  context.env = { NPM_TOKEN: 'mock-npm-token' }
 
   await verifyTrustedPublishing(
     context,

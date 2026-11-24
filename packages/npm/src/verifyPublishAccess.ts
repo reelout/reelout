@@ -15,6 +15,7 @@ import {
 } from './isCompleteReleasePlan'
 import { isJsonObject } from './isJsonObject'
 import { NOT_FOUND_PATTERN } from './probePublishedVersion'
+import { PLUGIN_NAME } from './PLUGIN_NAME'
 import { prepareAuth, type Env } from './prepareAuth'
 import { resolvePublishRegistry } from './resolvePublishRegistry'
 import { INVALID_CREDENTIALS_MESSAGE } from './verifyAuth'
@@ -89,26 +90,35 @@ type PackumentResult =
  * trusted publishing, network failures, or unsupported registries). Denied
  * plans are aggregated into one error that fails the release before any
  * publish, while `unknown` verdicts only warn because the registry rejects
- * unauthorized publishes on its own. Incomplete and non-npm plans are skipped.
+ * unauthorized publishes on its own. Incomplete plans and plans from other
+ * plugins are skipped.
  *
  * @param context Release context containing environment and working directory
  * @param plans Release plans to verify
  * @param packageManager Information about the active package manager
- * @returns A map of each complete npm plan to its publish access verdict
+ * @param pluginName Name of the plugin whose plans are verified, defaulting to the npm plugin
+ * @returns A map of each complete plan to its publish access verdict
  * @throws If any plan is denied publish permission
  */
 export async function verifyPublishAccess(
   context: ReleaseContext,
   plans: readonly ReleasePlan[],
-  packageManager: PackageManagerInfo
+  packageManager: PackageManagerInfo,
+  pluginName: string = PLUGIN_NAME
 ): Promise<Map<ReleasePlan, PublishAccessVerdict>> {
   const verdicts = new Map<ReleasePlan, PublishAccessVerdict>()
 
-  const publishable = plans.filter(isCompleteReleasePlan)
+  const publishable = plans.filter((plan) =>
+    isCompleteReleasePlan(plan, pluginName)
+  )
 
   const injectToken = Boolean(context.env.NPM_TOKEN?.trim())
 
-  const oidcOnly = !injectToken && hasOIDCAuth(context.env)
+  // OIDC authentication takes precedence over an injected `NPM_TOKEN`, so
+  // the spawned CLI commands would not share the credentials the publish
+  // uses and every verdict stays inconclusive. Yarn never authenticates
+  // with OIDC tokens, so Yarn verdicts stay conclusive.
+  const usesOidcAuth = !packageManager.isYarn && hasOIDCAuth(context.env)
 
   const check: AccessCheckState = {
     context,
@@ -126,7 +136,7 @@ export async function verifyPublishAccess(
       packageManager
     )
 
-    const verdict = oidcOnly
+    const verdict = usesOidcAuth
       ? 'unknown'
       : await checkPlan(check, plan, registry, injectToken)
 

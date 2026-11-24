@@ -338,7 +338,7 @@ catalogs:
 
 patchedDependencies:
   '@types/hosted-git-info': 616ae92eb507f046d0b7d17bc011ac39f690bc88e2a027543b9740cdc9709bfd
-  '@types/npmcli__config': af9f6536a2ba59e1a929e5b146314ff4061b46a374ec8ed039598580c5233790
+  '@types/npmcli__config': a044da31c71dc2f57238512ddafd9b07c5edac6a31165b22f122cc12fdb2eac9
 
 importers:
 
@@ -654,10 +654,25 @@ importers:
         version: 4.17.12
       '@types/npmcli__config':
         specifier: 'catalog:'
-        version: 6.0.4(patch_hash=af9f6536a2ba59e1a929e5b146314ff4061b46a374ec8ed039598580c5233790)
+        version: 6.0.4(patch_hash=a044da31c71dc2f57238512ddafd9b07c5edac6a31165b22f122cc12fdb2eac9)
       '@types/semver':
         specifier: 'catalog:'
         version: 7.8.0
+
+  packages/yarn:
+    dependencies:
+      '@reelout/core':
+        specifier: workspace:^
+        version: link:../core
+      '@reelout/github':
+        specifier: workspace:^
+        version: link:../github
+      '@reelout/npm':
+        specifier: workspace:^
+        version: link:../npm
+      consola:
+        specifier: 'catalog:'
+        version: 3.4.2
 
 packages:
 
@@ -5340,7 +5355,7 @@ snapshots:
     dependencies:
       undici-types: 8.9.0
 
-  '@types/npmcli__config@6.0.4(patch_hash=af9f6536a2ba59e1a929e5b146314ff4061b46a374ec8ed039598580c5233790)':
+  '@types/npmcli__config@6.0.4(patch_hash=a044da31c71dc2f57238512ddafd9b07c5edac6a31165b22f122cc12fdb2eac9)':
     dependencies:
       '@types/node': 26.6.6
       '@types/semver': 7.8.0

@@ -60,16 +60,23 @@ pipelines that require every step fail fast.
 
 ## Automatic activation
 
-The default configuration includes every built-in plugin, and each integration
-decides at `configure` time whether it applies to the repository:
+The default configuration includes every built-in plugin except the Yarn
+plugin, and each integration decides at `configure` time whether it applies to
+the repository:
 
-| Plugin                            | Activates when                          |
-| --------------------------------- | --------------------------------------- |
-| npm                               | The workspace root has a `package.json` |
-| cargo                             | The workspace root has a `Cargo.toml`   |
-| github                            | The repository is hosted on GitHub      |
-| gitlab                            | The repository is hosted on GitLab      |
-| analyzer, builder, changelog, git | Always                                  |
+| Plugin                            | Activates when                                                                        |
+| --------------------------------- | ------------------------------------------------------------------------------------- |
+| npm                               | The workspace root has a `package.json` and npm or pnpm is the active package manager |
+| cargo                             | The workspace root has a `Cargo.toml`                                                 |
+| github                            | The repository is hosted on GitHub                                                    |
+| gitlab                            | The repository is hosted on GitLab                                                    |
+| analyzer, builder, changelog, git | Always                                                                                |
+
+The Yarn plugin is built-in but **opt-in**: it is not part of the default
+configuration. Install `@reelout/yarn` and list `'@reelout/yarn'` in
+[`plugins`](./02-config.md#plugins); it activates when the workspace's active
+package manager is Yarn (Classic or Berry). On Yarn workspaces the npm plugin
+stays inactive, so packages publish through Yarn instead.
 
 Hosting plugins read the repository from the `origin` remote; a `repository`
 field declared in the root manifest takes precedence. A plugin that does not
@@ -181,7 +188,9 @@ export default {
 
 ReelOut resolves string specifiers from the working directory first, so local
 paths are supported. It then searches from `@reelout/config`, where the default
-integration plugins are installed. Entries set to `false` or `null` are
+integration plugins are installed. The opt-in `@reelout/yarn` plugin is not
+installed through `@reelout/config`; install it in your project before
+referencing it. Entries set to `false` or `null` are
 discarded.
 
 ## Agent skill
@@ -205,6 +214,7 @@ The skill source lives at [`.agents/skills/create-reelout-plugin/SKILL.md`](http
 | builder   | `@reelout/core/builder`   | Computes versions, tag names, and release notes                                                                                                                                       |
 | changelog | `@reelout/core/changelog` | Resolves package tags and generates changelogs                                                                                                                                        |
 | npm       | `@reelout/npm`            | Resolves the workspace, updates manifests and dependency ranges, and publishes packages, skipping versions already published with identical content                                   |
+| yarn      | `@reelout/yarn`           | Resolves Yarn workspaces (Classic and Berry), updates manifests and dependency ranges, and publishes packages with staged-publishing support; **opt-in**                              |
 | cargo     | `@reelout/cargo`          | Resolves the Cargo workspace, updates manifests and dependency requirements, refreshes `Cargo.lock`, and publishes crates, skipping versions already published with identical content |
 | git       | `@reelout/git`            | Creates the release commit, pushes tags, and rolls back tags on failure                                                                                                               |
 | github    | `@reelout/github`         | Creates GitHub releases, overwriting existing ones, and restores or removes them if a later step fails                                                                                |
