@@ -246,6 +246,21 @@ test('stays inactive when another package manager is active', async () => {
   ).toHaveLength(0)
 })
 
+test('stays inactive in strict mode when another package manager is active', async () => {
+  resolvePackageManager.mockResolvedValue('npm')
+
+  context.strict = true
+
+  mountPackageFixture()
+
+  context.plans = [createCompleteReleasePlan()]
+
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(publishPackage).not.toHaveBeenCalled()
+  expect(context.outcome?.status).toBe('success')
+})
+
 test('skips the publish phase with a warning when no registry authentication exists', async () => {
   mountPackageFixture()
 

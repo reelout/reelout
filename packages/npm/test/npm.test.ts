@@ -461,6 +461,23 @@ test('stays inactive when Yarn is the active package manager', async () => {
   expect(context.outcome?.status).toBe('success')
 })
 
+test('stays inactive in strict mode when Yarn is the active package manager', async () => {
+  resolvePackageManager.mockResolvedValue('yarn')
+  getPackageManagerVersion.mockResolvedValue(4)
+
+  context.strict = true
+
+  mountPackageFixture()
+
+  context.plans = [createCompleteReleasePlan()]
+
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(loadPackages).not.toHaveBeenCalled()
+  expect(publishPackage).not.toHaveBeenCalled()
+  expect(context.outcome?.status).toBe('success')
+})
+
 test('preserves configured workspace members when workspace options are explicitly provided', async () => {
   workspace.entry = '.'
   workspace.members = ['apps/*']
