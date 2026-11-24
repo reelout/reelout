@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.8.3](https://github.com/reelout/reelout/compare/%40reelout%2Fcontext%400.8.2...%40reelout%2Fcontext%400.8.3) (2026-11-24)
+
+### Features
+
+- **yarn:** split Yarn support into the @reelout/yarn plugin ([#34](https://github.com/reelout/reelout/issues/34)) ([bd2b5ce](https://github.com/reelout/reelout/commit/bd2b5ce51ac7ce933c98428eef53732e33cde97c))
+
 ## [0.8.2](https://github.com/reelout/reelout/compare/%40reelout%2Fcontext%400.8.1...%40reelout%2Fcontext%400.8.2) (2026-11-23)
 
 ### Features

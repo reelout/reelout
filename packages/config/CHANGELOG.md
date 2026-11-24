@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.7.1](https://github.com/reelout/reelout/compare/%40reelout%2Fconfig%400.7.0...%40reelout%2Fconfig%400.7.1) (2026-11-24)
+
+### Features
+
+- **yarn:** split Yarn support into the @reelout/yarn plugin ([#34](https://github.com/reelout/reelout/issues/34)) ([bd2b5ce](https://github.com/reelout/reelout/commit/bd2b5ce51ac7ce933c98428eef53732e33cde97c))
+
 ## [0.7.0](https://github.com/reelout/reelout/compare/%40reelout%2Fconfig%400.6.1...%40reelout%2Fconfig%400.7.0) (2026-11-23)
 
 ### Features
