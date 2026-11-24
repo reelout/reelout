@@ -19,9 +19,10 @@ This ESM-only package requires Node.js `>=24.15`.
 ## Usage
 
 The default configuration includes this plugin. It activates only when the
-workspace root has a `package.json` and stays inactive otherwise, so
-non-JavaScript repositories run it without side effects. Pass options as a
-tuple when needed:
+workspace root has a `package.json` and npm or pnpm is the active package
+manager, and stays inactive otherwise, so non-JavaScript repositories and
+Yarn workspaces run it without side effects. Pass options as a tuple when
+needed:
 
 ```ts
 export default {
