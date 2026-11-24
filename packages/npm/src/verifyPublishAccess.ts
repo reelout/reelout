@@ -118,7 +118,7 @@ export async function verifyPublishAccess(
   // the spawned CLI commands would not share the credentials the publish
   // uses and every verdict stays inconclusive. Yarn never authenticates
   // with OIDC tokens, so Yarn verdicts stay conclusive.
-  const oidcOnly = !packageManager.isYarn && hasOIDCAuth(context.env)
+  const usesOidcAuth = !packageManager.isYarn && hasOIDCAuth(context.env)
 
   const check: AccessCheckState = {
     context,
@@ -136,7 +136,7 @@ export async function verifyPublishAccess(
       packageManager
     )
 
-    const verdict = oidcOnly
+    const verdict = usesOidcAuth
       ? 'unknown'
       : await checkPlan(check, plan, registry, injectToken)
 
