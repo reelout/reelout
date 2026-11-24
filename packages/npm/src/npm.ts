@@ -11,27 +11,19 @@ import {
   type ReleasePlugin,
   type Workspace,
 } from '@reelout/core'
-import * as github from '@reelout/github'
-import * as gitlab from '@reelout/gitlab'
 import { colors } from 'consola/utils'
 import { version } from '../package.json'
 import { bumpPackageDependencies } from './bumpPackageDependencies'
-import { fallbackToStagedPublish } from './fallbackToStagedPublish'
 import { hasPackageManifest } from './hasPackageManifest'
 import { inspectPackageManager } from './inspectPackageManager'
-import {
-  isCompleteReleasePlan,
-  type CompleteReleasePlan,
-} from './isCompleteReleasePlan'
-import { isPublishOverRejection } from './isPublishOverRejection'
-import { isSameRepository } from './isSameRepository'
-import { isStageRequiredRejection } from './isStageRequiredRejection'
+import { isCompleteReleasePlan } from './isCompleteReleasePlan'
 import { loadPackages } from './loadPackages'
 import { PLUGIN_NAME } from './PLUGIN_NAME'
 import { probeReleasePlan } from './probeReleasePlan'
-import { publishPackage, type PublishPackageOptions } from './publishPackage'
-import { recoverFromPublishOverRejection } from './recoverFromPublishOverRejection'
+import type { PublishPackageOptions } from './publishPackage'
+import { publishPlans } from './publishPlans'
 import { resolveGitRepositoryFromPackage } from './resolveGitRepositoryFromPackage'
+import { resolveProvenance } from './resolveProvenance'
 import { resolveWorkspaceMembers } from './resolveWorkspaceMembers'
 import type { PublishAccess } from './types'
 import { verifyPublishAccess } from './verifyPublishAccess'
@@ -211,33 +203,7 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
         return next(context)
       }
 
-      let { provenance } = options
-
-      try {
-        if (provenance == null) {
-          const repo = await resolveGitRepositoryFromPackage(context.cwd)
-
-          if (
-            repo &&
-            context.repository &&
-            isSameRepository(repo, context.repository)
-          ) {
-            if (repo.host === 'github' && context.env.GITHUB_TOKEN) {
-              provenance = await github.isRepositoryPublic(
-                context.env.GITHUB_TOKEN,
-                repo
-              )
-            }
-
-            if (repo.host === 'gitlab' && context.env.GITLAB_TOKEN) {
-              provenance = await gitlab.isRepositoryPublic(
-                context.env.GITLAB_TOKEN,
-                repo
-              )
-            }
-          }
-        }
-      } catch {}
+      const provenance = await resolveProvenance(context, options.provenance)
 
       const publishable = context.plans.filter((plan) =>
         isCompleteReleasePlan(plan)
@@ -268,46 +234,13 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
         stage: options.stage,
       }
 
-      const staged: CompleteReleasePlan[] = []
-
-      for (const plan of context.plans) {
-        if (plan.package.provider !== PLUGIN_NAME || skipped.has(plan)) {
-          continue
-        }
-
-        try {
-          await publishPackage(context, plan, publishOptions)
-        } catch (error) {
-          if (packageManager === undefined || !isCompleteReleasePlan(plan)) {
-            throw error
-          }
-
-          if (isStageRequiredRejection(error)) {
-            if (
-              await fallbackToStagedPublish(
-                context,
-                plan,
-                packageManager,
-                publishOptions,
-                error
-              )
-            ) {
-              staged.push(plan)
-            } else {
-              throw error
-            }
-          } else if (isPublishOverRejection(error)) {
-            await recoverFromPublishOverRejection(
-              context,
-              plan,
-              packageManager,
-              error
-            )
-          } else {
-            throw error
-          }
-        }
-      }
+      const staged = await publishPlans(
+        context,
+        PLUGIN_NAME,
+        packageManager,
+        publishOptions,
+        skipped
+      )
 
       if (packageManager !== undefined && staged.length > 0) {
         const targets = staged
