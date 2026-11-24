@@ -53,7 +53,7 @@ for later approval instead of publishing it immediately, `false` publishes
 directly and fails when the registry requires staging, and the default
 publishes directly but falls back to staging a package when the registry
 rejects its direct publish with `E_STAGE_REQUIRED`. The fallback runs per
-package and only for the public npm registries; when packages were staged, the
+package and only for the public npm registry; when packages were staged, the
 run ends with a warning that lists them alongside the `yarn npm stage list`
 and `yarn npm stage approve <stage-id>` commands. Approving a staged
 publication requires an interactive 2FA prompt, so it stays a manual step.
