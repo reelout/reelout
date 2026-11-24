@@ -1,9 +1,17 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
-import type { ReleaseContext } from '@reelout/core'
+import type { Package, ReleaseContext, ReleasePlan } from '@reelout/core'
 import { formatError } from '@reelout/core'
+import { structUtils } from '@yarnpkg/core'
+import { npmConfigUtils } from '@yarnpkg/plugin-npm'
+import type { PackageManagerInfo } from './inspectPackageManager'
 import { loadConfig } from './loadConfig'
+import {
+  loadYarnConfig,
+  type YarnRegistryConfig,
+  type YarnScopeConfig,
+} from './loadYarnConfig'
 import { normalizeRegistry } from './normalizeRegistry'
 
 /**
@@ -16,15 +24,24 @@ import { normalizeRegistry } from './normalizeRegistry'
  * tarball endpoints do not accept them.
  *
  * @param context Release context containing environment and working directory
+ * @param plan Release plan describing the target package
+ * @param packageManager Information about the active package manager
  * @param tarballUrl Absolute URL of the published tarball
  * @returns The downloaded tarball bytes
  * @throws If the registry responds with a non-OK status
  */
 export async function downloadPublishedTarball(
   context: ReleaseContext,
+  plan: ReleasePlan,
+  packageManager: Partial<PackageManagerInfo>,
   tarballUrl: string
 ): Promise<Buffer> {
-  const authorization = await resolveTarballAuthorization(context, tarballUrl)
+  const authorization = await resolveTarballAuthorization(
+    context,
+    plan.package,
+    packageManager,
+    tarballUrl
+  )
 
   const response = await fetch(tarballUrl, {
     headers: authorization ? { authorization } : {},
@@ -44,24 +61,27 @@ export async function downloadPublishedTarball(
  * Resolve the `Authorization` header value for a tarball download.
  *
  * Derives the registry from the tarball URL, looks up ambient credentials for
- * it in the effective `.npmrc` configuration, and falls back to an
+ * it with the active package manager's configuration, and falls back to an
  * `NPM_TOKEN` bearer token when no ambient credentials exist.
  *
  * @param context Release context containing environment and working directory
+ * @param pkg Target package metadata object
+ * @param packageManager Information about the active package manager
  * @param tarballUrl Absolute URL of the published tarball
  * @returns The authorization header value, or undefined for anonymous access
  */
 async function resolveTarballAuthorization(
   context: ReleaseContext,
+  pkg: Package,
+  packageManager: Partial<PackageManagerInfo>,
   tarballUrl: string
 ): Promise<string | undefined> {
   const registry = registryFromTarballUrl(tarballUrl)
 
   if (registry) {
-    const authorization = await resolveNpmRegistryAuthorization(
-      context,
-      registry
-    )
+    const authorization = packageManager.isYarnBerry
+      ? await resolveYarnRegistryAuthorization(context, pkg, registry)
+      : await resolveNpmRegistryAuthorization(context, registry)
 
     if (authorization) {
       return authorization
@@ -85,6 +105,73 @@ function registryFromTarballUrl(tarballUrl: string): string | undefined {
   } catch {
     return undefined
   }
+}
+
+/**
+ * Resolve ambient Yarn Berry registry credentials for a registry.
+ *
+ * Checks the package scope's settings, the registry's `npmRegistries` entry,
+ * and the top-level configuration when the registry is the configured
+ * default, mirroring how Yarn itself resolves `npmAuthToken` and
+ * `npmAuthIdent` values.
+ *
+ * @param context Release context containing environment and working directory
+ * @param pkg Target package metadata object
+ * @param registry Registry URL the tarball is served from
+ * @returns The authorization header value, or undefined without credentials
+ */
+async function resolveYarnRegistryAuthorization(
+  context: ReleaseContext,
+  pkg: Package,
+  registry: string
+): Promise<string | undefined> {
+  let configuration
+
+  try {
+    configuration = await loadYarnConfig(context.cwd)
+  } catch (error) {
+    context.logger.debug(
+      `Yarn configuration could not be loaded for the tarball download: ${formatError(error)}`
+    )
+
+    return undefined
+  }
+
+  const ident = pkg.name ? structUtils.parseIdent(pkg.name) : undefined
+
+  const scopeConfiguration = npmConfigUtils.getScopeConfiguration(
+    ident ? ident.scope : null,
+    { configuration }
+  ) as YarnScopeConfig | null
+
+  const scopeAuthorization = authorizationFromYarnConfig(scopeConfiguration)
+
+  if (scopeAuthorization) {
+    return scopeAuthorization
+  }
+
+  const registryConfiguration = npmConfigUtils.getRegistryConfiguration(
+    registry,
+    { configuration }
+  ) as YarnRegistryConfig | null
+
+  const registryAuthorization = authorizationFromYarnConfig(
+    registryConfiguration
+  )
+
+  if (registryAuthorization) {
+    return registryAuthorization
+  }
+
+  const defaultRegistry =
+    normalizeRegistry(configuration.get('npmPublishRegistry')) ??
+    normalizeRegistry(configuration.get('npmRegistryServer'))
+
+  if (defaultRegistry === registry) {
+    return authorizationFromYarnConfig(configuration)
+  }
+
+  return undefined
 }
 
 /**
@@ -121,6 +208,30 @@ async function resolveNpmRegistryAuthorization(
 
   if (credentials.auth) {
     return `Basic ${credentials.auth}`
+  }
+
+  return undefined
+}
+
+/**
+ * Build an authorization header value from a Yarn registry configuration.
+ *
+ * @param config The Yarn scope, registry, or top-level configuration to read
+ * @returns The authorization header value, or undefined without credentials
+ */
+function authorizationFromYarnConfig(
+  config: YarnRegistryConfig | null | undefined
+): string | undefined {
+  const token = config?.get('npmAuthToken')
+
+  if (typeof token === 'string' && token) {
+    return `Bearer ${token}`
+  }
+
+  const ident = config?.get('npmAuthIdent')
+
+  if (typeof ident === 'string' && ident) {
+    return `Basic ${ident}`
   }
 
   return undefined

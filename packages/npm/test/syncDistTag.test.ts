@@ -106,6 +106,27 @@ test('syncs the dist-tag through pnpm with the resolved registry', async () => {
   )
 })
 
+test('syncs the dist-tag through yarn berry without a registry', async () => {
+  await syncDistTag(
+    context,
+    plan,
+    createPackageManager({
+      name: 'yarn',
+      isNpm: false,
+      isYarn: true,
+      isYarnBerry: true,
+    }),
+    {}
+  )
+
+  expect(execCommand).toHaveBeenCalledWith(
+    'yarn',
+    ['npm', 'tag', 'add', 'a@1.2.3', 'latest'],
+    expect.objectContaining({ cwd: packageDir })
+  )
+  expect(resolvePublishRegistry).not.toHaveBeenCalled()
+})
+
 test('syncs the configured release channel dist-tag', async () => {
   context.releaseChannel = 'next'
 

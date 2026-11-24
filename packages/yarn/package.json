@@ -40,11 +40,7 @@
     "@reelout/github": "workspace:^",
     "@reelout/gitlab": "workspace:^",
     "@reelout/npm": "workspace:^",
-    "@yarnpkg/core": "catalog:",
-    "@yarnpkg/fslib": "catalog:",
-    "@yarnpkg/plugin-npm": "catalog:",
-    "consola": "catalog:",
-    "yaml": "catalog:"
+    "consola": "catalog:"
   },
   "engines": {
     "node": ">=24.15"

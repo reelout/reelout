@@ -185,6 +185,8 @@ Run with `--debug` to see why a plugin is inactive:
 
 - `NPM workspace could not be found at "<path>".`
 - `NPM plugin is inactive: Yarn is the active package manager.`
+- `Yarn plugin is inactive: no package.json was found at "<path>".`
+- `Yarn plugin is inactive: "<name>" is the active package manager.`
 - `Cargo workspace could not be found at "<path>".`
 - `GitHub releases will not be created: no GitHub-hosted repository was detected.`
 - `GitLab releases will not be created: no GitLab-hosted repository was detected.`

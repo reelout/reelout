@@ -14,28 +14,31 @@ import {
 import * as github from '@reelout/github'
 import * as gitlab from '@reelout/gitlab'
 import { bumpPackageDependencies } from '@reelout/npm/bumpPackageDependencies'
+import { fallbackToStagedPublish } from '@reelout/npm/fallbackToStagedPublish'
 import { hasPackageManifest } from '@reelout/npm/hasPackageManifest'
 import { inspectPackageManager } from '@reelout/npm/inspectPackageManager'
+import {
+  isCompleteReleasePlan,
+  type CompleteReleasePlan,
+} from '@reelout/npm/isCompleteReleasePlan'
 import { isPublishOverRejection } from '@reelout/npm/isPublishOverRejection'
 import { isSameRepository } from '@reelout/npm/isSameRepository'
 import { isStageRequiredRejection } from '@reelout/npm/isStageRequiredRejection'
 import { loadPackages } from '@reelout/npm/loadPackages'
+import {
+  publishPackage,
+  type PublishPackageOptions,
+} from '@reelout/npm/publishPackage'
+import { probeReleasePlan } from '@reelout/npm/probeReleasePlan'
+import { recoverFromPublishOverRejection } from '@reelout/npm/recoverFromPublishOverRejection'
 import { resolveGitRepositoryFromPackage } from '@reelout/npm/resolveGitRepositoryFromPackage'
 import { resolveWorkspaceMembers } from '@reelout/npm/resolveWorkspaceMembers'
 import type { PublishAccess } from '@reelout/npm/types'
+import { verifyAuth } from '@reelout/npm/verifyAuth'
+import { verifyPublishAccess } from '@reelout/npm/verifyPublishAccess'
 import { colors } from 'consola/utils'
 import { version } from '../package.json'
-import { fallbackToStagedPublish } from './fallbackToStagedPublish'
-import {
-  isCompleteReleasePlan,
-  type CompleteReleasePlan,
-} from './isCompleteReleasePlan'
 import { PLUGIN_NAME } from './PLUGIN_NAME'
-import { probeReleasePlan } from './probeReleasePlan'
-import { publishPackage, type PublishPackageOptions } from './publishPackage'
-import { recoverFromPublishOverRejection } from './recoverFromPublishOverRejection'
-import { verifyPublishAccess } from './verifyPublishAccess'
-import { verifyAuth } from './verifyAuth'
 
 export { PLUGIN_NAME }
 
@@ -51,10 +54,10 @@ export interface PluginOptions {
  *
  * @remarks
  * **Lifecycle Stages:**
- * - `configure`: Warns and leaves the plugin inactive when the working
- *   directory holds no root `package.json` or the workspace is not managed
- *   by Yarn. Otherwise resolves and attaches Git repository metadata from
- *   root package configuration, then verifies registry authentication,
+ * - `configure`: Leaves the plugin inactive when the working directory holds
+ *   no root `package.json` or the workspace is not managed by Yarn.
+ *   Otherwise resolves and attaches Git repository metadata from root
+ *   package configuration, then verifies registry authentication,
  *   failing in strict mode or skipping the publish phase when no
  *   credentials exist.
  * - `discover`: Skips discovery when the plugin is inactive. Discovers
@@ -92,10 +95,8 @@ const yarn = (options: PluginOptions = {}): ReleasePlugin => {
       if (!(await hasPackageManifest(context.cwd))) {
         inactive = true
 
-        context.logger.warn(
-          colors.yellow(
-            `The Yarn plugin is registered, but no package.json was found at "${context.cwd}".`
-          )
+        context.logger.debug(
+          `Yarn plugin is inactive: no package.json was found at "${context.cwd}".`
         )
 
         return next(context)
@@ -108,10 +109,8 @@ const yarn = (options: PluginOptions = {}): ReleasePlugin => {
       if (!packageManager.isYarn) {
         inactive = true
 
-        context.logger.warn(
-          colors.yellow(
-            `The Yarn plugin is registered, but "${packageManager.name}" is the active package manager. Remove the plugin or switch the workspace to Yarn.`
-          )
+        context.logger.debug(
+          `Yarn plugin is inactive: "${packageManager.name}" is the active package manager.`
         )
 
         return next(context)
@@ -120,7 +119,7 @@ const yarn = (options: PluginOptions = {}): ReleasePlugin => {
       const repo = await resolveGitRepositoryFromPackage(context.cwd)
       context.repository = repo ?? context.repository
 
-      const authKind = await verifyAuth(context)
+      const authKind = await verifyAuth(context, packageManager)
 
       if (authKind === 'none') {
         if (context.strict) {
@@ -233,7 +232,9 @@ const yarn = (options: PluginOptions = {}): ReleasePlugin => {
         }
       } catch {}
 
-      const publishable = context.plans.filter(isCompleteReleasePlan)
+      const publishable = context.plans.filter((plan) =>
+        isCompleteReleasePlan(plan, PLUGIN_NAME)
+      )
 
       const packageManager =
         publishable.length > 0
@@ -243,7 +244,12 @@ const yarn = (options: PluginOptions = {}): ReleasePlugin => {
       const skipped = new Set<ReleasePlan>()
 
       if (packageManager) {
-        await verifyPublishAccess(context, publishable, packageManager)
+        await verifyPublishAccess(
+          context,
+          publishable,
+          packageManager,
+          PLUGIN_NAME
+        )
 
         for (const plan of publishable) {
           await probeReleasePlan(context, plan, packageManager, skipped)
@@ -268,7 +274,10 @@ const yarn = (options: PluginOptions = {}): ReleasePlugin => {
         try {
           await publishPackage(context, plan, publishOptions)
         } catch (error) {
-          if (packageManager === undefined || !isCompleteReleasePlan(plan)) {
+          if (
+            packageManager === undefined ||
+            !isCompleteReleasePlan(plan, PLUGIN_NAME)
+          ) {
             throw error
           }
 

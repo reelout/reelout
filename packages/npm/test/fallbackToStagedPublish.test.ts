@@ -34,6 +34,15 @@ const npmPackageManager: PackageManagerInfo = {
   isYarnBerry: false,
 }
 
+const yarnClassicPackageManager: PackageManagerInfo = {
+  name: 'yarn',
+  isNpm: false,
+  isPnpm: false,
+  isYarn: true,
+  isYarnClassic: true,
+  isYarnBerry: false,
+}
+
 const plan: CompleteReleasePlan = {
   package: {
     provider: '@reelout/npm',
@@ -87,6 +96,21 @@ test('falls back to staged publishing on the public npm registry', async () => {
   ).toHaveLength(1)
 })
 
+test('falls back to staged publishing on the default Yarn registry', async () => {
+  resolvePublishRegistry.mockResolvedValue('https://registry.yarnpkg.com/')
+
+  const staged = await fallbackToStagedPublish(
+    context,
+    plan,
+    npmPackageManager,
+    {},
+    stageRequiredError()
+  )
+
+  expect(staged).toBe(true)
+  expect(publishPackage).toHaveBeenCalledTimes(1)
+})
+
 test('warns and skips the fallback when the stage option disables it', async () => {
   const staged = await fallbackToStagedPublish(
     context,
@@ -118,6 +142,39 @@ test('skips the fallback for an already staged publish', async () => {
 
   expect(staged).toBe(false)
   expect(publishPackage).not.toHaveBeenCalled()
+})
+
+test('rejects when the package manager is Yarn Classic', async () => {
+  const stageRequired = stageRequiredError()
+
+  const error: unknown = await fallbackToStagedPublish(
+    context,
+    plan,
+    yarnClassicPackageManager,
+    {},
+    stageRequired
+  ).catch((err) => err)
+
+  expect(error).toMatchInlineSnapshot(
+    '[Error: Staged publishing is not supported by Yarn Classic.]'
+  )
+  expect((error as Error).cause).toBe(stageRequired)
+
+  expect(publishPackage).not.toHaveBeenCalled()
+})
+
+test('skips the disabled fallback silently when the package manager is Yarn Classic', async () => {
+  const staged = await fallbackToStagedPublish(
+    context,
+    plan,
+    yarnClassicPackageManager,
+    { stage: false },
+    stageRequiredError()
+  )
+
+  expect(staged).toBe(false)
+  expect(publishPackage).not.toHaveBeenCalled()
+  expect(warnCalls()).toHaveLength(0)
 })
 
 test('skips the fallback when the package targets another registry', async () => {

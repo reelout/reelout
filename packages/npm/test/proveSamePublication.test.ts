@@ -129,7 +129,12 @@ test('reports the publication as unverified when the published tarball cannot be
     proveSamePublication(context, plan, packageManager, TARBALL_URL, undefined)
   ).resolves.toBe(false)
 
-  expect(downloadPublishedTarball).toHaveBeenCalledWith(context, TARBALL_URL)
+  expect(downloadPublishedTarball).toHaveBeenCalledWith(
+    context,
+    plan,
+    packageManager,
+    TARBALL_URL
+  )
 })
 
 test('verifies the publication by comparing the downloaded tarball content', async () => {

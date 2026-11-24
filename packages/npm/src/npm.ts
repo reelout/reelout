@@ -118,7 +118,7 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
       const repo = await resolveGitRepositoryFromPackage(context.cwd)
       context.repository = repo ?? context.repository
 
-      const authKind = await verifyAuth(context)
+      const authKind = await verifyAuth(context, packageManager)
 
       if (authKind === 'none') {
         if (context.strict) {
@@ -189,7 +189,7 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
     publish: async (context, next) => {
       if (inactive) {
         context.logger.debug(
-          'NPM publishing was skipped: Yarn is the active package manager.'
+          'NPM plugin is inactive: Yarn is the active package manager.'
         )
 
         return next(context)
@@ -239,7 +239,9 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
         }
       } catch {}
 
-      const publishable = context.plans.filter(isCompleteReleasePlan)
+      const publishable = context.plans.filter((plan) =>
+        isCompleteReleasePlan(plan)
+      )
 
       const packageManager =
         publishable.length > 0

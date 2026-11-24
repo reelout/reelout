@@ -3,8 +3,7 @@
 Yarn integration for [ReelOut](https://github.com/reelout/reelout). The plugin
 resolves Yarn workspaces (Classic and Berry), updates package manifests and
 internal dependency ranges, and publishes packages with the active Yarn
-version. The package also exports workspace and publishing utilities for
-standalone use.
+version.
 
 ## Installation
 
@@ -74,14 +73,11 @@ before anything is published; inconclusive checks only warn.
 
 ## API
 
-Key exports include:
-
-- **Plugin** — `yarn` (default export).
-- **Publishing** — `publishPackage`, `prepareAuth`, `probeReleasePlan`, `probePublishedVersion`, `packLocalTarball`, and `fallbackToStagedPublish`.
-- **Registry** — `resolvePublishRegistry`, `verifyPublishAccess`, `syncDistTag`, and `proveSamePublication`.
-- **Registry auth** — `hasAuth` (registry authentication detection) and `verifyAuth` (credential verification).
-- **Tarballs** — `downloadPublishedTarball` and `recoverFromPublishOverRejection`.
-- **Yarn configuration** — `loadYarnConfig`.
+The package exposes a thin surface: the `yarn` plugin (default export)
+configured through `PluginOptions`, plus the `PLUGIN_NAME` constant
+(`@reelout/yarn`). Workspace resolution, probing, and publishing utilities
+live in [`@reelout/npm`](https://www.npmjs.com/package/@reelout/npm), which
+this plugin shares with the npm plugin.
 
 ## Documentation
 

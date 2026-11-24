@@ -13,17 +13,19 @@ export type CompleteReleasePlan = ReleasePlan & {
 }
 
 /**
- * Determine whether a release plan carries the complete data an npm
+ * Determine whether a release plan carries the complete data a registry
  * publish requires.
  *
  * @param plan The release plan to inspect
- * @returns True when the plan is npm-provided, public, named, and versioned
+ * @param pluginName Name of the plugin whose plans qualify, defaulting to the npm plugin
+ * @returns True when the plan is plugin-provided, public, named, and versioned
  */
 export function isCompleteReleasePlan(
-  plan: ReleasePlan
+  plan: ReleasePlan,
+  pluginName: string = PLUGIN_NAME
 ): plan is CompleteReleasePlan {
   return (
-    plan.package.provider === PLUGIN_NAME &&
+    plan.package.provider === pluginName &&
     !plan.package.private &&
     typeof plan.package.name === 'string' &&
     typeof plan.release?.version === 'string'

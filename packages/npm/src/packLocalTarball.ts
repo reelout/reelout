@@ -31,7 +31,16 @@ export async function packLocalTarball(
   const packDir = await mkdtemp(path.join(tmpdir(), 'reelout-pack-'))
 
   try {
-    const commandArgs: string[] = ['pack', '--pack-destination', packDir]
+    const commandArgs: string[] = ['pack']
+
+    if (packageManager.isYarn) {
+      commandArgs.push(
+        packageManager.isYarnBerry ? '--out' : '--filename',
+        path.join(packDir, 'package.tgz')
+      )
+    } else {
+      commandArgs.push('--pack-destination', packDir)
+    }
 
     await execCommand(packageManager.name, commandArgs, {
       cwd: packageDir,

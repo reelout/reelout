@@ -46,7 +46,7 @@ vi.mock(import('@reelout/core/util/execCommand'), () => ({
 }))
 
 vi.mock(
-  import('@reelout/yarn/downloadPublishedTarball'),
+  import('@reelout/npm/downloadPublishedTarball'),
   async (importActual) => ({
     downloadPublishedTarball: async (...args) =>
       downloadPublishedTarball(...args) ??
@@ -75,12 +75,12 @@ vi.mock(import('@reelout/npm/loadPackages'), async (importActual) => ({
   loadPackages: vi.fn((await importActual()).loadPackages),
 }))
 
-vi.mock(import('@reelout/yarn/prepareAuth'), async (importActual) => ({
+vi.mock(import('@reelout/npm/prepareAuth'), async (importActual) => ({
   prepareAuth: async (...args) =>
     (await prepareAuth(...args)) ?? (await importActual()).prepareAuth(...args),
 }))
 
-vi.mock(import('@reelout/yarn/publishPackage'), () => ({
+vi.mock(import('@reelout/npm/publishPackage'), () => ({
   publishPackage: (context, ...args) => publishPackage(context.cwd, ...args),
 }))
 
@@ -242,16 +242,11 @@ test('stays inactive without a root package manifest', async () => {
 
   await executeReleaseWorkflow(context, [plugin()])
 
-  expect(
-    warnCalls().filter((message) =>
-      message.includes(
-        'The Yarn plugin is registered, but no package.json was found at "/repo".'
-      )
-    )
-  ).toHaveLength(1)
-
   expect(publishPackage).not.toHaveBeenCalled()
   expect(context.outcome?.status).toBe('success')
+  expect(
+    warnCalls().filter((message) => message.includes('Yarn plugin is inactive'))
+  ).toHaveLength(0)
 
   expect(JSON.parse(await readFile('/repo/a/package.json', 'utf8'))).toEqual({
     name: 'a',
@@ -268,16 +263,11 @@ test('stays inactive when another package manager is active', async () => {
 
   await executeReleaseWorkflow(context, [plugin()])
 
-  expect(
-    warnCalls().filter((message) =>
-      message.includes(
-        'The Yarn plugin is registered, but "npm" is the active package manager. Remove the plugin or switch the workspace to Yarn.'
-      )
-    )
-  ).toHaveLength(1)
-
   expect(publishPackage).not.toHaveBeenCalled()
   expect(context.outcome?.status).toBe('success')
+  expect(
+    warnCalls().filter((message) => message.includes('Yarn plugin is inactive'))
+  ).toHaveLength(0)
 })
 
 test('skips the publish phase with a warning when no registry authentication exists', async () => {

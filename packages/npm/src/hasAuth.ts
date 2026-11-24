@@ -2,15 +2,26 @@
 // Copyright (c) 2026 Fai
 
 import type { Package, ReleaseContext } from '@reelout/core'
+import { structUtils } from '@yarnpkg/core'
+import { npmConfigUtils } from '@yarnpkg/plugin-npm'
 import type { PackageManagerInfo } from './inspectPackageManager'
 import { loadConfig } from './loadConfig'
+import {
+  loadYarnConfig,
+  type YarnRegistryConfig,
+  type YarnScopeConfig,
+} from './loadYarnConfig'
+import { normalizeRegistry } from './normalizeRegistry'
 import { resolvePublishRegistry } from './resolvePublishRegistry'
 
 /**
  * Determine whether authentication credentials exist for a package registry.
  *
- * Checks OIDC environment tokens, scope-level settings, registry configs,
- * and standard auth credentials to verify registry access.
+ * Checks OIDC environment tokens for npm and pnpm releases, scope-level
+ * settings, registry configs, and standard auth credentials to verify
+ * registry access. Yarn releases skip the OIDC check: the registry offers
+ * no OIDC exchange for Yarn, so OIDC environment tokens never count as
+ * Yarn credentials.
  *
  * @param context Release context containing environment and working directory
  * @param pkg Target package metadata object
@@ -22,18 +33,54 @@ export async function hasAuth(
   pkg: Package,
   packageManager: Partial<PackageManagerInfo>
 ): Promise<boolean> {
-  if (hasOIDCAuth(context.env)) {
+  if (!packageManager.isYarn && hasOIDCAuth(context.env)) {
     return true
   }
 
   const registry = await resolvePublishRegistry(context, pkg, packageManager)
 
-  const config = await loadConfig(context.cwd, { env: context.env })
+  if (packageManager.isYarnBerry) {
+    const hasTokenOrIdent = (config: YarnRegistryConfig | null | undefined) => {
+      return Boolean(config?.get('npmAuthToken') || config?.get('npmAuthIdent'))
+    }
 
-  const credentials = config.getCredentialsByURI(registry)
+    const configuration = await loadYarnConfig(context.cwd)
 
-  if (credentials.token || credentials.auth) {
-    return true
+    const ident = pkg.name ? structUtils.parseIdent(pkg.name) : undefined
+
+    const scopeConfiguration = npmConfigUtils.getScopeConfiguration(
+      ident ? ident.scope : null,
+      { configuration }
+    ) as YarnScopeConfig | null
+
+    if (hasTokenOrIdent(scopeConfiguration)) {
+      return true
+    }
+
+    const registryConfiguration = npmConfigUtils.getRegistryConfiguration(
+      registry,
+      { configuration }
+    ) as YarnRegistryConfig | null
+
+    if (hasTokenOrIdent(registryConfiguration)) {
+      return true
+    }
+
+    const defaultRegistry =
+      normalizeRegistry(configuration.get('npmPublishRegistry')) ??
+      normalizeRegistry(configuration.get('npmRegistryServer'))
+
+    if (defaultRegistry === registry && hasTokenOrIdent(configuration)) {
+      return true
+    }
+  } else {
+    const config = await loadConfig(context.cwd, { env: context.env })
+
+    const credentials = config.getCredentialsByURI(registry)
+
+    if (credentials.token || credentials.auth) {
+      return true
+    }
   }
 
   return false

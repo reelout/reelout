@@ -185,7 +185,10 @@ Rules:
   network calls.
 - Re-check the same predicate in each later hook instead of keeping local or
   context-level state: the condition is cheap and stable for the duration of
-  a run, and stateless gates cannot go stale across runs.
+  a run, and stateless gates cannot go stale across runs. Expensive
+  predicates are the exception: compute them once in `configure` and cache
+  the verdict in a closure flag, the way the built-in registry plugins cache
+  their `inactive` flags after inspecting the active package manager.
 - Log inactivity at `debug` level. Inactivity is enablement, not a skipped
   step: never warn for it and never escalate it under `--strict`. Reserve
   warn-and-skip (or the strict throw) for a plugin that applies but lacks
