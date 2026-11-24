@@ -1,5 +1,5 @@
 diff --git a/index.d.ts b/index.d.ts
-index 8053bce2369b4228022d1c2132fb6bed802804e9..10ae5216cef8903adf0011eed5265d9f6b7b6dd2 100644
+index 8053bce2369b4228022d1c2132fb6bed802804e9..5a015034d13337825357bb31584710bff715a136 100644
 --- a/index.d.ts
 +++ b/index.d.ts
 @@ -167,11 +167,19 @@ declare class Config<Definitions extends Config.DefinitionsObject = Config.Defin
