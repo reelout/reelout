@@ -64,19 +64,20 @@ export interface PluginOptions {
  * - `write`: Skips manifest updates when the plugin is inactive. Bumps
  *   internal workspace dependency versions in `package.json` files (skipped
  *   in dry-run).
- * - `publish`: Skips entirely when the plugin is inactive or configure-stage
- *   verification found no registry authentication. Verifies each
- *   publishable package's publish permission against its resolved registry,
- *   failing when access is definitively missing and warning when it cannot
- *   be confirmed. Then authenticates and probes each publishable package
- *   version before publishing, skipping versions the registry already holds
- *   with identical content (syncing their dist-tags) and failing on
- *   different or unverifiable content. Publishes non-private packages with
- *   Yarn, enabling provenance when the manifest repository is valid,
- *   matches the context repository, and is public. Falls back to staged
- *   publishing when the registry rejects a direct publish with a
- *   staged-publishing requirement and the `stage` option does not disable
- *   the fallback, summarizing the staged publications at the end.
+ * - `publish`: Verifies each publishable package's publish permission
+ *   against its resolved registry, failing when access is definitively
+ *   missing and warning when it cannot be confirmed. Then authenticates
+ *   and probes each publishable package version before publishing,
+ *   skipping versions the registry already holds with identical content
+ *   (syncing their dist-tags) and failing on different or unverifiable
+ *   content. Publishes non-private packages with Yarn, enabling provenance
+ *   when the manifest repository is valid, matches the context repository,
+ *   and is public. Falls back to staged publishing when the registry
+ *   rejects a direct publish with a staged-publishing requirement and the
+ *   `stage` option does not disable the fallback, summarizing the staged
+ *   publications at the end. Skips entirely when no Yarn workspace was
+ *   found, another package manager is active, or configure-stage
+ *   verification found no registry authentication.
  *
  * @param options Configuration options for Yarn workspace discovery and publishing behavior.
  * @returns A release plugin configured for Yarn workspace management and package publication.
@@ -91,10 +92,8 @@ const yarn = (options: PluginOptions = {}): ReleasePlugin => {
     version,
     configure: async (context, next) => {
       if (!(await hasPackageManifest(context.cwd))) {
-        inactive = true
-
         context.logger.debug(
-          `Yarn plugin is inactive: no package.json was found at "${context.cwd}".`
+          `Yarn workspace could not be found at "${context.cwd}".`
         )
 
         return next(context)
@@ -138,7 +137,7 @@ const yarn = (options: PluginOptions = {}): ReleasePlugin => {
       return next(context)
     },
     discover: async (context, next) => {
-      if (inactive) {
+      if (inactive || !(await hasPackageManifest(context.cwd))) {
         return next(context)
       }
 
@@ -170,7 +169,7 @@ const yarn = (options: PluginOptions = {}): ReleasePlugin => {
       return next(context)
     },
     write: async (context, next) => {
-      if (inactive) {
+      if (inactive || !(await hasPackageManifest(context.cwd))) {
         return next(context)
       }
 
@@ -188,7 +187,15 @@ const yarn = (options: PluginOptions = {}): ReleasePlugin => {
     publish: async (context, next) => {
       if (inactive) {
         context.logger.debug(
-          'Yarn publishing was skipped: the plugin is inactive.'
+          'Yarn plugin is inactive: another package manager is active.'
+        )
+
+        return next(context)
+      }
+
+      if (!(await hasPackageManifest(context.cwd))) {
+        context.logger.debug(
+          'Yarn publishing was skipped: no Yarn workspace was found.'
         )
 
         return next(context)
