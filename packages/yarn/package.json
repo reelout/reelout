@@ -38,7 +38,6 @@
   "dependencies": {
     "@reelout/core": "workspace:^",
     "@reelout/github": "workspace:^",
-    "@reelout/gitlab": "workspace:^",
     "@reelout/npm": "workspace:^",
     "consola": "catalog:"
   },

@@ -667,9 +667,6 @@ importers:
       '@reelout/github':
         specifier: workspace:^
         version: link:../github
-      '@reelout/gitlab':
-        specifier: workspace:^
-        version: link:../gitlab
       '@reelout/npm':
         specifier: workspace:^
         version: link:../npm
