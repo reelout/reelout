@@ -18,20 +18,9 @@ import {
 
 const execCommand = vi.hoisted(() => vi.fn())
 
-const prepareAuth = vi.hoisted(() =>
-  vi.fn(async (...args: unknown[]): Promise<undefined> => {})
-)
-
-const publishPackage = vi.hoisted(() =>
-  vi.fn(
-    async (cwd: string, ...args: unknown[]): Promise<void> =>
-      await prepareAuth({ cwd })
-  )
-)
+const publishPackage = vi.hoisted(() => vi.fn())
 
 const isGitHubRepositoryPublic = vi.hoisted(() => vi.fn())
-
-const isGitLabRepositoryPublic = vi.hoisted(() => vi.fn())
 
 const isPackageTarballIdentical = vi.hoisted(() => vi.fn())
 
@@ -71,15 +60,6 @@ vi.mock(import('@reelout/npm/getPackageManagerVersion'), () => ({
   getPackageManagerVersion,
 }))
 
-vi.mock(import('@reelout/npm/loadPackages'), async (importActual) => ({
-  loadPackages: vi.fn((await importActual()).loadPackages),
-}))
-
-vi.mock(import('@reelout/npm/prepareAuth'), async (importActual) => ({
-  prepareAuth: async (...args) =>
-    (await prepareAuth(...args)) ?? (await importActual()).prepareAuth(...args),
-}))
-
 vi.mock(import('@reelout/npm/publishPackage'), () => ({
   publishPackage: (context, ...args) => publishPackage(context.cwd, ...args),
 }))
@@ -90,10 +70,6 @@ vi.mock(import('@reelout/npm/resolvePackageManager'), () => ({
 
 vi.mock(import('@reelout/github/isRepositoryPublic'), () => ({
   isRepositoryPublic: isGitHubRepositoryPublic,
-}))
-
-vi.mock(import('@reelout/gitlab/isRepositoryPublic'), () => ({
-  isRepositoryPublic: isGitLabRepositoryPublic,
 }))
 
 const NPMJS = 'https://registry.npmjs.org/'
