@@ -3,6 +3,8 @@
 
 import type { ReleaseContext, ReleasePlan } from '@reelout/core'
 import { formatError } from '@reelout/core'
+import semver from 'semver'
+import { getPackageManagerFullVersion } from './getPackageManagerFullVersion'
 import { hasAuth, hasOIDCAuth } from './hasAuth'
 import type { PackageManagerInfo } from './inspectPackageManager'
 import {
@@ -11,6 +13,7 @@ import {
 } from './isCompleteReleasePlan'
 import { isJsonObject } from './isJsonObject'
 import { normalizeRegistry } from './normalizeRegistry'
+import type { PackageManager } from './resolvePackageManager'
 import {
   DEFAULT_REGISTRY,
   resolvePublishRegistry,
@@ -18,6 +21,18 @@ import {
 
 /** The OIDC audience of the public npm registry's trusted-publishing tokens. */
 const TRUSTED_PUBLISHING_AUDIENCE = 'npm:registry.npmjs.org'
+
+/**
+ * Minimum package manager CLI versions that publish with OIDC trusted
+ * publishing. `undefined` marks package managers without OIDC support.
+ */
+const MINIMUM_OIDC_CLI_VERSIONS: Readonly<
+  Record<PackageManager, string | undefined>
+> = {
+  npm: '11.5.1',
+  pnpm: '11.0.0',
+  yarn: undefined,
+}
 
 /**
  * Verify OIDC trusted publishing for release plans before anything is
@@ -33,9 +48,10 @@ const TRUSTED_PUBLISHING_AUDIENCE = 'npm:registry.npmjs.org'
  * plans targeting the public npm registry are verified; complete plans on
  * any other registry fail the release when neither an `NPM_TOKEN` nor
  * ambient registry credentials exist for them, because OIDC authentication
- * cannot publish them. Fails the release when the identity token cannot be
- * retrieved or an exchange is rejected, before a single package is
- * published.
+ * cannot publish them. Requires a package manager CLI that can publish
+ * with OIDC itself and fails the release when it is too old. Fails the
+ * release when the identity token cannot be retrieved or an exchange is
+ * rejected, before a single package is published.
  *
  * @param context Release context containing environment and working directory
  * @param plans Release plans to verify
@@ -43,8 +59,8 @@ const TRUSTED_PUBLISHING_AUDIENCE = 'npm:registry.npmjs.org'
  * @returns The plans whose trusted publishing was verified; empty when OIDC
  * authentication is not in use
  * @throws If a plan targets a registry without OIDC support and no other
- * credentials exist, or any plan's trusted-publishing token exchange was
- * rejected
+ * credentials exist, the package manager CLI cannot publish with OIDC, or
+ * any plan's trusted-publishing token exchange was rejected
  */
 export async function verifyTrustedPublishing(
   context: ReleaseContext,
@@ -115,6 +131,8 @@ export async function verifyTrustedPublishing(
     return new Set()
   }
 
+  await assertOidcCapablePackageManager(context, packageManager.name)
+
   const identityToken = await resolveIdentityToken(context)
 
   const failures: string[] = []
@@ -146,6 +164,34 @@ export async function verifyTrustedPublishing(
   )
 
   return new Set(targets)
+}
+
+/**
+ * Assert that the active package manager CLI can publish with OIDC trusted
+ * publishing.
+ *
+ * @param context Release context containing environment and working directory
+ * @param name Name of the active package manager executable
+ * @throws If the CLI version is unknown or older than the first version
+ * with OIDC publishing support
+ */
+async function assertOidcCapablePackageManager(
+  context: ReleaseContext,
+  name: PackageManager
+): Promise<void> {
+  const minimumVersion = MINIMUM_OIDC_CLI_VERSIONS[name]
+
+  if (minimumVersion === undefined) {
+    return
+  }
+
+  const version = await getPackageManagerFullVersion(context.cwd, name)
+
+  if (version === undefined || semver.lt(version, minimumVersion)) {
+    throw new Error(
+      `Trusted publishing requires ${name} >= ${minimumVersion}, but "${version ?? 'an unknown version'}" was found. Upgrade the package manager to publish with OIDC trusted publishing.`
+    )
+  }
 }
 
 /**

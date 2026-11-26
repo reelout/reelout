@@ -17,6 +17,12 @@ import { context, logger } from '../../../test/mock/context'
 
 const fetchMock = vi.hoisted(() => vi.fn())
 
+const getPackageManagerFullVersionMock = vi.hoisted(() => vi.fn())
+
+vi.mock(import('@reelout/npm/getPackageManagerFullVersion'), () => ({
+  getPackageManagerFullVersion: getPackageManagerFullVersionMock,
+}))
+
 const NPMJS = 'https://registry.npmjs.org/'
 
 const createPackageManager = (
@@ -85,6 +91,7 @@ const infoMessages = (): string[] =>
 
 beforeEach(() => {
   vi.resetAllMocks()
+  getPackageManagerFullVersionMock.mockResolvedValue('11.5.1')
   vi.stubGlobal('fetch', (...args: unknown[]) => fetchMock(...args))
 })
 
@@ -328,6 +335,70 @@ test('aggregates rejected exchanges across packages', async () => {
     ).rejects.toThrow(
       'Trusted publishing could not be verified for "a@1.2.3" (HTTP 404: not configured), "b@2.0.0" (HTTP 403: workflow not allowed).'
     )
+  })
+})
+
+test('fails the release when the package manager is too old for OIDC trusted publishing', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_ID_TOKEN: 'mock-id-token' }
+
+    getPackageManagerFullVersionMock.mockResolvedValue('11.5.0')
+
+    await expect(
+      verifyTrustedPublishing(
+        context,
+        [createPlan({ name: 'a' })],
+        createPackageManager('npm')
+      )
+    ).rejects.toThrow(
+      'Trusted publishing requires npm >= 11.5.1, but "11.5.0" was found. Upgrade the package manager to publish with OIDC trusted publishing.'
+    )
+
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(getPackageManagerFullVersionMock).toHaveBeenCalledWith(cwd, 'npm')
+  })
+})
+
+test('fails the release when the package manager version is unknown', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_ID_TOKEN: 'mock-id-token' }
+
+    getPackageManagerFullVersionMock.mockResolvedValue(undefined)
+
+    await expect(
+      verifyTrustedPublishing(
+        context,
+        [createPlan({ name: 'a' })],
+        createPackageManager('npm')
+      )
+    ).rejects.toThrow(
+      'Trusted publishing requires npm >= 11.5.1, but "an unknown version" was found. Upgrade the package manager to publish with OIDC trusted publishing.'
+    )
+
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+})
+
+test('fails the release when pnpm predates OIDC publishing support', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_ID_TOKEN: 'mock-id-token' }
+
+    getPackageManagerFullVersionMock.mockResolvedValue('10.15.1')
+
+    await expect(
+      verifyTrustedPublishing(
+        context,
+        [createPlan({ name: 'a' })],
+        createPackageManager('pnpm')
+      )
+    ).rejects.toThrow(
+      'Trusted publishing requires pnpm >= 11.0.0, but "10.15.1" was found. Upgrade the package manager to publish with OIDC trusted publishing.'
+    )
+
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 })
 
