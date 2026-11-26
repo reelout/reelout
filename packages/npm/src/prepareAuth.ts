@@ -28,7 +28,7 @@ export async function prepareAuth(
   pkg: Package,
   packageManager: Partial<PackageManagerInfo>
 ): Promise<Env | undefined> {
-  const token = context.env.NPM_TOKEN
+  const token = context.env.NPM_TOKEN?.trim()
 
   if (!token) return
 

@@ -88,7 +88,7 @@ async function resolveTarballAuthorization(
     }
   }
 
-  const token = context.env.NPM_TOKEN
+  const token = context.env.NPM_TOKEN?.trim()
 
   return token ? `Bearer ${token}` : undefined
 }

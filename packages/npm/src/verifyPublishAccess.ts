@@ -648,7 +648,7 @@ function buildNpmEnv(
   registry: string,
   env: Env | undefined
 ): NodeJS.ProcessEnv {
-  const token = check.context.env.NPM_TOKEN
+  const token = check.context.env.NPM_TOKEN?.trim()
 
   return {
     ...check.context.env,

@@ -91,16 +91,21 @@ export async function hasAuth(
  *
  * Detects a pre-issued `NPM_ID_TOKEN` or a GitHub Actions OIDC token pair
  * without reading configuration files or spawning package manager commands.
+ * Whitespace-only values count as absent.
  *
  * @param env Environment variables to inspect
  * @returns True if OIDC environment tokens exist, otherwise false
  */
 export function hasOIDCAuth(env: Readonly<NodeJS.ProcessEnv>): boolean {
-  if (env.NPM_ID_TOKEN) {
+  if (env.NPM_ID_TOKEN?.trim()) {
     return true
   }
 
-  if (env.ACTIONS_ID_TOKEN_REQUEST_URL && env.ACTIONS_ID_TOKEN_REQUEST_TOKEN) {
+  const requestUrl = env.ACTIONS_ID_TOKEN_REQUEST_URL?.trim()
+
+  const requestToken = env.ACTIONS_ID_TOKEN_REQUEST_TOKEN?.trim()
+
+  if (requestUrl && requestToken) {
     return true
   }
 

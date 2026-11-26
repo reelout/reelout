@@ -135,9 +135,9 @@ async function resolveIdentityToken(context: ReleaseContext): Promise<string> {
     return identityToken
   }
 
-  const requestUrl = context.env.ACTIONS_ID_TOKEN_REQUEST_URL
+  const requestUrl = context.env.ACTIONS_ID_TOKEN_REQUEST_URL?.trim()
 
-  const requestToken = context.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN
+  const requestToken = context.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN?.trim()
 
   if (!requestUrl || !requestToken) {
     throw new Error('OIDC identity token is not available.')

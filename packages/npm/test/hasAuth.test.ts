@@ -42,6 +42,29 @@ test('returns true when GitHub Actions ID token request URL and token environmen
   })
 })
 
+test('returns false when NPM_ID_TOKEN environment variable contains only whitespace', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.env = { NPM_ID_TOKEN: '   ' }
+
+    context.cwd = cwd
+
+    expect(await hasAuth(context, pkg1, {})).toBe(false)
+  })
+})
+
+test('returns false when GitHub Actions OIDC environment variables contain only whitespace', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.env = {
+      ACTIONS_ID_TOKEN_REQUEST_URL: '  ',
+      ACTIONS_ID_TOKEN_REQUEST_TOKEN: '   ',
+    }
+
+    context.cwd = cwd
+
+    expect(await hasAuth(context, pkg1, {})).toBe(false)
+  })
+})
+
 test('returns false when OIDC environment variables are the only credentials and Yarn is active', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd

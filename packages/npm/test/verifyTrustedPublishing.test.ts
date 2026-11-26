@@ -298,18 +298,70 @@ test('aggregates rejected exchanges across packages', async () => {
   })
 })
 
-test('fails the release when no usable identity token source exists', async () => {
+test('skips verification when the NPM_ID_TOKEN contains only whitespace', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd
     context.env = { NPM_ID_TOKEN: '   ' }
 
-    await expect(
-      verifyTrustedPublishing(
-        context,
-        [createPlan({ name: 'a', version: '1.2.3' })],
-        createPackageManager('npm')
-      )
-    ).rejects.toThrow('OIDC identity token is not available.')
+    await verifyTrustedPublishing(
+      context,
+      [createPlan({ name: 'a', version: '1.2.3' })],
+      createPackageManager('npm')
+    )
+
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(logger.mock.calls).toEqual([])
+  })
+})
+
+test('skips verification when the GitHub Actions OIDC pair contains only whitespace', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = {
+      ACTIONS_ID_TOKEN_REQUEST_URL: '  ',
+      ACTIONS_ID_TOKEN_REQUEST_TOKEN: '   ',
+    }
+
+    await verifyTrustedPublishing(
+      context,
+      [createPlan({ name: 'a', version: '1.2.3' })],
+      createPackageManager('npm')
+    )
+
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(logger.mock.calls).toEqual([])
+  })
+})
+
+test('falls back to the GitHub Actions identity token when NPM_ID_TOKEN contains only whitespace', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = {
+      NPM_ID_TOKEN: '   ',
+      ACTIONS_ID_TOKEN_REQUEST_URL: 'https://github-actions-token/',
+      ACTIONS_ID_TOKEN_REQUEST_TOKEN: 'mock-request-token',
+    }
+
+    mockIdentityToken('mock-id-token')
+    mockExchange()
+
+    await verifyTrustedPublishing(
+      context,
+      [createPlan({ name: 'a' })],
+      createPackageManager('npm')
+    )
+
+    expect(String(fetchMock.mock.calls[0]?.[0])).toBe(
+      'https://github-actions-token/?audience=npm%3Aregistry.npmjs.org'
+    )
+
+    expect(fetchMock.mock.calls[1]).toEqual([
+      exchangeEndpoint('a'),
+      {
+        method: 'POST',
+        headers: { authorization: 'Bearer mock-id-token' },
+      },
+    ])
   })
 })
 
