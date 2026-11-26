@@ -22,6 +22,9 @@ import {
 /** The OIDC audience of the public npm registry's trusted-publishing tokens. */
 const TRUSTED_PUBLISHING_AUDIENCE = 'npm:registry.npmjs.org'
 
+/** Timeout for trusted-publishing network requests, in milliseconds. */
+const REQUEST_TIMEOUT_MS = 30_000
+
 /**
  * Minimum package manager CLI versions that publish with OIDC trusted
  * publishing. `undefined` marks package managers without OIDC support.
@@ -49,7 +52,8 @@ const MINIMUM_OIDC_CLI_VERSIONS: Readonly<
  * any other registry fail the release when neither an `NPM_TOKEN` nor
  * ambient registry credentials exist for them, because OIDC authentication
  * cannot publish them. Requires a package manager CLI that can publish
- * with OIDC itself and fails the release when it is too old. Fails the
+ * with OIDC itself and fails the release when it is too old. Identity
+ * token and exchange requests abort after 30 seconds. Fails the
  * release when the identity token cannot be retrieved or an exchange is
  * rejected, before a single package is published.
  *
@@ -195,11 +199,28 @@ async function assertOidcCapablePackageManager(
 }
 
 /**
+ * Build the abort signal for a trusted-publishing network request.
+ *
+ * Aborts when the release is aborted or the request outlives the
+ * trusted-publishing request timeout, so a stalled CI endpoint cannot hang
+ * the release.
+ *
+ * @param context Release context containing environment and working directory
+ * @returns The combined abort signal
+ */
+function requestSignal(context: ReleaseContext): AbortSignal {
+  return context.signal
+    ? AbortSignal.any([context.signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)])
+    : AbortSignal.timeout(REQUEST_TIMEOUT_MS)
+}
+
+/**
  * Resolve the OIDC identity token for the trusted-publishing audience.
  *
  * Returns a pre-issued `NPM_ID_TOKEN` when configured and otherwise requests
  * a fresh identity token from the GitHub Actions endpoint, scoped to the
- * public npm registry's trusted-publishing audience.
+ * public npm registry's trusted-publishing audience. The request aborts
+ * after the trusted-publishing request timeout.
  *
  * @param context Release context containing environment and working directory
  * @returns The OIDC identity token
@@ -230,7 +251,7 @@ async function resolveIdentityToken(context: ReleaseContext): Promise<string> {
 
     response = await fetch(url, {
       headers: { authorization: `Bearer ${requestToken}` },
-      ...(context.signal ? { signal: context.signal } : {}),
+      signal: requestSignal(context),
     })
   } catch (error) {
     throw new Error(
@@ -263,6 +284,7 @@ async function resolveIdentityToken(context: ReleaseContext): Promise<string> {
  * Posts to the public npm registry's trusted-publishing token exchange
  * endpoint and ignores the returned short-lived token, because the publish
  * itself authenticates through the package manager's own OIDC support.
+ * The request aborts after the trusted-publishing request timeout.
  *
  * @param context Release context containing environment and working directory
  * @param identityToken The OIDC identity token to exchange
@@ -281,7 +303,7 @@ async function exchangeTrustedPublishingToken(
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: { authorization: `Bearer ${identityToken}` },
-    ...(context.signal ? { signal: context.signal } : {}),
+    signal: requestSignal(context),
   })
 
   if (response.ok) {

@@ -121,6 +121,7 @@ test('verifies trusted publishing when NPM_TOKEN is also configured', async () =
         {
           method: 'POST',
           headers: { authorization: 'Bearer mock-id-token' },
+          signal: expect.any(AbortSignal),
         },
       ],
     ])
@@ -223,6 +224,7 @@ test('verifies each package through the trusted-publishing token exchange', asyn
         {
           method: 'POST',
           headers: { authorization: 'Bearer mock-id-token' },
+          signal: expect.any(AbortSignal),
         },
       ],
       [
@@ -230,6 +232,7 @@ test('verifies each package through the trusted-publishing token exchange', asyn
         {
           method: 'POST',
           headers: { authorization: 'Bearer mock-id-token' },
+          signal: expect.any(AbortSignal),
         },
       ],
     ])
@@ -263,6 +266,7 @@ test('requests the identity token from GitHub Actions with the npm audience', as
 
     expect(fetchMock.mock.calls[0]?.[1]).toEqual({
       headers: { authorization: 'Bearer mock-request-token' },
+      signal: expect.any(AbortSignal),
     })
 
     expect(fetchMock.mock.calls[1]).toEqual([
@@ -270,6 +274,7 @@ test('requests the identity token from GitHub Actions with the npm audience', as
       {
         method: 'POST',
         headers: { authorization: 'Bearer mock-id-token' },
+        signal: expect.any(AbortSignal),
       },
     ])
   })
@@ -464,6 +469,7 @@ test('falls back to the GitHub Actions identity token when NPM_ID_TOKEN contains
       {
         method: 'POST',
         headers: { authorization: 'Bearer mock-id-token' },
+        signal: expect.any(AbortSignal),
       },
     ])
   })
@@ -670,6 +676,7 @@ test('verifies npm registry targets alongside packages that target another regis
         {
           method: 'POST',
           headers: { authorization: 'Bearer mock-id-token' },
+          signal: expect.any(AbortSignal),
         },
       ],
     ])
@@ -701,6 +708,7 @@ test('skips private, incomplete, and non-npm plans', async () => {
         {
           method: 'POST',
           headers: { authorization: 'Bearer mock-id-token' },
+          signal: expect.any(AbortSignal),
         },
       ],
     ])
@@ -728,15 +736,28 @@ test('forwards the abort signal to the identity token request and the exchange',
       createPackageManager('npm')
     )
 
-    expect(fetchMock.mock.calls[0]?.[1]).toEqual({
-      headers: { authorization: 'Bearer mock-request-token' },
-      signal: controller.signal,
+    const identityOptions = fetchMock.mock.calls[0]?.[1] as RequestInit
+
+    const exchangeOptions = fetchMock.mock.calls[1]?.[1] as RequestInit
+
+    expect(identityOptions.headers).toEqual({
+      authorization: 'Bearer mock-request-token',
     })
 
-    expect(fetchMock.mock.calls[1]?.[1]).toEqual({
-      method: 'POST',
-      headers: { authorization: 'Bearer mock-id-token' },
-      signal: controller.signal,
+    expect(exchangeOptions.method).toBe('POST')
+
+    expect(exchangeOptions.headers).toEqual({
+      authorization: 'Bearer mock-id-token',
     })
+
+    expect(identityOptions.signal).toBeInstanceOf(AbortSignal)
+    expect(exchangeOptions.signal).toBeInstanceOf(AbortSignal)
+    expect(identityOptions.signal?.aborted).toBe(false)
+    expect(exchangeOptions.signal?.aborted).toBe(false)
+
+    controller.abort()
+
+    expect(identityOptions.signal?.aborted).toBe(true)
+    expect(exchangeOptions.signal?.aborted).toBe(true)
   })
 })
