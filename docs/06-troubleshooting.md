@@ -81,11 +81,11 @@ The check is best-effort and cannot cover every registry behavior:
   trusted-publishing token exchange for npm and pnpm releases to the public
   npm registry, failing before anything is published when the exchange is
   rejected; packages on other registries fail the release unless `NPM_TOKEN`
-  or ambient registry credentials exist for them. The publish permission
-  warning still fires for verified releases because the registry's access
-  endpoints do not accept OIDC tokens. Yarn releases are not verified and
-  rely on the registry's own rejection, which can surface mid-run after
-  earlier packages were already published.
+  or ambient registry credentials exist for them. Verified releases do not
+  warn about the inconclusive access check, because the exchange already
+  proved the registry would issue a publish token. Yarn releases are not
+  verified and rely on the registry's own rejection, which can surface
+  mid-run after earlier packages were already published.
 - Two-factor authentication is enforced by the registry at publish time, not
   by this check.
 - Registries without npm's access endpoints, such as GitHub Packages or
