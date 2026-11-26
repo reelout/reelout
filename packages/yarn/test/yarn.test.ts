@@ -462,7 +462,7 @@ test('probes with yarn npm info and syncs with yarn npm tag when the workspace u
   await executeReleaseWorkflow(context, [plugin()])
 
   expect(execCommand.mock.calls).toEqual([
-    ['yarn', ['npm', 'whoami'], expect.anything()],
+    ['yarn', ['npm', 'whoami', '--publish'], expect.anything()],
     ['yarn', ['npm', 'info', 'a', '--json'], expect.anything()],
     ['yarn', ['npm', 'info', 'a@1.2.3', '--json'], expect.anything()],
     ['yarn', ['pack', '--out', expect.any(String)], expect.anything()],

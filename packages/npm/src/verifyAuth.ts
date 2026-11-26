@@ -99,7 +99,7 @@ async function assertRegistryAuth(
 
   try {
     if (packageManager.isYarnBerry) {
-      await execCommand('yarn', ['npm', 'whoami'], {
+      await execCommand('yarn', ['npm', 'whoami', '--publish'], {
         cwd: context.cwd,
         env: { ...context.env, ...env },
         signal: context.signal,

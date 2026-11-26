@@ -149,7 +149,7 @@ test('returns token and runs yarn npm whoami when NPM_TOKEN is set and Yarn Berr
     expect(execCommand.mock.calls).toEqual([
       [
         'yarn',
-        ['npm', 'whoami'],
+        ['npm', 'whoami', '--publish'],
         {
           cwd,
           env: {
@@ -198,7 +198,7 @@ test('returns token and verifies ambient Yarn Berry credentials without token in
     expect(await verifyAuth(context)).toBe('token')
 
     expect(execCommand.mock.calls).toEqual([
-      ['yarn', ['npm', 'whoami'], { cwd, env: {} }],
+      ['yarn', ['npm', 'whoami', '--publish'], { cwd, env: {} }],
     ])
   })
 })

@@ -212,7 +212,7 @@ async function checkPlan(
       return 'allowed'
     }
 
-    const identity = await resolveIdentity(check, registry, env)
+    const identity = await resolveIdentity(check, plan, registry, env)
 
     if (identity === undefined) {
       return 'unknown'
@@ -232,7 +232,7 @@ async function checkPlan(
     )
   }
 
-  const identity = await resolveIdentity(check, registry, env)
+  const identity = await resolveIdentity(check, plan, registry, env)
 
   if (identity === undefined) {
     return 'unknown'
@@ -344,27 +344,38 @@ async function fetchPackument(
 
 /**
  * Resolve the registry identity of the configured credentials, cached per
- * registry.
+ * registry and, for Yarn Berry, package scope.
  *
- * Runs the package manager's `whoami` command against the publish registry,
- * deduplicating the lookup across plans on the same registry. Credential
- * rejections fail the release, while other failures and unusable output
- * resolve to undefined so callers can fall back to an unknown verdict.
+ * Runs the package manager's `whoami` command against the publish registry.
+ * Yarn Berry resolves the publish registry and scoped credentials the same
+ * way `yarn npm publish` does, so the command runs from the plan's package
+ * directory with the `--publish` flag and, for scoped packages, the
+ * `--scope` flag. Credential rejections fail the release, while other
+ * failures and unusable output resolve to undefined so callers can fall
+ * back to an unknown verdict.
  *
  * @param check Shared verification state for the release
- * @param registry The publish registry the identity is resolved against
+ * @param plan The release plan whose credentials are resolved
+ * @param registry The plan's resolved publish registry
  * @param env Prepared authentication environment, if credentials are injected
  * @returns The registry username, or undefined when it cannot be determined
  */
 async function resolveIdentity(
   check: AccessCheckState,
+  plan: CompleteReleasePlan,
   registry: string,
   env: Env | undefined
 ): Promise<string | undefined> {
   const { context, packageManager, identities } = check
 
-  if (identities.has(registry)) {
-    return identities.get(registry)
+  const scope = extractPackageScope(plan.package.name)
+
+  const identityKey = packageManager.isYarnBerry
+    ? `${registry}\0${scope ?? ''}`
+    : registry
+
+  if (identities.has(identityKey)) {
+    return identities.get(identityKey)
   }
 
   let identity: string | undefined
@@ -373,8 +384,16 @@ async function resolveIdentity(
     let stdout: string
 
     if (packageManager.isYarnBerry) {
-      stdout = await execCommand('yarn', ['npm', 'whoami'], {
-        cwd: context.cwd,
+      const args = ['npm', 'whoami']
+
+      if (scope !== null) {
+        args.push('--scope', scope)
+      }
+
+      args.push('--publish')
+
+      stdout = await execCommand('yarn', args, {
+        cwd: path.resolve(context.cwd, plan.package.location),
         env: { ...context.env, ...env },
         signal: context.signal,
       })
@@ -400,7 +419,7 @@ async function resolveIdentity(
     identity = undefined
   }
 
-  identities.set(registry, identity)
+  identities.set(identityKey, identity)
 
   return identity
 }

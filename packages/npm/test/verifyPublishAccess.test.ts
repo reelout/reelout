@@ -1040,7 +1040,7 @@ test('verifies the injected token when NPM_TOKEN and OIDC tokens are both availa
 
     expect(execCommand.mock.calls.map((call) => [call[0], call[1]])).toEqual([
       ['yarn', ['npm', 'info', 'a', '--json']],
-      ['yarn', ['npm', 'whoami']],
+      ['yarn', ['npm', 'whoami', '--publish']],
     ])
   })
 })
@@ -1206,6 +1206,69 @@ test('resolves the identity once per registry across plans', async () => {
   })
 })
 
+test('resolves the identity once per scope for Yarn Berry plans on the same registry', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_TOKEN: 'mock-npm-token' }
+
+    const first = createPlan({ name: '@scope/first' })
+    const second = createPlan({ name: '@scope/second', version: '2.0.0' })
+
+    mockRegistry({
+      whoami: 'mock-user',
+      packument: maintainedBy('mock-user'),
+    })
+
+    const verdicts = await verifyPublishAccess(
+      context,
+      [first, second],
+      createPackageManager('yarn', true)
+    )
+
+    expect(verdicts.get(first)).toBe('allowed')
+    expect(verdicts.get(second)).toBe('allowed')
+
+    expect(
+      execCommand.mock.calls
+        .map((call) => call[1] as readonly string[])
+        .filter((args) => args.includes('whoami'))
+    ).toEqual([['npm', 'whoami', '--scope', 'scope', '--publish']])
+  })
+})
+
+test('resolves the identity per scope for Yarn Berry plans with different scopes', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_TOKEN: 'mock-npm-token' }
+
+    const first = createPlan({ name: '@scope/first' })
+    const second = createPlan({ name: '@other/second', version: '2.0.0' })
+
+    mockRegistry({
+      whoami: 'mock-user',
+      packument: maintainedBy('mock-user'),
+    })
+
+    const verdicts = await verifyPublishAccess(
+      context,
+      [first, second],
+      createPackageManager('yarn', true)
+    )
+
+    expect(verdicts.get(first)).toBe('allowed')
+    expect(verdicts.get(second)).toBe('allowed')
+
+    expect(
+      execCommand.mock.calls
+        .map((call) => call[1] as readonly string[])
+        .filter((args) => args.includes('whoami'))
+    ).toEqual([
+      ['npm', 'whoami', '--scope', 'scope', '--publish'],
+      ['npm', 'whoami', '--scope', 'other', '--publish'],
+    ])
+  })
+})
+
 test('probes with pnpm view and resolves the identity with pnpm whoami', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd
@@ -1296,7 +1359,7 @@ test('probes with yarn npm info and resolves the identity with yarn npm whoami f
 
     expect(execCommand.mock.calls.map((call) => [call[0], call[1]])).toEqual([
       ['yarn', ['npm', 'info', 'a', '--json']],
-      ['yarn', ['npm', 'whoami']],
+      ['yarn', ['npm', 'whoami', '--publish']],
     ])
   })
 })
@@ -1408,7 +1471,7 @@ test('warns when Yarn Berry ambient credentials cannot authenticate the collabor
 
     expect(execCommand.mock.calls.map((call) => [call[0], call[1]])).toEqual([
       ['yarn', ['npm', 'info', '@scope/pkg', '--json']],
-      ['yarn', ['npm', 'whoami']],
+      ['yarn', ['npm', 'whoami', '--scope', 'scope', '--publish']],
       [
         'npm',
         [
