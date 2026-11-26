@@ -1085,6 +1085,49 @@ test('warns for plans on other registries without credentials when only OIDC tok
   })
 })
 
+test('stays silent for plans whose trusted publishing was already verified', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_ID_TOKEN: 'mock-id-token' }
+
+    const plan = createPlan({ name: 'a' })
+
+    const verdicts = await verifyPublishAccess(
+      context,
+      [plan],
+      createPackageManager('npm'),
+      PLUGIN_NAME,
+      new Set([plan])
+    )
+
+    expect(verdicts.get(plan)).toBe('unknown')
+    expect(execCommand).not.toHaveBeenCalled()
+    expect(warnCalls()).toHaveLength(0)
+  })
+})
+
+test('warns for plans missing from the verified trusted publishing set', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_ID_TOKEN: 'mock-id-token' }
+
+    const verified = createPlan({ name: 'verified-a' })
+    const plan = createPlan({ name: 'a' })
+
+    const verdicts = await verifyPublishAccess(
+      context,
+      [plan],
+      createPackageManager('npm'),
+      PLUGIN_NAME,
+      new Set([verified])
+    )
+
+    expect(verdicts.get(plan)).toBe('unknown')
+    expect(execCommand).not.toHaveBeenCalled()
+    expect(warnCalls()).toHaveLength(1)
+  })
+})
+
 test('verifies the injected token when NPM_TOKEN and OIDC tokens are both available and Yarn is active', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd

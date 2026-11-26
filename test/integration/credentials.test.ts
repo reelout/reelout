@@ -16,6 +16,7 @@ import {
   type ReleasePlugin,
 } from '@reelout/core'
 import { createRelease } from '@reelout/github/createRelease'
+import type { CompleteReleasePlan } from '@reelout/npm'
 import { writePackageJson } from '@reelout/npm'
 import { probePublishedVersion } from '@reelout/npm/probePublishedVersion'
 import { proveSamePublication } from '@reelout/npm/proveSamePublication'
@@ -59,7 +60,9 @@ vi.mock(import('@reelout/npm/publishPackage'), () => ({
 // publishing is mocked out to keep the registry's token exchange
 // unreached.
 vi.mock(import('@reelout/npm/verifyTrustedPublishing'), () => ({
-  verifyTrustedPublishing: vi.fn(async () => {}),
+  verifyTrustedPublishing: vi.fn(
+    async (): Promise<Set<CompleteReleasePlan>> => new Set()
+  ),
 }))
 
 vi.mock(import('@reelout/github/createRelease'), () => ({

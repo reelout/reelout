@@ -95,13 +95,16 @@ type PackumentResult =
  * unsupported registries). Denied
  * plans are aggregated into one error that fails the release before any
  * publish, while `unknown` verdicts only warn because the registry rejects
- * unauthorized publishes on its own. Incomplete plans and plans from other
- * plugins are skipped.
+ * unauthorized publishes on its own — except for plans whose trusted
+ * publishing `verifyTrustedPublishing` already verified, which stay silent.
+ * Incomplete plans and plans from other plugins are skipped.
  *
  * @param context Release context containing environment and working directory
  * @param plans Release plans to verify
  * @param packageManager Information about the active package manager
  * @param pluginName Name of the plugin whose plans are verified, defaulting to the npm plugin
+ * @param verifiedTrustedPublishing Plans whose trusted publishing was already
+ * verified, whose `unknown` verdicts do not warn
  * @returns A map of each complete plan to its publish access verdict
  * @throws If any plan is denied publish permission
  */
@@ -109,7 +112,8 @@ export async function verifyPublishAccess(
   context: ReleaseContext,
   plans: readonly ReleasePlan[],
   packageManager: PackageManagerInfo,
-  pluginName: string = PLUGIN_NAME
+  pluginName: string = PLUGIN_NAME,
+  verifiedTrustedPublishing?: ReadonlySet<ReleasePlan>
 ): Promise<Map<ReleasePlan, PublishAccessVerdict>> {
   const verdicts = new Map<ReleasePlan, PublishAccessVerdict>()
 
@@ -155,7 +159,7 @@ export async function verifyPublishAccess(
 
     if (verdict === 'denied') {
       denied.push(`"${target}" (${registry})`)
-    } else if (verdict === 'unknown') {
+    } else if (verdict === 'unknown' && !verifiedTrustedPublishing?.has(plan)) {
       context.logger.warn(
         colors.yellow(
           `Could not verify publish permission for "${target}": the registry will reject the publish if access is missing.`

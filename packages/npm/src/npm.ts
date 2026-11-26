@@ -217,9 +217,19 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
       const skipped = new Set<ReleasePlan>()
 
       if (packageManager) {
-        await verifyTrustedPublishing(context, publishable, packageManager)
+        const trustedPublishing = await verifyTrustedPublishing(
+          context,
+          publishable,
+          packageManager
+        )
 
-        await verifyPublishAccess(context, publishable, packageManager)
+        await verifyPublishAccess(
+          context,
+          publishable,
+          packageManager,
+          PLUGIN_NAME,
+          trustedPublishing
+        )
 
         for (const plan of publishable) {
           await probeReleasePlan(context, plan, packageManager, skipped)

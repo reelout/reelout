@@ -5,6 +5,7 @@ import '../mock/env'
 import '../mock/git'
 import '../mock/util'
 
+import type { CompleteReleasePlan } from '@reelout/npm'
 import { beforeAll, beforeEach, vi } from 'vitest'
 
 vi.mock(import('@reelout/npm/publishPackage'), async () => ({
@@ -21,7 +22,9 @@ vi.mock(import('@reelout/npm/verifyPublishAccess'), () => ({
 // publishing is mocked out to keep the registry's token exchange
 // unreached.
 vi.mock(import('@reelout/npm/verifyTrustedPublishing'), () => ({
-  verifyTrustedPublishing: vi.fn(async () => {}),
+  verifyTrustedPublishing: vi.fn(
+    async (): Promise<Set<CompleteReleasePlan>> => new Set()
+  ),
 }))
 
 vi.mock(import('@reelout/github/createRelease'), async () => ({

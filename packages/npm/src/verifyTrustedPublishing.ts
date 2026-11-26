@@ -40,8 +40,8 @@ const TRUSTED_PUBLISHING_AUDIENCE = 'npm:registry.npmjs.org'
  * @param context Release context containing environment and working directory
  * @param plans Release plans to verify
  * @param packageManager Information about the active package manager
- * @returns A promise that resolves when every plan's trusted publishing is
- * verified
+ * @returns The plans whose trusted publishing was verified; empty when OIDC
+ * authentication is not in use
  * @throws If a plan targets a registry without OIDC support and no other
  * credentials exist, or any plan's trusted-publishing token exchange was
  * rejected
@@ -50,9 +50,9 @@ export async function verifyTrustedPublishing(
   context: ReleaseContext,
   plans: readonly ReleasePlan[],
   packageManager: PackageManagerInfo
-): Promise<void> {
+): Promise<Set<CompleteReleasePlan>> {
   if (!hasOIDCAuth(context.env)) {
-    return
+    return new Set()
   }
 
   if (!packageManager.isNpm && !packageManager.isPnpm) {
@@ -60,7 +60,7 @@ export async function verifyTrustedPublishing(
       'Trusted publishing was not verified: the package manager does not support OIDC authentication.'
     )
 
-    return
+    return new Set()
   }
 
   const targets: CompleteReleasePlan[] = []
@@ -112,7 +112,7 @@ export async function verifyTrustedPublishing(
       'Trusted publishing was not verified: no package targets the public npm registry.'
     )
 
-    return
+    return new Set()
   }
 
   const identityToken = await resolveIdentityToken(context)
@@ -144,6 +144,8 @@ export async function verifyTrustedPublishing(
       .map((plan) => `"${plan.package.name}@${plan.release.version}"`)
       .join(', ')}.`
   )
+
+  return new Set(targets)
 }
 
 /**
