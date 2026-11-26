@@ -14,10 +14,14 @@ import {
   type CompleteReleasePlan,
 } from './isCompleteReleasePlan'
 import { isJsonObject } from './isJsonObject'
+import { normalizeRegistry } from './normalizeRegistry'
 import { NOT_FOUND_PATTERN } from './probePublishedVersion'
 import { PLUGIN_NAME } from './PLUGIN_NAME'
 import { prepareAuth, type Env } from './prepareAuth'
-import { resolvePublishRegistry } from './resolvePublishRegistry'
+import {
+  DEFAULT_REGISTRY,
+  resolvePublishRegistry,
+} from './resolvePublishRegistry'
 import { INVALID_CREDENTIALS_MESSAGE } from './verifyAuth'
 
 /**
@@ -87,7 +91,8 @@ type PackumentResult =
  * packages the identity does not maintain. Returns `allowed` when the registry
  * grants the identity publish access, `denied` when the registry shows no
  * publish access, and `unknown` when permission cannot be determined (OIDC
- * trusted publishing, network failures, or unsupported registries). Denied
+ * trusted publishing on the public npm registry, network failures, or
+ * unsupported registries). Denied
  * plans are aggregated into one error that fails the release before any
  * publish, while `unknown` verdicts only warn because the registry rejects
  * unauthorized publishes on its own. Incomplete plans and plans from other
@@ -114,12 +119,6 @@ export async function verifyPublishAccess(
 
   const injectToken = Boolean(context.env.NPM_TOKEN?.trim())
 
-  // OIDC authentication takes precedence over an injected `NPM_TOKEN`, so
-  // the spawned CLI commands would not share the credentials the publish
-  // uses and every verdict stays inconclusive. Yarn never authenticates
-  // with OIDC tokens, so Yarn verdicts stay conclusive.
-  const usesOidcAuth = !packageManager.isYarn && hasOIDCAuth(context.env)
-
   const check: AccessCheckState = {
     context,
     packageManager,
@@ -135,6 +134,16 @@ export async function verifyPublishAccess(
       plan.package,
       packageManager
     )
+
+    // OIDC authentication takes precedence over an injected `NPM_TOKEN`, so
+    // the spawned CLI commands would not share the credentials the publish
+    // uses and the verdict stays inconclusive. Only the public npm registry
+    // supports OIDC trusted publishing, and Yarn never authenticates with
+    // OIDC tokens, so those plans stay conclusive.
+    const usesOidcAuth =
+      !packageManager.isYarn &&
+      hasOIDCAuth(context.env) &&
+      normalizeRegistry(registry) === DEFAULT_REGISTRY
 
     const verdict = usesOidcAuth
       ? 'unknown'

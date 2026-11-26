@@ -3,7 +3,7 @@
 
 import type { ReleaseContext, ReleasePlan } from '@reelout/core'
 import { formatError } from '@reelout/core'
-import { hasOIDCAuth } from './hasAuth'
+import { hasAuth, hasOIDCAuth } from './hasAuth'
 import type { PackageManagerInfo } from './inspectPackageManager'
 import {
   isCompleteReleasePlan,
@@ -29,18 +29,22 @@ const TRUSTED_PUBLISHING_AUDIENCE = 'npm:registry.npmjs.org'
  * would issue one, while the publish itself authenticates through the
  * package manager's own OIDC support. Runs when OIDC environment tokens
  * exist — even alongside an `NPM_TOKEN`, which the OIDC authentication
- * takes precedence over — the package manager is npm or pnpm, and at least
- * one complete plan targets the public npm registry; every other
- * combination is skipped without verification. Fails the release when the
- * identity token cannot be retrieved or an exchange is rejected, before a
- * single package is published.
+ * takes precedence over — and the package manager is npm or pnpm. Complete
+ * plans targeting the public npm registry are verified; complete plans on
+ * any other registry fail the release when neither an `NPM_TOKEN` nor
+ * ambient registry credentials exist for them, because OIDC authentication
+ * cannot publish them. Fails the release when the identity token cannot be
+ * retrieved or an exchange is rejected, before a single package is
+ * published.
  *
  * @param context Release context containing environment and working directory
  * @param plans Release plans to verify
  * @param packageManager Information about the active package manager
  * @returns A promise that resolves when every plan's trusted publishing is
  * verified
- * @throws If any plan's trusted-publishing token exchange was rejected
+ * @throws If a plan targets a registry without OIDC support and no other
+ * credentials exist, or any plan's trusted-publishing token exchange was
+ * rejected
  */
 export async function verifyTrustedPublishing(
   context: ReleaseContext,
@@ -61,6 +65,8 @@ export async function verifyTrustedPublishing(
 
   const targets: CompleteReleasePlan[] = []
 
+  const orphans: Array<{ plan: CompleteReleasePlan; registry: string }> = []
+
   for (const plan of plans) {
     if (!isCompleteReleasePlan(plan)) {
       continue
@@ -74,7 +80,31 @@ export async function verifyTrustedPublishing(
 
     if (normalizeRegistry(registry) === DEFAULT_REGISTRY) {
       targets.push(plan)
+    } else {
+      orphans.push({ plan, registry })
     }
+  }
+
+  const unauthenticated: string[] = []
+
+  for (const { plan, registry } of orphans) {
+    const hasCredentials =
+      Boolean(context.env.NPM_TOKEN?.trim()) ||
+      (await hasAuth(context, plan.package, packageManager))
+
+    if (!hasCredentials) {
+      unauthenticated.push(
+        `"${plan.package.name}@${plan.release.version}" (${registry})`
+      )
+    }
+  }
+
+  if (unauthenticated.length > 0) {
+    throw new Error(
+      `OIDC trusted publishing cannot authenticate ${unauthenticated.join(
+        ', '
+      )}: it only supports the public npm registry and neither NPM_TOKEN nor ambient registry credentials were found. Configure credentials for the target registry or remove the id-token permission from the CI job.`
+    )
   }
 
   if (targets.length === 0) {

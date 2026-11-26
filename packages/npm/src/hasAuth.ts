@@ -12,16 +12,20 @@ import {
   type YarnScopeConfig,
 } from './loadYarnConfig'
 import { normalizeRegistry } from './normalizeRegistry'
-import { resolvePublishRegistry } from './resolvePublishRegistry'
+import {
+  DEFAULT_REGISTRY,
+  resolvePublishRegistry,
+} from './resolvePublishRegistry'
 
 /**
  * Determine whether authentication credentials exist for a package registry.
  *
- * Checks OIDC environment tokens for npm and pnpm releases, scope-level
- * settings, registry configs, and standard auth credentials to verify
- * registry access. Yarn releases skip the OIDC check: the registry offers
- * no OIDC exchange for Yarn, so OIDC environment tokens never count as
- * Yarn credentials.
+ * Checks OIDC environment tokens for npm and pnpm releases on the public
+ * npm registry — the only registry whose trusted-publishing OIDC exchange
+ * the package manager CLI supports — then scope-level settings, registry
+ * configs, and standard auth credentials to verify registry access. Yarn
+ * releases skip the OIDC check: the registry offers no OIDC exchange for
+ * Yarn, so OIDC environment tokens never count as Yarn credentials.
  *
  * @param context Release context containing environment and working directory
  * @param pkg Target package metadata object
@@ -33,11 +37,15 @@ export async function hasAuth(
   pkg: Package,
   packageManager: Partial<PackageManagerInfo>
 ): Promise<boolean> {
-  if (!packageManager.isYarn && hasOIDCAuth(context.env)) {
+  const registry = await resolvePublishRegistry(context, pkg, packageManager)
+
+  if (
+    !packageManager.isYarn &&
+    hasOIDCAuth(context.env) &&
+    normalizeRegistry(registry) === DEFAULT_REGISTRY
+  ) {
     return true
   }
-
-  const registry = await resolvePublishRegistry(context, pkg, packageManager)
 
   if (packageManager.isYarnBerry) {
     const hasTokenOrIdent = (config: YarnRegistryConfig | null | undefined) => {

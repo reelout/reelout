@@ -1015,6 +1015,76 @@ test('warns without running commands when NPM_TOKEN and OIDC tokens are both ava
   })
 })
 
+test('checks NPM_TOKEN credentials for plans on other registries when OIDC tokens are available', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = {
+      NPM_TOKEN: 'mock-npm-token',
+      NPM_ID_TOKEN: 'mock-id-token',
+    }
+
+    await writeFile(
+      path.join(cwd, 'package.json'),
+      JSON.stringify({
+        name: 'a',
+        version: '1.2.3',
+        publishConfig: { registry: 'https://npm.example.com/' },
+      })
+    )
+
+    const plan = createPlan({ name: 'a' })
+
+    mockRegistry({
+      whoami: 'mock-user',
+      packument: maintainedBy('mock-user'),
+    })
+
+    const verdicts = await verifyPublishAccess(
+      context,
+      [plan],
+      createPackageManager('npm')
+    )
+
+    expect(verdicts.get(plan)).toBe('allowed')
+    expect(warnCalls()).toHaveLength(0)
+  })
+})
+
+test('warns for plans on other registries without credentials when only OIDC tokens are available', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_ID_TOKEN: 'mock-id-token' }
+
+    await writeFile(
+      path.join(cwd, 'package.json'),
+      JSON.stringify({
+        name: 'a',
+        version: '1.2.3',
+        publishConfig: { registry: 'https://npm.example.com/' },
+      })
+    )
+
+    const plan = createPlan({ name: 'a' })
+
+    const verdicts = await verifyPublishAccess(
+      context,
+      [plan],
+      createPackageManager('npm')
+    )
+
+    expect(verdicts.get(plan)).toBe('unknown')
+    expect(execCommand).not.toHaveBeenCalled()
+
+    expect(
+      warnCalls().filter((message) =>
+        message.includes(
+          'Could not verify publish permission for "a@1.2.3": the registry will reject the publish if access is missing.'
+        )
+      )
+    ).toHaveLength(1)
+  })
+})
+
 test('verifies the injected token when NPM_TOKEN and OIDC tokens are both available and Yarn is active', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd

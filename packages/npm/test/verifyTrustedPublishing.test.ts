@@ -9,7 +9,7 @@ import {
   verifyTrustedPublishing,
   type PackageManagerInfo,
 } from '@reelout/npm'
-import { writeFile } from 'node:fs/promises'
+import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { temporaryDirectoryTask } from 'tempy'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
@@ -37,6 +37,7 @@ interface PlanOptions {
   isPrivate?: boolean | undefined
   provider?: string | undefined
   withoutRelease?: boolean | undefined
+  location?: string | undefined
 }
 
 const createPlan = (options: PlanOptions = {}): ReleasePlan =>
@@ -49,7 +50,7 @@ const createPlan = (options: PlanOptions = {}): ReleasePlan =>
       root: false,
       entry: false,
       dependencies: [],
-      location: '.',
+      location: options.location ?? '.',
     },
     history: [],
     release: options.withoutRelease
@@ -442,7 +443,10 @@ test('fails the release when the identity token response carries no token', asyn
 test('skips packages that target another registry', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd
-    context.env = { NPM_ID_TOKEN: 'mock-id-token' }
+    context.env = {
+      NPM_ID_TOKEN: 'mock-id-token',
+      NPM_TOKEN: 'mock-npm-token',
+    }
 
     await writeFile(
       path.join(cwd, 'package.json'),
@@ -461,6 +465,111 @@ test('skips packages that target another registry', async () => {
 
     expect(fetchMock).not.toHaveBeenCalled()
     expect(logger.mock.calls).toEqual([])
+  })
+})
+
+test('fails the release when a package targets another registry without credentials', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_ID_TOKEN: 'mock-id-token' }
+
+    await writeFile(
+      path.join(cwd, 'package.json'),
+      JSON.stringify({
+        name: 'a',
+        version: '1.2.3',
+        publishConfig: { registry: 'https://npm.example.com/' },
+      })
+    )
+
+    await expect(
+      verifyTrustedPublishing(
+        context,
+        [createPlan({ name: 'a' })],
+        createPackageManager('npm')
+      )
+    ).rejects.toThrow(
+      'OIDC trusted publishing cannot authenticate "a@1.2.3" (https://npm.example.com/): it only supports the public npm registry and neither NPM_TOKEN nor ambient registry credentials were found. Configure credentials for the target registry or remove the id-token permission from the CI job.'
+    )
+
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+})
+
+test('allows packages that target another registry through ambient credentials', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_ID_TOKEN: 'mock-id-token' }
+
+    await writeFile(
+      path.join(cwd, 'package.json'),
+      JSON.stringify({
+        name: 'a',
+        version: '1.2.3',
+        publishConfig: { registry: 'https://npm.example.com/' },
+      })
+    )
+
+    await writeFile(
+      path.join(cwd, '.npmrc'),
+      '//npm.example.com/:_authToken=mock-ambient-token'
+    )
+
+    await verifyTrustedPublishing(
+      context,
+      [createPlan({ name: 'a' })],
+      createPackageManager('npm')
+    )
+
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(logger.mock.calls).toEqual([])
+  })
+})
+
+test('verifies npm registry targets alongside packages that target another registry', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = {
+      NPM_ID_TOKEN: 'mock-id-token',
+      NPM_TOKEN: 'mock-npm-token',
+    }
+
+    await writeFile(
+      path.join(cwd, 'package.json'),
+      JSON.stringify({ name: 'a', version: '1.2.3' })
+    )
+
+    await mkdir(path.join(cwd, 'packages', 'b'), { recursive: true })
+
+    await writeFile(
+      path.join(cwd, 'packages', 'b', 'package.json'),
+      JSON.stringify({
+        name: 'b',
+        version: '2.0.0',
+        publishConfig: { registry: 'https://npm.example.com/' },
+      })
+    )
+
+    mockExchange()
+
+    await verifyTrustedPublishing(
+      context,
+      [
+        createPlan({ name: 'a' }),
+        createPlan({ name: 'b', version: '2.0.0', location: 'packages/b' }),
+      ],
+      createPackageManager('npm')
+    )
+
+    expect(fetchMock.mock.calls).toEqual([
+      [
+        exchangeEndpoint('a'),
+        {
+          method: 'POST',
+          headers: { authorization: 'Bearer mock-id-token' },
+        },
+      ],
+    ])
   })
 })
 

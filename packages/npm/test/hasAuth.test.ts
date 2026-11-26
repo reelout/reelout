@@ -75,6 +75,24 @@ test('returns false when OIDC environment variables are the only credentials and
   })
 })
 
+test('returns false when OIDC environment variables target a custom publish registry', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_ID_TOKEN: 'mock-id-token' }
+
+    await writeFile(
+      path.join(cwd, 'package.json'),
+      JSON.stringify({
+        name: 'a',
+        version: '1.2.3',
+        publishConfig: { registry: 'https://npm.example.com/' },
+      })
+    )
+
+    expect(await hasAuth(context, pkg1, {})).toBe(false)
+  })
+})
+
 test('returns false when local .npmrc configuration file is empty for unscoped package', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd
