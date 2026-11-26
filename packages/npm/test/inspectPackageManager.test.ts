@@ -5,6 +5,9 @@ import '../../../test/mock/corepack'
 
 import { execCommand, type ExecCommandOptions } from '@reelout/core'
 import { inspectPackageManager, writePackageJson } from '@reelout/npm'
+import { createConsola } from 'consola/core'
+import { mkdir, writeFile } from 'node:fs/promises'
+import path from 'node:path'
 import { temporaryDirectoryTask } from 'tempy'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 
@@ -106,3 +109,46 @@ test('inspects yarn berry package manager', async () => {
     `)
   })
 }, 60_000)
+
+test('logs a debug diagnostic when the yarn major version cannot be determined', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    options.cwd = cwd
+
+    await writePackageJson(cwd, { packageManager: 'yarn@1.22.22' })
+
+    const binDir = path.join(cwd, 'bin')
+
+    await mkdir(binDir)
+
+    await writeFile(path.join(binDir, 'yarn'), '#!/bin/sh\nexit 1\n', {
+      mode: 0o755,
+    })
+
+    options.env = {
+      PATH: [binDir, process.env.PATH].filter(Boolean).join(path.delimiter),
+    }
+
+    const debugLogger = vi.fn()
+
+    expect(
+      await inspectPackageManager(
+        cwd,
+        options,
+        createConsola({ mockFn: () => debugLogger })
+      )
+    ).toMatchInlineSnapshot(`
+      {
+        "isNpm": false,
+        "isPnpm": false,
+        "isYarn": true,
+        "isYarnBerry": false,
+        "isYarnClassic": true,
+        "name": "yarn",
+      }
+    `)
+
+    expect(debugLogger).toHaveBeenCalledWith(
+      'Assuming Yarn Classic: the Yarn major version could not be determined.'
+    )
+  })
+})

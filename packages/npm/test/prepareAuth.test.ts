@@ -38,6 +38,16 @@ test('returns undefined when NPM_TOKEN environment variable is absent and authen
   })
 })
 
+test('returns undefined when NPM_TOKEN contains only whitespace and authentication does not exist', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+
+    context.env = { NPM_TOKEN: '   ' }
+
+    expect(await prepareAuth(context, pkg1, {})).toBeUndefined()
+  })
+})
+
 test('skips configuration when authentication already exists', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd

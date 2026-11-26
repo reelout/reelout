@@ -149,7 +149,7 @@ test('returns token and runs yarn npm whoami when NPM_TOKEN is set and Yarn Berr
     expect(execCommand.mock.calls).toEqual([
       [
         'yarn',
-        ['npm', 'whoami'],
+        ['npm', 'whoami', '--publish'],
         {
           cwd,
           env: {
@@ -198,7 +198,7 @@ test('returns token and verifies ambient Yarn Berry credentials without token in
     expect(await verifyAuth(context)).toBe('token')
 
     expect(execCommand.mock.calls).toEqual([
-      ['yarn', ['npm', 'whoami'], { cwd, env: {} }],
+      ['yarn', ['npm', 'whoami', '--publish'], { cwd, env: {} }],
     ])
   })
 })
@@ -239,6 +239,32 @@ test('returns oidc without registry verification when NPM_TOKEN and OIDC environ
     expect(await verifyAuth(context)).toBe('oidc')
 
     expect(execCommand).not.toHaveBeenCalled()
+  })
+})
+
+test('returns token when NPM_TOKEN is set and the OIDC identity token is whitespace-only', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_TOKEN: 'mock-npm-token', NPM_ID_TOKEN: '   ' }
+
+    resolvePackageManager.mockResolvedValue('npm')
+
+    expect(await verifyAuth(context)).toBe('token')
+
+    expect(execCommand.mock.calls).toEqual([
+      [
+        'npm',
+        ['whoami', '--registry', NPMJS],
+        {
+          cwd,
+          env: {
+            NPM_TOKEN: 'mock-npm-token',
+            NPM_ID_TOKEN: '   ',
+            'npm_config_//registry.npmjs.org/:_authToken': 'mock-npm-token',
+          },
+        },
+      ],
+    ])
   })
 })
 

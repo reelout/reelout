@@ -41,6 +41,7 @@ interface PlanOptions {
   isPrivate?: boolean | undefined
   provider?: string | undefined
   hasRelease?: boolean | undefined
+  location?: string | undefined
 }
 
 const createPlan = (options: PlanOptions = {}): ReleasePlan =>
@@ -53,7 +54,7 @@ const createPlan = (options: PlanOptions = {}): ReleasePlan =>
       root: false,
       entry: false,
       dependencies: [],
-      location: '.',
+      location: options.location ?? '.',
     },
     history: [],
     release:
@@ -1015,6 +1016,119 @@ test('warns without running commands when NPM_TOKEN and OIDC tokens are both ava
   })
 })
 
+test('checks NPM_TOKEN credentials for plans on other registries when OIDC tokens are available', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = {
+      NPM_TOKEN: 'mock-npm-token',
+      NPM_ID_TOKEN: 'mock-id-token',
+    }
+
+    await writeFile(
+      path.join(cwd, 'package.json'),
+      JSON.stringify({
+        name: 'a',
+        version: '1.2.3',
+        publishConfig: { registry: 'https://npm.example.com/' },
+      })
+    )
+
+    const plan = createPlan({ name: 'a' })
+
+    mockRegistry({
+      whoami: 'mock-user',
+      packument: maintainedBy('mock-user'),
+    })
+
+    const verdicts = await verifyPublishAccess(
+      context,
+      [plan],
+      createPackageManager('npm')
+    )
+
+    expect(verdicts.get(plan)).toBe('allowed')
+    expect(warnCalls()).toHaveLength(0)
+  })
+})
+
+test('warns for plans on other registries without credentials when only OIDC tokens are available', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_ID_TOKEN: 'mock-id-token' }
+
+    await writeFile(
+      path.join(cwd, 'package.json'),
+      JSON.stringify({
+        name: 'a',
+        version: '1.2.3',
+        publishConfig: { registry: 'https://npm.example.com/' },
+      })
+    )
+
+    const plan = createPlan({ name: 'a' })
+
+    const verdicts = await verifyPublishAccess(
+      context,
+      [plan],
+      createPackageManager('npm')
+    )
+
+    expect(verdicts.get(plan)).toBe('unknown')
+    expect(execCommand).not.toHaveBeenCalled()
+
+    expect(
+      warnCalls().filter((message) =>
+        message.includes(
+          'Could not verify publish permission for "a@1.2.3": the registry will reject the publish if access is missing.'
+        )
+      )
+    ).toHaveLength(1)
+  })
+})
+
+test('stays silent for plans whose trusted publishing was already verified', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_ID_TOKEN: 'mock-id-token' }
+
+    const plan = createPlan({ name: 'a' })
+
+    const verdicts = await verifyPublishAccess(
+      context,
+      [plan],
+      createPackageManager('npm'),
+      PLUGIN_NAME,
+      new Set([plan])
+    )
+
+    expect(verdicts.get(plan)).toBe('unknown')
+    expect(execCommand).not.toHaveBeenCalled()
+    expect(warnCalls()).toHaveLength(0)
+  })
+})
+
+test('warns for plans missing from the verified trusted publishing set', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_ID_TOKEN: 'mock-id-token' }
+
+    const verified = createPlan({ name: 'verified-a' })
+    const plan = createPlan({ name: 'a' })
+
+    const verdicts = await verifyPublishAccess(
+      context,
+      [plan],
+      createPackageManager('npm'),
+      PLUGIN_NAME,
+      new Set([verified])
+    )
+
+    expect(verdicts.get(plan)).toBe('unknown')
+    expect(execCommand).not.toHaveBeenCalled()
+    expect(warnCalls()).toHaveLength(1)
+  })
+})
+
 test('verifies the injected token when NPM_TOKEN and OIDC tokens are both available and Yarn is active', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd
@@ -1040,7 +1154,7 @@ test('verifies the injected token when NPM_TOKEN and OIDC tokens are both availa
 
     expect(execCommand.mock.calls.map((call) => [call[0], call[1]])).toEqual([
       ['yarn', ['npm', 'info', 'a', '--json']],
-      ['yarn', ['npm', 'whoami']],
+      ['yarn', ['npm', 'whoami', '--publish']],
     ])
   })
 })
@@ -1206,6 +1320,106 @@ test('resolves the identity once per registry across plans', async () => {
   })
 })
 
+test('resolves the identity once per scope for Yarn Berry plans on the same registry', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_TOKEN: 'mock-npm-token' }
+
+    const first = createPlan({ name: '@scope/first' })
+    const second = createPlan({ name: '@scope/second', version: '2.0.0' })
+
+    mockRegistry({
+      whoami: 'mock-user',
+      packument: maintainedBy('mock-user'),
+    })
+
+    const verdicts = await verifyPublishAccess(
+      context,
+      [first, second],
+      createPackageManager('yarn', true)
+    )
+
+    expect(verdicts.get(first)).toBe('allowed')
+    expect(verdicts.get(second)).toBe('allowed')
+
+    expect(
+      execCommand.mock.calls
+        .map((call) => call[1] as readonly string[])
+        .filter((args) => args.includes('whoami'))
+    ).toEqual([['npm', 'whoami', '--scope', 'scope', '--publish']])
+  })
+})
+
+test('resolves the identity per scope for Yarn Berry plans with different scopes', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_TOKEN: 'mock-npm-token' }
+
+    const first = createPlan({ name: '@scope/first' })
+    const second = createPlan({ name: '@other/second', version: '2.0.0' })
+
+    mockRegistry({
+      whoami: 'mock-user',
+      packument: maintainedBy('mock-user'),
+    })
+
+    const verdicts = await verifyPublishAccess(
+      context,
+      [first, second],
+      createPackageManager('yarn', true)
+    )
+
+    expect(verdicts.get(first)).toBe('allowed')
+    expect(verdicts.get(second)).toBe('allowed')
+
+    expect(
+      execCommand.mock.calls
+        .map((call) => call[1] as readonly string[])
+        .filter((args) => args.includes('whoami'))
+    ).toEqual([
+      ['npm', 'whoami', '--scope', 'scope', '--publish'],
+      ['npm', 'whoami', '--scope', 'other', '--publish'],
+    ])
+  })
+})
+
+test('resolves the identity without the scope flag when the manifest pins the publish registry for Yarn Berry', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_TOKEN: 'mock-npm-token' }
+
+    await writeFile(
+      path.join(cwd, 'package.json'),
+      JSON.stringify({
+        name: '@scope/pkg',
+        version: '1.2.3',
+        publishConfig: { registry: 'https://npm.example.com/' },
+      })
+    )
+
+    const plan = createPlan({ name: '@scope/pkg' })
+
+    mockRegistry({
+      whoami: 'mock-user',
+      packument: maintainedBy('mock-user'),
+    })
+
+    const verdicts = await verifyPublishAccess(
+      context,
+      [plan],
+      createPackageManager('yarn', true)
+    )
+
+    expect(verdicts.get(plan)).toBe('allowed')
+
+    expect(
+      execCommand.mock.calls
+        .map((call) => call[1] as readonly string[])
+        .filter((args) => args.includes('whoami'))
+    ).toEqual([['npm', 'whoami', '--publish']])
+  })
+})
+
 test('probes with pnpm view and resolves the identity with pnpm whoami', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd
@@ -1296,7 +1510,70 @@ test('probes with yarn npm info and resolves the identity with yarn npm whoami f
 
     expect(execCommand.mock.calls.map((call) => [call[0], call[1]])).toEqual([
       ['yarn', ['npm', 'info', 'a', '--json']],
-      ['yarn', ['npm', 'whoami']],
+      ['yarn', ['npm', 'whoami', '--publish']],
+    ])
+  })
+})
+
+test('resolves the Yarn Berry identity from the plan package directory', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_TOKEN: 'mock-npm-token' }
+
+    const plan = createPlan({ name: 'a', location: 'packages/a' })
+
+    mockRegistry({
+      whoami: 'mock-user',
+      packument: maintainedBy('mock-user'),
+    })
+
+    const verdicts = await verifyPublishAccess(
+      context,
+      [plan],
+      createPackageManager('yarn', true)
+    )
+
+    expect(verdicts.get(plan)).toBe('allowed')
+
+    expect(execCommand.mock.calls[1]).toEqual([
+      'yarn',
+      ['npm', 'whoami', '--publish'],
+      expect.objectContaining({
+        cwd: path.resolve(cwd, 'packages/a'),
+      }),
+    ])
+  })
+})
+
+test('resolves the Yarn Berry identity separately for each package directory', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_TOKEN: 'mock-npm-token' }
+
+    const first = createPlan({ name: 'a', location: 'packages/first' })
+    const second = createPlan({ name: 'b', location: 'packages/second' })
+
+    mockRegistry({
+      whoami: 'mock-user',
+      packument: maintainedBy('mock-user'),
+    })
+
+    const verdicts = await verifyPublishAccess(
+      context,
+      [first, second],
+      createPackageManager('yarn', true)
+    )
+
+    expect(verdicts.get(first)).toBe('allowed')
+    expect(verdicts.get(second)).toBe('allowed')
+
+    const whoamiCwds = execCommand.mock.calls
+      .filter((call) => (call[1] as readonly string[]).includes('whoami'))
+      .map((call) => (call[2] as { cwd: string }).cwd)
+
+    expect(whoamiCwds).toEqual([
+      path.resolve(cwd, 'packages/first'),
+      path.resolve(cwd, 'packages/second'),
     ])
   })
 })
@@ -1408,7 +1685,7 @@ test('warns when Yarn Berry ambient credentials cannot authenticate the collabor
 
     expect(execCommand.mock.calls.map((call) => [call[0], call[1]])).toEqual([
       ['yarn', ['npm', 'info', '@scope/pkg', '--json']],
-      ['yarn', ['npm', 'whoami']],
+      ['yarn', ['npm', 'whoami', '--scope', 'scope', '--publish']],
       [
         'npm',
         [

@@ -7,7 +7,7 @@ import { colors } from 'consola/utils'
 import path from 'node:path'
 import { extractPackageScope } from './extractPackageScope'
 import { getAuthTokenKey } from './getAuthTokenKey'
-import { hasAuth, hasOIDCAuth } from './hasAuth'
+import { hasAuth, usesOidcTrustedPublishing } from './hasAuth'
 import type { PackageManagerInfo } from './inspectPackageManager'
 import {
   isCompleteReleasePlan,
@@ -17,6 +17,7 @@ import { isJsonObject } from './isJsonObject'
 import { NOT_FOUND_PATTERN } from './probePublishedVersion'
 import { PLUGIN_NAME } from './PLUGIN_NAME'
 import { prepareAuth, type Env } from './prepareAuth'
+import { readPackageJson } from './readPackageJson'
 import { resolvePublishRegistry } from './resolvePublishRegistry'
 import { INVALID_CREDENTIALS_MESSAGE } from './verifyAuth'
 
@@ -87,16 +88,20 @@ type PackumentResult =
  * packages the identity does not maintain. Returns `allowed` when the registry
  * grants the identity publish access, `denied` when the registry shows no
  * publish access, and `unknown` when permission cannot be determined (OIDC
- * trusted publishing, network failures, or unsupported registries). Denied
- * plans are aggregated into one error that fails the release before any
- * publish, while `unknown` verdicts only warn because the registry rejects
- * unauthorized publishes on its own. Incomplete plans and plans from other
- * plugins are skipped.
+ * trusted publishing on the public npm registry, network failures, or
+ * unsupported registries). Denied plans are aggregated into one error that
+ * fails the release before any publish, while `unknown` verdicts only warn
+ * because the registry rejects unauthorized publishes on its own — except for
+ * plans whose trusted publishing `verifyTrustedPublishing` already verified,
+ * which stay silent. Incomplete plans and plans from other plugins are
+ * skipped.
  *
  * @param context Release context containing environment and working directory
  * @param plans Release plans to verify
  * @param packageManager Information about the active package manager
  * @param pluginName Name of the plugin whose plans are verified, defaulting to the npm plugin
+ * @param verifiedTrustedPublishing Plans whose trusted publishing was already
+ * verified, whose `unknown` verdicts do not warn
  * @returns A map of each complete plan to its publish access verdict
  * @throws If any plan is denied publish permission
  */
@@ -104,7 +109,8 @@ export async function verifyPublishAccess(
   context: ReleaseContext,
   plans: readonly ReleasePlan[],
   packageManager: PackageManagerInfo,
-  pluginName: string = PLUGIN_NAME
+  pluginName: string = PLUGIN_NAME,
+  verifiedTrustedPublishing?: ReadonlySet<ReleasePlan>
 ): Promise<Map<ReleasePlan, PublishAccessVerdict>> {
   const verdicts = new Map<ReleasePlan, PublishAccessVerdict>()
 
@@ -113,12 +119,6 @@ export async function verifyPublishAccess(
   )
 
   const injectToken = Boolean(context.env.NPM_TOKEN?.trim())
-
-  // OIDC authentication takes precedence over an injected `NPM_TOKEN`, so
-  // the spawned CLI commands would not share the credentials the publish
-  // uses and every verdict stays inconclusive. Yarn never authenticates
-  // with OIDC tokens, so Yarn verdicts stay conclusive.
-  const usesOidcAuth = !packageManager.isYarn && hasOIDCAuth(context.env)
 
   const check: AccessCheckState = {
     context,
@@ -136,6 +136,17 @@ export async function verifyPublishAccess(
       packageManager
     )
 
+    // OIDC authentication takes precedence over an injected `NPM_TOKEN`, so
+    // the spawned CLI commands would not share the credentials the publish
+    // uses and the verdict stays inconclusive. Only the public npm registry
+    // supports OIDC trusted publishing, and Yarn never authenticates with
+    // OIDC tokens, so those plans stay conclusive.
+    const usesOidcAuth = usesOidcTrustedPublishing(
+      packageManager,
+      context.env,
+      registry
+    )
+
     const verdict = usesOidcAuth
       ? 'unknown'
       : await checkPlan(check, plan, registry, injectToken)
@@ -146,7 +157,7 @@ export async function verifyPublishAccess(
 
     if (verdict === 'denied') {
       denied.push(`"${target}" (${registry})`)
-    } else if (verdict === 'unknown') {
+    } else if (verdict === 'unknown' && !verifiedTrustedPublishing?.has(plan)) {
       context.logger.warn(
         colors.yellow(
           `Could not verify publish permission for "${target}": the registry will reject the publish if access is missing.`
@@ -212,7 +223,7 @@ async function checkPlan(
       return 'allowed'
     }
 
-    const identity = await resolveIdentity(check, registry, env)
+    const identity = await resolveIdentity(check, plan, registry, env)
 
     if (identity === undefined) {
       return 'unknown'
@@ -232,7 +243,7 @@ async function checkPlan(
     )
   }
 
-  const identity = await resolveIdentity(check, registry, env)
+  const identity = await resolveIdentity(check, plan, registry, env)
 
   if (identity === undefined) {
     return 'unknown'
@@ -343,28 +354,66 @@ async function fetchPackument(
 }
 
 /**
- * Resolve the registry identity of the configured credentials, cached per
- * registry.
+ * Determine whether the plan's manifest pins the publish registry.
  *
- * Runs the package manager's `whoami` command against the publish registry,
- * deduplicating the lookup across plans on the same registry. Credential
- * rejections fail the release, while other failures and unusable output
- * resolve to undefined so callers can fall back to an unknown verdict.
+ * `yarn npm whoami --scope` resolves the scope registry and skips the
+ * manifest's `publishConfig.registry`, so the flag is only passed while
+ * the manifest leaves the publish registry to the scope settings.
+ *
+ * @param context Release context containing environment and working directory
+ * @param plan The release plan whose manifest is inspected
+ * @returns True if the manifest sets `publishConfig.registry`, otherwise false
+ */
+async function manifestPinsPublishRegistry(
+  context: ReleaseContext,
+  plan: CompleteReleasePlan
+): Promise<boolean> {
+  try {
+    const packageJson = await readPackageJson(
+      path.resolve(context.cwd, plan.package.location)
+    )
+
+    return Boolean(packageJson.publishConfig?.registry)
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Resolve the registry identity of the configured credentials, cached per
+ * registry and, for Yarn Berry, package scope and directory.
+ *
+ * Runs the package manager's `whoami` command against the publish registry.
+ * Yarn Berry resolves the publish registry the same way `yarn npm publish`
+ * does, so the command runs from the plan's package directory with the
+ * `--publish` flag; scoped packages also pass `--scope` to prefer scope
+ * credentials, unless the manifest pins `publishConfig.registry`, which
+ * `--scope` would skip. Credential rejections fail the release, while other
+ * failures and unusable output resolve to undefined so callers can fall
+ * back to an unknown verdict.
  *
  * @param check Shared verification state for the release
- * @param registry The publish registry the identity is resolved against
+ * @param plan The release plan whose credentials are resolved
+ * @param registry The plan's resolved publish registry
  * @param env Prepared authentication environment, if credentials are injected
  * @returns The registry username, or undefined when it cannot be determined
  */
 async function resolveIdentity(
   check: AccessCheckState,
+  plan: CompleteReleasePlan,
   registry: string,
   env: Env | undefined
 ): Promise<string | undefined> {
   const { context, packageManager, identities } = check
 
-  if (identities.has(registry)) {
-    return identities.get(registry)
+  const scope = extractPackageScope(plan.package.name)
+
+  const identityKey = packageManager.isYarnBerry
+    ? `${registry}\0${scope ?? ''}\0${plan.package.location}`
+    : registry
+
+  if (identities.has(identityKey)) {
+    return identities.get(identityKey)
   }
 
   let identity: string | undefined
@@ -373,8 +422,19 @@ async function resolveIdentity(
     let stdout: string
 
     if (packageManager.isYarnBerry) {
-      stdout = await execCommand('yarn', ['npm', 'whoami'], {
-        cwd: context.cwd,
+      const args = ['npm', 'whoami']
+
+      if (
+        scope !== null &&
+        !(await manifestPinsPublishRegistry(context, plan))
+      ) {
+        args.push('--scope', scope)
+      }
+
+      args.push('--publish')
+
+      stdout = await execCommand('yarn', args, {
+        cwd: path.resolve(context.cwd, plan.package.location),
         env: { ...context.env, ...env },
         signal: context.signal,
       })
@@ -400,7 +460,7 @@ async function resolveIdentity(
     identity = undefined
   }
 
-  identities.set(registry, identity)
+  identities.set(identityKey, identity)
 
   return identity
 }
@@ -648,7 +708,7 @@ function buildNpmEnv(
   registry: string,
   env: Env | undefined
 ): NodeJS.ProcessEnv {
-  const token = check.context.env.NPM_TOKEN
+  const token = check.context.env.NPM_TOKEN?.trim()
 
   return {
     ...check.context.env,

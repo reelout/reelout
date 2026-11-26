@@ -12,16 +12,20 @@ import {
   type YarnScopeConfig,
 } from './loadYarnConfig'
 import { normalizeRegistry } from './normalizeRegistry'
-import { resolvePublishRegistry } from './resolvePublishRegistry'
+import {
+  DEFAULT_REGISTRY,
+  resolvePublishRegistry,
+} from './resolvePublishRegistry'
 
 /**
  * Determine whether authentication credentials exist for a package registry.
  *
- * Checks OIDC environment tokens for npm and pnpm releases, scope-level
- * settings, registry configs, and standard auth credentials to verify
- * registry access. Yarn releases skip the OIDC check: the registry offers
- * no OIDC exchange for Yarn, so OIDC environment tokens never count as
- * Yarn credentials.
+ * Checks OIDC environment tokens for npm and pnpm releases on the public
+ * npm registry — the only registry whose trusted-publishing OIDC exchange
+ * the package manager CLI supports — then scope-level settings, registry
+ * configs, and standard auth credentials to verify registry access. Yarn
+ * releases skip the OIDC check: the registry offers no OIDC exchange for
+ * Yarn, so OIDC environment tokens never count as Yarn credentials.
  *
  * @param context Release context containing environment and working directory
  * @param pkg Target package metadata object
@@ -33,11 +37,11 @@ export async function hasAuth(
   pkg: Package,
   packageManager: Partial<PackageManagerInfo>
 ): Promise<boolean> {
-  if (!packageManager.isYarn && hasOIDCAuth(context.env)) {
+  const registry = await resolvePublishRegistry(context, pkg, packageManager)
+
+  if (usesOidcTrustedPublishing(packageManager, context.env, registry)) {
     return true
   }
-
-  const registry = await resolvePublishRegistry(context, pkg, packageManager)
 
   if (packageManager.isYarnBerry) {
     const hasTokenOrIdent = (config: YarnRegistryConfig | null | undefined) => {
@@ -91,18 +95,48 @@ export async function hasAuth(
  *
  * Detects a pre-issued `NPM_ID_TOKEN` or a GitHub Actions OIDC token pair
  * without reading configuration files or spawning package manager commands.
+ * Whitespace-only values count as absent.
  *
  * @param env Environment variables to inspect
  * @returns True if OIDC environment tokens exist, otherwise false
  */
 export function hasOIDCAuth(env: Readonly<NodeJS.ProcessEnv>): boolean {
-  if (env.NPM_ID_TOKEN) {
+  if (env.NPM_ID_TOKEN?.trim()) {
     return true
   }
 
-  if (env.ACTIONS_ID_TOKEN_REQUEST_URL && env.ACTIONS_ID_TOKEN_REQUEST_TOKEN) {
+  const requestUrl = env.ACTIONS_ID_TOKEN_REQUEST_URL?.trim()
+
+  const requestToken = env.ACTIONS_ID_TOKEN_REQUEST_TOKEN?.trim()
+
+  if (requestUrl && requestToken) {
     return true
   }
 
   return false
+}
+
+/**
+ * Determine whether a release authenticates through OIDC trusted publishing.
+ *
+ * OIDC environment tokens authenticate only npm and pnpm releases to the
+ * public npm registry — the only registry whose trusted-publishing OIDC
+ * exchange the package manager CLI supports — so Yarn releases and other
+ * registries never count them as credentials.
+ *
+ * @param packageManager Information about the active package manager
+ * @param env Environment variables to inspect
+ * @param registry The release's resolved publish registry
+ * @returns True if the release authenticates through OIDC trusted publishing
+ */
+export function usesOidcTrustedPublishing(
+  packageManager: Partial<PackageManagerInfo>,
+  env: Readonly<NodeJS.ProcessEnv>,
+  registry: string
+): boolean {
+  return (
+    !packageManager.isYarn &&
+    hasOIDCAuth(env) &&
+    normalizeRegistry(registry) === DEFAULT_REGISTRY
+  )
 }

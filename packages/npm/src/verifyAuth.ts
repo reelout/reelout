@@ -40,6 +40,12 @@ export type AuthKind = 'none' | 'oidc' | 'token'
  * registry so expired tokens fail before packages are published; OIDC
  * tokens are trusted without verification.
  *
+ * The `oidc` classification is deliberately registry-agnostic. Verification
+ * runs before packages are discovered, and a release may publish to several
+ * registries, so no single registry could gate the classification; whether
+ * OIDC trusted publishing applies to a package is decided later, once its
+ * plans and publish registries are known.
+ *
  * @param context Release context containing environment and working directory
  * @param packageManager Information about the active package manager, inspected from the working directory when omitted
  * @returns The detected authentication kind
@@ -52,7 +58,11 @@ export async function verifyAuth(
 
   const manager =
     packageManager ??
-    (await inspectPackageManager(context.cwd, { env: context.env }))
+    (await inspectPackageManager(
+      context.cwd,
+      { env: context.env },
+      context.logger
+    ))
 
   if (!manager.isYarn && hasOIDCAuth(context.env)) {
     return 'oidc'
@@ -99,7 +109,7 @@ async function assertRegistryAuth(
 
   try {
     if (packageManager.isYarnBerry) {
-      await execCommand('yarn', ['npm', 'whoami'], {
+      await execCommand('yarn', ['npm', 'whoami', '--publish'], {
         cwd: context.cwd,
         env: { ...context.env, ...env },
         signal: context.signal,

@@ -93,9 +93,13 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
         return next(context)
       }
 
-      const packageManager = await inspectPackageManager(context.cwd, {
-        env: context.env,
-      })
+      const packageManager = await inspectPackageManager(
+        context.cwd,
+        {
+          env: context.env,
+        },
+        context.logger
+      )
 
       if (packageManager.isYarn) {
         inactive = true
@@ -211,15 +215,29 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
 
       const packageManager =
         publishable.length > 0
-          ? await inspectPackageManager(context.cwd, { env: context.env })
+          ? await inspectPackageManager(
+              context.cwd,
+              { env: context.env },
+              context.logger
+            )
           : undefined
 
       const skipped = new Set<ReleasePlan>()
 
       if (packageManager) {
-        await verifyTrustedPublishing(context, publishable, packageManager)
+        const trustedPublishing = await verifyTrustedPublishing(
+          context,
+          publishable,
+          packageManager
+        )
 
-        await verifyPublishAccess(context, publishable, packageManager)
+        await verifyPublishAccess(
+          context,
+          publishable,
+          packageManager,
+          PLUGIN_NAME,
+          trustedPublishing
+        )
 
         for (const plan of publishable) {
           await probeReleasePlan(context, plan, packageManager, skipped)

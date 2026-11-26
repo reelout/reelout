@@ -5,6 +5,7 @@ import '../../../test/mock/env'
 
 import type { ReleasePlan } from '@reelout/core'
 import { publishPackage } from '@reelout/npm'
+import { createConsola } from 'consola/core'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { context } from '../../../test/mock/context'
 
@@ -353,6 +354,23 @@ test('skips publishing when dry-run option is enabled for yarn version 1', async
   await publishPackage(context, plan, { dryRun: true })
 
   expect(execCommand).not.toHaveBeenCalled()
+})
+
+test('logs a debug diagnostic when a yarn 1 dry-run publish is skipped', async () => {
+  resolvePackageManager.mockResolvedValue('yarn')
+  getPackageManagerVersion.mockResolvedValue(1)
+
+  const debugLogger = vi.fn()
+
+  context.logger = createConsola({ mockFn: () => debugLogger })
+
+  await publishPackage(context, plan, { dryRun: true })
+
+  expect(execCommand).not.toHaveBeenCalled()
+
+  expect(debugLogger).toHaveBeenCalledWith(
+    '[DRY RUN] The publish was skipped: Yarn Classic does not support dry-run publishing.'
+  )
 })
 
 test('publishes package successfully using yarn version 1 with supported options', async () => {

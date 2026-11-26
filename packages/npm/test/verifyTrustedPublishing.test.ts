@@ -9,13 +9,19 @@ import {
   verifyTrustedPublishing,
   type PackageManagerInfo,
 } from '@reelout/npm'
-import { writeFile } from 'node:fs/promises'
+import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { temporaryDirectoryTask } from 'tempy'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { context, logger } from '../../../test/mock/context'
 
 const fetchMock = vi.hoisted(() => vi.fn())
+
+const getPackageManagerFullVersionMock = vi.hoisted(() => vi.fn())
+
+vi.mock(import('@reelout/npm/getPackageManagerFullVersion'), () => ({
+  getPackageManagerFullVersion: getPackageManagerFullVersionMock,
+}))
 
 const NPMJS = 'https://registry.npmjs.org/'
 
@@ -37,6 +43,7 @@ interface PlanOptions {
   isPrivate?: boolean | undefined
   provider?: string | undefined
   withoutRelease?: boolean | undefined
+  location?: string | undefined
 }
 
 const createPlan = (options: PlanOptions = {}): ReleasePlan =>
@@ -49,7 +56,7 @@ const createPlan = (options: PlanOptions = {}): ReleasePlan =>
       root: false,
       entry: false,
       dependencies: [],
-      location: '.',
+      location: options.location ?? '.',
     },
     history: [],
     release: options.withoutRelease
@@ -84,6 +91,7 @@ const infoMessages = (): string[] =>
 
 beforeEach(() => {
   vi.resetAllMocks()
+  getPackageManagerFullVersionMock.mockResolvedValue('11.5.1')
   vi.stubGlobal('fetch', (...args: unknown[]) => fetchMock(...args))
 })
 
@@ -113,6 +121,7 @@ test('verifies trusted publishing when NPM_TOKEN is also configured', async () =
         {
           method: 'POST',
           headers: { authorization: 'Bearer mock-id-token' },
+          signal: expect.any(AbortSignal),
         },
       ],
     ])
@@ -123,15 +132,38 @@ test('verifies trusted publishing when NPM_TOKEN is also configured', async () =
   })
 })
 
+test('returns the verified plans', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_ID_TOKEN: 'mock-id-token' }
+
+    const first = createPlan({ name: 'a' })
+    const second = createPlan({ name: 'b', version: '2.0.0' })
+
+    mockExchange()
+    mockExchange()
+
+    const verified = await verifyTrustedPublishing(
+      context,
+      [first, second],
+      createPackageManager('npm')
+    )
+
+    expect(verified.size).toBe(2)
+    expect([...verified]).toEqual([first, second])
+  })
+})
+
 test('skips verification when NPM_TOKEN is configured without OIDC tokens', async () => {
   context.env = { NPM_TOKEN: 'mock-npm-token' }
 
-  await verifyTrustedPublishing(
+  const verified = await verifyTrustedPublishing(
     context,
     [createPlan({ name: 'a' })],
     createPackageManager('npm')
   )
 
+  expect(verified.size).toBe(0)
   expect(fetchMock).not.toHaveBeenCalled()
   expect(logger.mock.calls).toEqual([])
 })
@@ -183,6 +215,7 @@ test('verifies each package through the trusted-publishing token exchange', asyn
         {
           method: 'POST',
           headers: { authorization: 'Bearer mock-id-token' },
+          signal: expect.any(AbortSignal),
         },
       ],
       [
@@ -190,6 +223,7 @@ test('verifies each package through the trusted-publishing token exchange', asyn
         {
           method: 'POST',
           headers: { authorization: 'Bearer mock-id-token' },
+          signal: expect.any(AbortSignal),
         },
       ],
     ])
@@ -223,6 +257,7 @@ test('requests the identity token from GitHub Actions with the npm audience', as
 
     expect(fetchMock.mock.calls[0]?.[1]).toEqual({
       headers: { authorization: 'Bearer mock-request-token' },
+      signal: expect.any(AbortSignal),
     })
 
     expect(fetchMock.mock.calls[1]).toEqual([
@@ -230,6 +265,7 @@ test('requests the identity token from GitHub Actions with the npm audience', as
       {
         method: 'POST',
         headers: { authorization: 'Bearer mock-id-token' },
+        signal: expect.any(AbortSignal),
       },
     ])
   })
@@ -298,18 +334,138 @@ test('aggregates rejected exchanges across packages', async () => {
   })
 })
 
-test('fails the release when no usable identity token source exists', async () => {
+test('fails the release when the package manager is too old for OIDC trusted publishing', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd
-    context.env = { NPM_ID_TOKEN: '   ' }
+    context.env = { NPM_ID_TOKEN: 'mock-id-token' }
+
+    getPackageManagerFullVersionMock.mockResolvedValue('11.5.0')
 
     await expect(
       verifyTrustedPublishing(
         context,
-        [createPlan({ name: 'a', version: '1.2.3' })],
+        [createPlan({ name: 'a' })],
         createPackageManager('npm')
       )
-    ).rejects.toThrow('OIDC identity token is not available.')
+    ).rejects.toThrow(
+      'Trusted publishing requires npm >= 11.5.1, but "11.5.0" was found.'
+    )
+
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(getPackageManagerFullVersionMock).toHaveBeenCalledWith(cwd, 'npm', {
+      env: { NPM_ID_TOKEN: 'mock-id-token' },
+      signal: undefined,
+    })
+  })
+})
+
+test('fails the release when the package manager version is unknown', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_ID_TOKEN: 'mock-id-token' }
+
+    getPackageManagerFullVersionMock.mockResolvedValue(undefined)
+
+    await expect(
+      verifyTrustedPublishing(
+        context,
+        [createPlan({ name: 'a' })],
+        createPackageManager('npm')
+      )
+    ).rejects.toThrow(
+      'Trusted publishing requires npm >= 11.5.1, but "an unknown version" was found.'
+    )
+
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+})
+
+test('fails the release when pnpm predates OIDC publishing support', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_ID_TOKEN: 'mock-id-token' }
+
+    getPackageManagerFullVersionMock.mockResolvedValue('10.15.1')
+
+    await expect(
+      verifyTrustedPublishing(
+        context,
+        [createPlan({ name: 'a' })],
+        createPackageManager('pnpm')
+      )
+    ).rejects.toThrow(
+      'Trusted publishing requires pnpm >= 11.0.0, but "10.15.1" was found.'
+    )
+
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+})
+
+test('skips verification when the NPM_ID_TOKEN contains only whitespace', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_ID_TOKEN: '   ' }
+
+    await verifyTrustedPublishing(
+      context,
+      [createPlan({ name: 'a', version: '1.2.3' })],
+      createPackageManager('npm')
+    )
+
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(logger.mock.calls).toEqual([])
+  })
+})
+
+test('skips verification when the GitHub Actions OIDC pair contains only whitespace', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = {
+      ACTIONS_ID_TOKEN_REQUEST_URL: '  ',
+      ACTIONS_ID_TOKEN_REQUEST_TOKEN: '   ',
+    }
+
+    await verifyTrustedPublishing(
+      context,
+      [createPlan({ name: 'a', version: '1.2.3' })],
+      createPackageManager('npm')
+    )
+
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(logger.mock.calls).toEqual([])
+  })
+})
+
+test('falls back to the GitHub Actions identity token when NPM_ID_TOKEN contains only whitespace', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = {
+      NPM_ID_TOKEN: '   ',
+      ACTIONS_ID_TOKEN_REQUEST_URL: 'https://github-actions-token/',
+      ACTIONS_ID_TOKEN_REQUEST_TOKEN: 'mock-request-token',
+    }
+
+    mockIdentityToken('mock-id-token')
+    mockExchange()
+
+    await verifyTrustedPublishing(
+      context,
+      [createPlan({ name: 'a' })],
+      createPackageManager('npm')
+    )
+
+    expect(String(fetchMock.mock.calls[0]?.[0])).toBe(
+      'https://github-actions-token/?audience=npm%3Aregistry.npmjs.org'
+    )
+
+    expect(fetchMock.mock.calls[1]).toEqual([
+      exchangeEndpoint('a'),
+      {
+        method: 'POST',
+        headers: { authorization: 'Bearer mock-id-token' },
+        signal: expect.any(AbortSignal),
+      },
+    ])
   })
 })
 
@@ -390,7 +546,10 @@ test('fails the release when the identity token response carries no token', asyn
 test('skips packages that target another registry', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd
-    context.env = { NPM_ID_TOKEN: 'mock-id-token' }
+    context.env = {
+      NPM_ID_TOKEN: 'mock-id-token',
+      NPM_TOKEN: 'mock-npm-token',
+    }
 
     await writeFile(
       path.join(cwd, 'package.json'),
@@ -409,6 +568,112 @@ test('skips packages that target another registry', async () => {
 
     expect(fetchMock).not.toHaveBeenCalled()
     expect(logger.mock.calls).toEqual([])
+  })
+})
+
+test('fails the release when a package targets another registry without credentials', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_ID_TOKEN: 'mock-id-token' }
+
+    await writeFile(
+      path.join(cwd, 'package.json'),
+      JSON.stringify({
+        name: 'a',
+        version: '1.2.3',
+        publishConfig: { registry: 'https://npm.example.com/' },
+      })
+    )
+
+    await expect(
+      verifyTrustedPublishing(
+        context,
+        [createPlan({ name: 'a' })],
+        createPackageManager('npm')
+      )
+    ).rejects.toThrow(
+      'OIDC trusted publishing cannot authenticate "a@1.2.3" (https://npm.example.com/): it only supports the public npm registry and neither NPM_TOKEN nor ambient registry credentials were found.'
+    )
+
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+})
+
+test('allows packages that target another registry through ambient credentials', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_ID_TOKEN: 'mock-id-token' }
+
+    await writeFile(
+      path.join(cwd, 'package.json'),
+      JSON.stringify({
+        name: 'a',
+        version: '1.2.3',
+        publishConfig: { registry: 'https://npm.example.com/' },
+      })
+    )
+
+    await writeFile(
+      path.join(cwd, '.npmrc'),
+      '//npm.example.com/:_authToken=mock-ambient-token'
+    )
+
+    await verifyTrustedPublishing(
+      context,
+      [createPlan({ name: 'a' })],
+      createPackageManager('npm')
+    )
+
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(logger.mock.calls).toEqual([])
+  })
+})
+
+test('verifies npm registry targets alongside packages that target another registry', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = {
+      NPM_ID_TOKEN: 'mock-id-token',
+      NPM_TOKEN: 'mock-npm-token',
+    }
+
+    await writeFile(
+      path.join(cwd, 'package.json'),
+      JSON.stringify({ name: 'a', version: '1.2.3' })
+    )
+
+    await mkdir(path.join(cwd, 'packages', 'b'), { recursive: true })
+
+    await writeFile(
+      path.join(cwd, 'packages', 'b', 'package.json'),
+      JSON.stringify({
+        name: 'b',
+        version: '2.0.0',
+        publishConfig: { registry: 'https://npm.example.com/' },
+      })
+    )
+
+    mockExchange()
+
+    await verifyTrustedPublishing(
+      context,
+      [
+        createPlan({ name: 'a' }),
+        createPlan({ name: 'b', version: '2.0.0', location: 'packages/b' }),
+      ],
+      createPackageManager('npm')
+    )
+
+    expect(fetchMock.mock.calls).toEqual([
+      [
+        exchangeEndpoint('a'),
+        {
+          method: 'POST',
+          headers: { authorization: 'Bearer mock-id-token' },
+          signal: expect.any(AbortSignal),
+        },
+      ],
+    ])
   })
 })
 
@@ -437,6 +702,7 @@ test('skips private, incomplete, and non-npm plans', async () => {
         {
           method: 'POST',
           headers: { authorization: 'Bearer mock-id-token' },
+          signal: expect.any(AbortSignal),
         },
       ],
     ])
@@ -464,15 +730,28 @@ test('forwards the abort signal to the identity token request and the exchange',
       createPackageManager('npm')
     )
 
-    expect(fetchMock.mock.calls[0]?.[1]).toEqual({
-      headers: { authorization: 'Bearer mock-request-token' },
-      signal: controller.signal,
+    const identityOptions = fetchMock.mock.calls[0]?.[1] as RequestInit
+
+    const exchangeOptions = fetchMock.mock.calls[1]?.[1] as RequestInit
+
+    expect(identityOptions.headers).toEqual({
+      authorization: 'Bearer mock-request-token',
     })
 
-    expect(fetchMock.mock.calls[1]?.[1]).toEqual({
-      method: 'POST',
-      headers: { authorization: 'Bearer mock-id-token' },
-      signal: controller.signal,
+    expect(exchangeOptions.method).toBe('POST')
+
+    expect(exchangeOptions.headers).toEqual({
+      authorization: 'Bearer mock-id-token',
     })
+
+    expect(identityOptions.signal).toBeInstanceOf(AbortSignal)
+    expect(exchangeOptions.signal).toBeInstanceOf(AbortSignal)
+    expect(identityOptions.signal?.aborted).toBe(false)
+    expect(exchangeOptions.signal?.aborted).toBe(false)
+
+    controller.abort()
+
+    expect(identityOptions.signal?.aborted).toBe(true)
+    expect(exchangeOptions.signal?.aborted).toBe(true)
   })
 })

@@ -92,9 +92,13 @@ const yarn = (options: PluginOptions = {}): ReleasePlugin => {
         return next(context)
       }
 
-      const packageManager = await inspectPackageManager(context.cwd, {
-        env: context.env,
-      })
+      const packageManager = await inspectPackageManager(
+        context.cwd,
+        {
+          env: context.env,
+        },
+        context.logger
+      )
 
       if (!packageManager.isYarn) {
         inactive = true
@@ -210,7 +214,11 @@ const yarn = (options: PluginOptions = {}): ReleasePlugin => {
 
       const packageManager =
         publishable.length > 0
-          ? await inspectPackageManager(context.cwd, { env: context.env })
+          ? await inspectPackageManager(
+              context.cwd,
+              { env: context.env },
+              context.logger
+            )
           : undefined
 
       const skipped = new Set<ReleasePlan>()
