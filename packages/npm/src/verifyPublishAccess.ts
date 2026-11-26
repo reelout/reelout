@@ -88,12 +88,12 @@ type PackumentResult =
  * grants the identity publish access, `denied` when the registry shows no
  * publish access, and `unknown` when permission cannot be determined (OIDC
  * trusted publishing on the public npm registry, network failures, or
- * unsupported registries). Denied
- * plans are aggregated into one error that fails the release before any
- * publish, while `unknown` verdicts only warn because the registry rejects
- * unauthorized publishes on its own — except for plans whose trusted
- * publishing `verifyTrustedPublishing` already verified, which stay silent.
- * Incomplete plans and plans from other plugins are skipped.
+ * unsupported registries). Denied plans are aggregated into one error that
+ * fails the release before any publish, while `unknown` verdicts only warn
+ * because the registry rejects unauthorized publishes on its own — except for
+ * plans whose trusted publishing `verifyTrustedPublishing` already verified,
+ * which stay silent. Incomplete plans and plans from other plugins are
+ * skipped.
  *
  * @param context Release context containing environment and working directory
  * @param plans Release plans to verify
