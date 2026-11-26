@@ -123,7 +123,7 @@ export async function verifyTrustedPublishing(
     throw new Error(
       `OIDC trusted publishing cannot authenticate ${unauthenticated.join(
         ', '
-      )}: it only supports the public npm registry and neither NPM_TOKEN nor ambient registry credentials were found. Configure credentials for the target registry or remove the id-token permission from the CI job.`
+      )}: it only supports the public npm registry and neither NPM_TOKEN nor ambient registry credentials were found.`
     )
   }
 
@@ -193,7 +193,7 @@ async function assertOidcCapablePackageManager(
 
   if (version === undefined || semver.lt(version, minimumVersion)) {
     throw new Error(
-      `Trusted publishing requires ${name} >= ${minimumVersion}, but "${version ?? 'an unknown version'}" was found. Upgrade the package manager to publish with OIDC trusted publishing.`
+      `Trusted publishing requires ${name} >= ${minimumVersion}, but "${version ?? 'an unknown version'}" was found.`
     )
   }
 }

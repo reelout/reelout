@@ -357,7 +357,7 @@ test('fails the release when the package manager is too old for OIDC trusted pub
         createPackageManager('npm')
       )
     ).rejects.toThrow(
-      'Trusted publishing requires npm >= 11.5.1, but "11.5.0" was found. Upgrade the package manager to publish with OIDC trusted publishing.'
+      'Trusted publishing requires npm >= 11.5.1, but "11.5.0" was found.'
     )
 
     expect(fetchMock).not.toHaveBeenCalled()
@@ -379,7 +379,7 @@ test('fails the release when the package manager version is unknown', async () =
         createPackageManager('npm')
       )
     ).rejects.toThrow(
-      'Trusted publishing requires npm >= 11.5.1, but "an unknown version" was found. Upgrade the package manager to publish with OIDC trusted publishing.'
+      'Trusted publishing requires npm >= 11.5.1, but "an unknown version" was found.'
     )
 
     expect(fetchMock).not.toHaveBeenCalled()
@@ -400,7 +400,7 @@ test('fails the release when pnpm predates OIDC publishing support', async () =>
         createPackageManager('pnpm')
       )
     ).rejects.toThrow(
-      'Trusted publishing requires pnpm >= 11.0.0, but "10.15.1" was found. Upgrade the package manager to publish with OIDC trusted publishing.'
+      'Trusted publishing requires pnpm >= 11.0.0, but "10.15.1" was found.'
     )
 
     expect(fetchMock).not.toHaveBeenCalled()
@@ -598,7 +598,7 @@ test('fails the release when a package targets another registry without credenti
         createPackageManager('npm')
       )
     ).rejects.toThrow(
-      'OIDC trusted publishing cannot authenticate "a@1.2.3" (https://npm.example.com/): it only supports the public npm registry and neither NPM_TOKEN nor ambient registry credentials were found. Configure credentials for the target registry or remove the id-token permission from the CI job.'
+      'OIDC trusted publishing cannot authenticate "a@1.2.3" (https://npm.example.com/): it only supports the public npm registry and neither NPM_TOKEN nor ambient registry credentials were found.'
     )
 
     expect(fetchMock).not.toHaveBeenCalled()
