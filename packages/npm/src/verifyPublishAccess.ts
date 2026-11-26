@@ -354,7 +354,7 @@ async function fetchPackument(
 
 /**
  * Resolve the registry identity of the configured credentials, cached per
- * registry and, for Yarn Berry, package scope.
+ * registry and, for Yarn Berry, package scope and directory.
  *
  * Runs the package manager's `whoami` command against the publish registry.
  * Yarn Berry resolves the publish registry and scoped credentials the same
@@ -381,7 +381,7 @@ async function resolveIdentity(
   const scope = extractPackageScope(plan.package.name)
 
   const identityKey = packageManager.isYarnBerry
-    ? `${registry}\0${scope ?? ''}`
+    ? `${registry}\0${scope ?? ''}\0${plan.package.location}`
     : registry
 
   if (identities.has(identityKey)) {

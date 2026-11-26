@@ -1508,6 +1508,39 @@ test('resolves the Yarn Berry identity from the plan package directory', async (
   })
 })
 
+test('resolves the Yarn Berry identity separately for each package directory', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_TOKEN: 'mock-npm-token' }
+
+    const first = createPlan({ name: 'a', location: 'packages/first' })
+    const second = createPlan({ name: 'b', location: 'packages/second' })
+
+    mockRegistry({
+      whoami: 'mock-user',
+      packument: maintainedBy('mock-user'),
+    })
+
+    const verdicts = await verifyPublishAccess(
+      context,
+      [first, second],
+      createPackageManager('yarn', true)
+    )
+
+    expect(verdicts.get(first)).toBe('allowed')
+    expect(verdicts.get(second)).toBe('allowed')
+
+    const whoamiCwds = execCommand.mock.calls
+      .filter((call) => (call[1] as readonly string[]).includes('whoami'))
+      .map((call) => (call[2] as { cwd: string }).cwd)
+
+    expect(whoamiCwds).toEqual([
+      path.resolve(cwd, 'packages/first'),
+      path.resolve(cwd, 'packages/second'),
+    ])
+  })
+})
+
 test('probes with npm view and resolves the identity with npm whoami for Yarn Classic', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd
