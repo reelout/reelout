@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
-import type { ExecCommandOptions, ReleaseContext } from '@reelout/core'
+import type { ExecCommandOptions } from '@reelout/core'
+import type { ConsolaInstance } from 'consola/core'
 import { getPackageManagerVersion } from './getPackageManagerVersion'
 import type { PackageManager } from './resolvePackageManager'
 import { resolvePackageManager } from './resolvePackageManager'
@@ -29,7 +30,7 @@ export interface PackageManagerInfo {
 export async function inspectPackageManager(
   cwd: string,
   options?: Partial<ExecCommandOptions>,
-  logger?: ReleaseContext['logger']
+  logger?: ConsolaInstance | undefined
 ): Promise<PackageManagerInfo> {
   const packageManager = await resolvePackageManager(cwd)
   let isYarnClassic = false
