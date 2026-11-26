@@ -132,18 +132,6 @@ test('verifies trusted publishing when NPM_TOKEN is also configured', async () =
   })
 })
 
-test('returns an empty set when verification is skipped', async () => {
-  context.env = { NPM_TOKEN: 'mock-npm-token' }
-
-  const skipped = await verifyTrustedPublishing(
-    context,
-    [createPlan({ name: 'a' })],
-    createPackageManager('npm')
-  )
-
-  expect(skipped.size).toBe(0)
-})
-
 test('returns the verified plans', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd
@@ -169,12 +157,13 @@ test('returns the verified plans', async () => {
 test('skips verification when NPM_TOKEN is configured without OIDC tokens', async () => {
   context.env = { NPM_TOKEN: 'mock-npm-token' }
 
-  await verifyTrustedPublishing(
+  const verified = await verifyTrustedPublishing(
     context,
     [createPlan({ name: 'a' })],
     createPackageManager('npm')
   )
 
+  expect(verified.size).toBe(0)
   expect(fetchMock).not.toHaveBeenCalled()
   expect(logger.mock.calls).toEqual([])
 })
