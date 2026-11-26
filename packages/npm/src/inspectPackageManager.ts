@@ -44,7 +44,7 @@ export async function inspectPackageManager(
     } else {
       if (version == null) {
         logger?.debug(
-          'The Yarn major version could not be determined; assuming Yarn Classic.'
+          'Assuming Yarn Classic: the Yarn major version could not be determined.'
         )
       }
 

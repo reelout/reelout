@@ -148,7 +148,7 @@ test('logs a debug diagnostic when the yarn major version cannot be determined',
     `)
 
     expect(debugLogger).toHaveBeenCalledWith(
-      'The Yarn major version could not be determined; assuming Yarn Classic.'
+      'Assuming Yarn Classic: the Yarn major version could not be determined.'
     )
   })
 })
