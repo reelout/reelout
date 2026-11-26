@@ -41,6 +41,7 @@ interface PlanOptions {
   isPrivate?: boolean | undefined
   provider?: string | undefined
   hasRelease?: boolean | undefined
+  location?: string | undefined
 }
 
 const createPlan = (options: PlanOptions = {}): ReleasePlan =>
@@ -53,7 +54,7 @@ const createPlan = (options: PlanOptions = {}): ReleasePlan =>
       root: false,
       entry: false,
       dependencies: [],
-      location: '.',
+      location: options.location ?? '.',
     },
     history: [],
     release:
@@ -1473,6 +1474,36 @@ test('probes with yarn npm info and resolves the identity with yarn npm whoami f
     expect(execCommand.mock.calls.map((call) => [call[0], call[1]])).toEqual([
       ['yarn', ['npm', 'info', 'a', '--json']],
       ['yarn', ['npm', 'whoami', '--publish']],
+    ])
+  })
+})
+
+test('resolves the Yarn Berry identity from the plan package directory', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_TOKEN: 'mock-npm-token' }
+
+    const plan = createPlan({ name: 'a', location: 'packages/a' })
+
+    mockRegistry({
+      whoami: 'mock-user',
+      packument: maintainedBy('mock-user'),
+    })
+
+    const verdicts = await verifyPublishAccess(
+      context,
+      [plan],
+      createPackageManager('yarn', true)
+    )
+
+    expect(verdicts.get(plan)).toBe('allowed')
+
+    expect(execCommand.mock.calls[1]).toEqual([
+      'yarn',
+      ['npm', 'whoami', '--publish'],
+      expect.objectContaining({
+        cwd: path.resolve(cwd, 'packages/a'),
+      }),
     ])
   })
 })
