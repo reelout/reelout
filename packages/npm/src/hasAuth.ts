@@ -39,11 +39,7 @@ export async function hasAuth(
 ): Promise<boolean> {
   const registry = await resolvePublishRegistry(context, pkg, packageManager)
 
-  if (
-    !packageManager.isYarn &&
-    hasOIDCAuth(context.env) &&
-    normalizeRegistry(registry) === DEFAULT_REGISTRY
-  ) {
+  if (usesOidcTrustedPublishing(packageManager, context.env, registry)) {
     return true
   }
 
@@ -118,4 +114,29 @@ export function hasOIDCAuth(env: Readonly<NodeJS.ProcessEnv>): boolean {
   }
 
   return false
+}
+
+/**
+ * Determine whether a release authenticates through OIDC trusted publishing.
+ *
+ * OIDC environment tokens authenticate only npm and pnpm releases to the
+ * public npm registry — the only registry whose trusted-publishing OIDC
+ * exchange the package manager CLI supports — so Yarn releases and other
+ * registries never count them as credentials.
+ *
+ * @param packageManager Information about the active package manager
+ * @param env Environment variables to inspect
+ * @param registry The release's resolved publish registry
+ * @returns True if the release authenticates through OIDC trusted publishing
+ */
+export function usesOidcTrustedPublishing(
+  packageManager: Partial<PackageManagerInfo>,
+  env: Readonly<NodeJS.ProcessEnv>,
+  registry: string
+): boolean {
+  return (
+    !packageManager.isYarn &&
+    hasOIDCAuth(env) &&
+    normalizeRegistry(registry) === DEFAULT_REGISTRY
+  )
 }

@@ -7,21 +7,17 @@ import { colors } from 'consola/utils'
 import path from 'node:path'
 import { extractPackageScope } from './extractPackageScope'
 import { getAuthTokenKey } from './getAuthTokenKey'
-import { hasAuth, hasOIDCAuth } from './hasAuth'
+import { hasAuth, usesOidcTrustedPublishing } from './hasAuth'
 import type { PackageManagerInfo } from './inspectPackageManager'
 import {
   isCompleteReleasePlan,
   type CompleteReleasePlan,
 } from './isCompleteReleasePlan'
 import { isJsonObject } from './isJsonObject'
-import { normalizeRegistry } from './normalizeRegistry'
 import { NOT_FOUND_PATTERN } from './probePublishedVersion'
 import { PLUGIN_NAME } from './PLUGIN_NAME'
 import { prepareAuth, type Env } from './prepareAuth'
-import {
-  DEFAULT_REGISTRY,
-  resolvePublishRegistry,
-} from './resolvePublishRegistry'
+import { resolvePublishRegistry } from './resolvePublishRegistry'
 import { INVALID_CREDENTIALS_MESSAGE } from './verifyAuth'
 
 /**
@@ -144,10 +140,11 @@ export async function verifyPublishAccess(
     // uses and the verdict stays inconclusive. Only the public npm registry
     // supports OIDC trusted publishing, and Yarn never authenticates with
     // OIDC tokens, so those plans stay conclusive.
-    const usesOidcAuth =
-      !packageManager.isYarn &&
-      hasOIDCAuth(context.env) &&
-      normalizeRegistry(registry) === DEFAULT_REGISTRY
+    const usesOidcAuth = usesOidcTrustedPublishing(
+      packageManager,
+      context.env,
+      registry
+    )
 
     const verdict = usesOidcAuth
       ? 'unknown'
