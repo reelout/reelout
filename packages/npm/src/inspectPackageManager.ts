@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
-import type { ExecCommandOptions } from '@reelout/core'
+import type { ExecCommandOptions, ReleaseContext } from '@reelout/core'
 import { getPackageManagerVersion } from './getPackageManagerVersion'
 import type { PackageManager } from './resolvePackageManager'
 import { resolvePackageManager } from './resolvePackageManager'
@@ -23,11 +23,13 @@ export interface PackageManagerInfo {
  *
  * @param cwd Working directory path to inspect
  * @param options Additional execution, environment, and stream options
+ * @param logger Logger for debug diagnostics about the version detection
  * @returns Metadata object describing the active package manager
  */
 export async function inspectPackageManager(
   cwd: string,
-  options?: Partial<ExecCommandOptions>
+  options?: Partial<ExecCommandOptions>,
+  logger?: ReleaseContext['logger']
 ): Promise<PackageManagerInfo> {
   const packageManager = await resolvePackageManager(cwd)
   let isYarnClassic = false
@@ -39,6 +41,12 @@ export async function inspectPackageManager(
     if (version != null && version >= 2) {
       isYarnBerry = true
     } else {
+      if (version == null) {
+        logger?.debug(
+          'The Yarn major version could not be determined; assuming Yarn Classic.'
+        )
+      }
+
       isYarnClassic = true
     }
   }

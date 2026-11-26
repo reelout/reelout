@@ -52,7 +52,11 @@ export async function verifyAuth(
 
   const manager =
     packageManager ??
-    (await inspectPackageManager(context.cwd, { env: context.env }))
+    (await inspectPackageManager(
+      context.cwd,
+      { env: context.env },
+      context.logger
+    ))
 
   if (!manager.isYarn && hasOIDCAuth(context.env)) {
     return 'oidc'

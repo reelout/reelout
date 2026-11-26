@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Fai
 
 import type { ReleaseContext } from '@reelout/core'
+import { formatError } from '@reelout/core'
 import * as github from '@reelout/github'
 import * as gitlab from '@reelout/gitlab'
 import { isSameRepository } from './isSameRepository'
@@ -45,7 +46,11 @@ export async function resolveProvenance(
         return await gitlab.isRepositoryPublic(context.env.GITLAB_TOKEN, repo)
       }
     }
-  } catch {}
+  } catch (error) {
+    context.logger.debug(
+      `Provenance could not be resolved from the package repository: ${formatError(error)}`
+    )
+  }
 
   return undefined
 }

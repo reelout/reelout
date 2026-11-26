@@ -39,9 +39,13 @@ export async function publishPackage(
     return
   }
 
-  const packageManager = await inspectPackageManager(context.cwd, {
-    env: context.env,
-  })
+  const packageManager = await inspectPackageManager(
+    context.cwd,
+    {
+      env: context.env,
+    },
+    context.logger
+  )
 
   const { isNpm, isPnpm, isYarnClassic, isYarnBerry } = packageManager
 
@@ -68,7 +72,13 @@ export async function publishPackage(
       break
   }
 
-  if (options.dryRun && isYarnClassic) return
+  if (options.dryRun && isYarnClassic) {
+    context.logger.debug(
+      'Yarn Classic does not support dry-run publishing, so the publish was skipped.'
+    )
+
+    return
+  }
 
   if (options.dryRun) commandArgs.push('--dry-run')
 
