@@ -85,7 +85,10 @@ export async function verifyTrustedPublishing(
 
   const targets: CompleteReleasePlan[] = []
 
-  const orphans: Array<{ plan: CompleteReleasePlan; registry: string }> = []
+  const unsupportedRegistryPlans: Array<{
+    plan: CompleteReleasePlan
+    registry: string
+  }> = []
 
   for (const plan of plans) {
     if (!isCompleteReleasePlan(plan)) {
@@ -101,13 +104,13 @@ export async function verifyTrustedPublishing(
     if (normalizeRegistry(registry) === DEFAULT_REGISTRY) {
       targets.push(plan)
     } else {
-      orphans.push({ plan, registry })
+      unsupportedRegistryPlans.push({ plan, registry })
     }
   }
 
   const unauthenticated: string[] = []
 
-  for (const { plan, registry } of orphans) {
+  for (const { plan, registry } of unsupportedRegistryPlans) {
     const hasCredentials =
       Boolean(context.env.NPM_TOKEN?.trim()) ||
       (await hasAuth(context, plan.package, packageManager))
