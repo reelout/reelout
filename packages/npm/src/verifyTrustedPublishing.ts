@@ -176,6 +176,7 @@ export async function verifyTrustedPublishing(
  *
  * @param context Release context containing environment and working directory
  * @param name Name of the active package manager executable
+ * @returns A promise that resolves when the CLI can publish with OIDC trusted publishing
  * @throws If the CLI version is unknown or older than the first version
  * with OIDC publishing support
  */
@@ -189,7 +190,10 @@ async function assertOidcCapablePackageManager(
     return
   }
 
-  const version = await getPackageManagerFullVersion(context.cwd, name)
+  const version = await getPackageManagerFullVersion(context.cwd, name, {
+    env: context.env,
+    signal: context.signal,
+  })
 
   if (version === undefined || semver.lt(version, minimumVersion)) {
     throw new Error(

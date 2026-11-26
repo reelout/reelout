@@ -361,7 +361,10 @@ test('fails the release when the package manager is too old for OIDC trusted pub
     )
 
     expect(fetchMock).not.toHaveBeenCalled()
-    expect(getPackageManagerFullVersionMock).toHaveBeenCalledWith(cwd, 'npm')
+    expect(getPackageManagerFullVersionMock).toHaveBeenCalledWith(cwd, 'npm', {
+      env: { NPM_ID_TOKEN: 'mock-id-token' },
+      signal: undefined,
+    })
   })
 })
 
