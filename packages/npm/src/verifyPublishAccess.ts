@@ -17,6 +17,7 @@ import { isJsonObject } from './isJsonObject'
 import { NOT_FOUND_PATTERN } from './probePublishedVersion'
 import { PLUGIN_NAME } from './PLUGIN_NAME'
 import { prepareAuth, type Env } from './prepareAuth'
+import { readPackageJson } from './readPackageJson'
 import { resolvePublishRegistry } from './resolvePublishRegistry'
 import { INVALID_CREDENTIALS_MESSAGE } from './verifyAuth'
 
@@ -353,14 +354,41 @@ async function fetchPackument(
 }
 
 /**
+ * Determine whether the plan's manifest pins the publish registry.
+ *
+ * `yarn npm whoami --scope` resolves the scope registry and skips the
+ * manifest's `publishConfig.registry`, so the flag is only passed while
+ * the manifest leaves the publish registry to the scope settings.
+ *
+ * @param context Release context containing environment and working directory
+ * @param plan The release plan whose manifest is inspected
+ * @returns True if the manifest sets `publishConfig.registry`, otherwise false
+ */
+async function manifestPinsPublishRegistry(
+  context: ReleaseContext,
+  plan: CompleteReleasePlan
+): Promise<boolean> {
+  try {
+    const packageJson = await readPackageJson(
+      path.resolve(context.cwd, plan.package.location)
+    )
+
+    return Boolean(packageJson.publishConfig?.registry)
+  } catch {
+    return false
+  }
+}
+
+/**
  * Resolve the registry identity of the configured credentials, cached per
  * registry and, for Yarn Berry, package scope and directory.
  *
  * Runs the package manager's `whoami` command against the publish registry.
- * Yarn Berry resolves the publish registry and scoped credentials the same
- * way `yarn npm publish` does, so the command runs from the plan's package
- * directory with the `--publish` flag and, for scoped packages, the
- * `--scope` flag. Credential rejections fail the release, while other
+ * Yarn Berry resolves the publish registry the same way `yarn npm publish`
+ * does, so the command runs from the plan's package directory with the
+ * `--publish` flag; scoped packages also pass `--scope` to prefer scope
+ * credentials, unless the manifest pins `publishConfig.registry`, which
+ * `--scope` would skip. Credential rejections fail the release, while other
  * failures and unusable output resolve to undefined so callers can fall
  * back to an unknown verdict.
  *
@@ -396,7 +424,10 @@ async function resolveIdentity(
     if (packageManager.isYarnBerry) {
       const args = ['npm', 'whoami']
 
-      if (scope !== null) {
+      if (
+        scope !== null &&
+        !(await manifestPinsPublishRegistry(context, plan))
+      ) {
         args.push('--scope', scope)
       }
 

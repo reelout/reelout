@@ -1383,6 +1383,43 @@ test('resolves the identity per scope for Yarn Berry plans with different scopes
   })
 })
 
+test('resolves the identity without the scope flag when the manifest pins the publish registry for Yarn Berry', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_TOKEN: 'mock-npm-token' }
+
+    await writeFile(
+      path.join(cwd, 'package.json'),
+      JSON.stringify({
+        name: '@scope/pkg',
+        version: '1.2.3',
+        publishConfig: { registry: 'https://npm.example.com/' },
+      })
+    )
+
+    const plan = createPlan({ name: '@scope/pkg' })
+
+    mockRegistry({
+      whoami: 'mock-user',
+      packument: maintainedBy('mock-user'),
+    })
+
+    const verdicts = await verifyPublishAccess(
+      context,
+      [plan],
+      createPackageManager('yarn', true)
+    )
+
+    expect(verdicts.get(plan)).toBe('allowed')
+
+    expect(
+      execCommand.mock.calls
+        .map((call) => call[1] as readonly string[])
+        .filter((args) => args.includes('whoami'))
+    ).toEqual([['npm', 'whoami', '--publish']])
+  })
+})
+
 test('probes with pnpm view and resolves the identity with pnpm whoami', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd
