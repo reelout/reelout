@@ -74,7 +74,7 @@ export async function publishPackage(
 
   if (options.dryRun && isYarnClassic) {
     context.logger.debug(
-      'The dry-run publish was skipped: Yarn Classic does not support dry-run publishing.'
+      '[DRY RUN] The publish was skipped: Yarn Classic does not support dry-run publishing.'
     )
 
     return

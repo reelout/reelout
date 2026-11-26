@@ -369,7 +369,7 @@ test('logs a debug diagnostic when a yarn 1 dry-run publish is skipped', async (
   expect(execCommand).not.toHaveBeenCalled()
 
   expect(debugLogger).toHaveBeenCalledWith(
-    'The dry-run publish was skipped: Yarn Classic does not support dry-run publishing.'
+    '[DRY RUN] The publish was skipped: Yarn Classic does not support dry-run publishing.'
   )
 })
 
