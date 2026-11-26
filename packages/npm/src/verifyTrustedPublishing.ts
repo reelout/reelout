@@ -63,8 +63,8 @@ const MINIMUM_OIDC_CLI_VERSIONS: Readonly<
  * @returns The plans whose trusted publishing was verified; empty when OIDC
  * authentication is not in use
  * @throws If a plan targets a registry without OIDC support and no other
- * credentials exist, the package manager CLI cannot publish with OIDC, or
- * any plan's trusted-publishing token exchange was rejected
+ * credentials exist, or any plan's trusted-publishing token exchange was
+ * rejected
  */
 export async function verifyTrustedPublishing(
   context: ReleaseContext,
