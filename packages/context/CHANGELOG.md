@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.8.4](https://github.com/reelout/reelout/compare/%40reelout%2Fcontext%400.8.3...%40reelout%2Fcontext%400.8.4) (2026-11-26)
+
+### Bug Fixes
+
+- **npm:** harden registry authentication and OIDC trusted publishing ([#35](https://github.com/reelout/reelout/issues/35)) ([f866315](https://github.com/reelout/reelout/commit/f866315c6561c41517c63be1075f56c5d7d22aa3))
+
 ## [0.8.3](https://github.com/reelout/reelout/compare/%40reelout%2Fcontext%400.8.2...%40reelout%2Fcontext%400.8.3) (2026-11-24)
 
 ### Features

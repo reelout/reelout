@@ -1,6 +1,6 @@
 {
   "name": "@reelout/yarn",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Yarn plugin for discovering workspaces, updating manifests and dependency ranges, and publishing packages with Yarn Classic and Yarn Berry.",
   "repository": {
     "type": "git",

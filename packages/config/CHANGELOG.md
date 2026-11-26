@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.7.2](https://github.com/reelout/reelout/compare/%40reelout%2Fconfig%400.7.1...%40reelout%2Fconfig%400.7.2) (2026-11-26)
+
+### Bug Fixes
+
+- **npm:** harden registry authentication and OIDC trusted publishing ([#35](https://github.com/reelout/reelout/issues/35)) ([f866315](https://github.com/reelout/reelout/commit/f866315c6561c41517c63be1075f56c5d7d22aa3))
+
 ## [0.7.1](https://github.com/reelout/reelout/compare/%40reelout%2Fconfig%400.7.0...%40reelout%2Fconfig%400.7.1) (2026-11-24)
 
 ### Features
