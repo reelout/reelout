@@ -132,7 +132,7 @@ test('verifies trusted publishing when NPM_TOKEN is also configured', async () =
   })
 })
 
-test('returns the verified plans and an empty set when verification is skipped', async () => {
+test('returns an empty set when verification is skipped', async () => {
   context.env = { NPM_TOKEN: 'mock-npm-token' }
 
   const skipped = await verifyTrustedPublishing(
@@ -142,7 +142,9 @@ test('returns the verified plans and an empty set when verification is skipped',
   )
 
   expect(skipped.size).toBe(0)
+})
 
+test('returns the verified plans', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd
     context.env = { NPM_ID_TOKEN: 'mock-id-token' }
