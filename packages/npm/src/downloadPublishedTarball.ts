@@ -13,15 +13,17 @@ import {
   type YarnScopeConfig,
 } from './loadYarnConfig'
 import { normalizeRegistry } from './normalizeRegistry'
+import { resolvePublishRegistry } from './resolvePublishRegistry'
 
 /**
  * Download the published tarball of a package version from its registry.
  *
  * Resolves registry credentials the same way the package managers do —
- * ambient configuration first, then the `NPM_TOKEN` environment variable —
- * and fetches the tarball over HTTP with an `Authorization` header when
- * credentials exist. OIDC identity tokens are not sent because registry
- * tarball endpoints do not accept them.
+ * ambient configuration first, then the `NPM_TOKEN` environment variable
+ * when the tarball is served by the publish registry's origin — and fetches
+ * the tarball over HTTP with an `Authorization` header when credentials
+ * exist. OIDC identity tokens are not sent because registry tarball
+ * endpoints do not accept them.
  *
  * @param context Release context containing environment and working directory
  * @param plan Release plan describing the target package
@@ -62,7 +64,9 @@ export async function downloadPublishedTarball(
  *
  * Derives the registry from the tarball URL, looks up ambient credentials for
  * it with the active package manager's configuration, and falls back to an
- * `NPM_TOKEN` bearer token when no ambient credentials exist.
+ * `NPM_TOKEN` bearer token when no ambient credentials exist and the tarball
+ * is served by the publish registry's origin, so the token is never sent to
+ * an unrelated host.
  *
  * @param context Release context containing environment and working directory
  * @param pkg Target package metadata object
@@ -90,7 +94,34 @@ async function resolveTarballAuthorization(
 
   const token = context.env.NPM_TOKEN?.trim()
 
-  return token ? `Bearer ${token}` : undefined
+  if (!token) {
+    return undefined
+  }
+
+  const publishRegistry = await resolvePublishRegistry(
+    context,
+    pkg,
+    packageManager
+  )
+
+  return registryOriginsMatch(publishRegistry, tarballUrl)
+    ? `Bearer ${token}`
+    : undefined
+}
+
+/**
+ * Check whether a registry and a tarball URL share the same origin.
+ *
+ * @param registry Registry URL the package publishes to
+ * @param tarballUrl Absolute URL of the published tarball
+ * @returns True when both URLs parse and share an origin, false otherwise
+ */
+function registryOriginsMatch(registry: string, tarballUrl: string): boolean {
+  try {
+    return new URL(registry).origin === new URL(tarballUrl).origin
+  } catch {
+    return false
+  }
 }
 
 /**

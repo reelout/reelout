@@ -198,7 +198,7 @@ test('forwards the context abort signal to the tarball fetch', async () => {
   ])
 })
 
-test('falls back to NPM_TOKEN when the tarball URL has no parseable registry', async () => {
+test('downloads without credentials when the tarball URL is unparseable', async () => {
   context.env = { NPM_TOKEN: 'mock-npm-token' }
 
   mockSuccessfulResponse('published-tarball')
@@ -206,7 +206,7 @@ test('falls back to NPM_TOKEN when the tarball URL has no parseable registry', a
   await downloadPublishedTarball(context, plan, npm, 'not-a-registry-url')
 
   expect(fetchMock.mock.calls[0]?.[1]).toEqual({
-    headers: { authorization: 'Bearer mock-npm-token' },
+    headers: {},
     signal: undefined,
   })
 })
@@ -223,6 +223,50 @@ test('falls back to NPM_TOKEN when the npm configuration cannot be loaded', asyn
   expect(fetchMock.mock.calls[0]?.[1]).toEqual({
     headers: { authorization: 'Bearer mock-npm-token' },
     signal: undefined,
+  })
+})
+
+test('withholds NPM_TOKEN when the tarball is served by another origin', async () => {
+  context.env = { NPM_TOKEN: 'mock-npm-token' }
+
+  mockSuccessfulResponse('published-tarball')
+
+  await downloadPublishedTarball(
+    context,
+    plan,
+    npm,
+    'https://mirror.example.com/a/-/a-1.2.3.tgz'
+  )
+
+  expect(fetchMock.mock.calls[0]?.[1]).toEqual({
+    headers: {},
+    signal: undefined,
+  })
+})
+
+test('sends NPM_TOKEN when the publish registry matches the tarball origin', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_TOKEN: 'mock-npm-token' }
+
+    await writeFile(
+      path.join(cwd, 'package.json'),
+      '{"publishConfig":{"registry":"https://mirror.example.com/"}}'
+    )
+
+    mockSuccessfulResponse('published-tarball')
+
+    await downloadPublishedTarball(
+      context,
+      plan,
+      npm,
+      'https://mirror.example.com/a/-/a-1.2.3.tgz'
+    )
+
+    expect(fetchMock.mock.calls[0]?.[1]).toEqual({
+      headers: { authorization: 'Bearer mock-npm-token' },
+      signal: undefined,
+    })
   })
 })
 
@@ -300,7 +344,12 @@ test('falls back to NPM_TOKEN when the Yarn configuration cannot be loaded', asy
 
   mockSuccessfulResponse('published-tarball')
 
-  await downloadPublishedTarball(context, plan, yarnBerry, TARBALL_URL)
+  await downloadPublishedTarball(
+    context,
+    plan,
+    yarnBerry,
+    'https://registry.yarnpkg.com/a/-/a-1.2.3.tgz'
+  )
 
   expect(fetchMock.mock.calls[0]?.[1]).toEqual({
     headers: { authorization: 'Bearer mock-npm-token' },
