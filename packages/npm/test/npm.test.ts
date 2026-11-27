@@ -26,7 +26,6 @@ import { c as tarCreate } from 'tar'
 import { beforeEach, expect, test, vi } from 'vitest'
 import {
   context,
-  createMockLogger,
   createMockRepository,
   logger,
   repository,
@@ -448,8 +447,6 @@ test('stays inactive without a root package manifest', async () => {
 })
 
 test('stays inactive when Yarn is the active package manager', async () => {
-  context.dryRun = true
-
   resolvePackageManager.mockResolvedValue('yarn')
   getPackageManagerVersion.mockResolvedValue(4)
 
@@ -782,7 +779,6 @@ test('updates dependency versions in package manifests when release plans are pr
 })
 
 test('does not modify package manifests when dry-run mode is enabled', async () => {
-  context.logger = createMockLogger(logger)
   await provideAmbientAuth()
 
   using _dryRun = vi.spyOn(context, 'dryRun', 'get').mockReturnValue(true)
@@ -1000,7 +996,6 @@ test('skips authentication and publishing when packages are private', async () =
 })
 
 test('forwards dryRun flag to publisher when dry-run mode is enabled', async () => {
-  context.logger = createMockLogger(logger)
   await provideAmbientAuth()
 
   using _dryRun = vi.spyOn(context, 'dryRun', 'get').mockReturnValue(true)

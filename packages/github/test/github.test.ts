@@ -12,7 +12,6 @@ import plugin from '@reelout/github'
 import { beforeEach, expect, test, vi } from 'vitest'
 import {
   context,
-  createMockLogger,
   createMockRepository,
   logger,
   repository,
@@ -77,7 +76,6 @@ beforeEach(() => {
 })
 
 test('skips GitHub release creation when GITHUB_TOKEN is missing', async () => {
-  context.logger = createMockLogger(logger)
   context.repository = repository
 
   context.plans = [plan]
@@ -183,7 +181,6 @@ test('fails workflow execution when the GitHub token is invalid during dry-run',
 })
 
 test('skips GitHub publishing and stays inactive when repository context is unavailable', async () => {
-  context.logger = createMockLogger(logger)
   context.env = { GITHUB_TOKEN: 'token' }
 
   context.repository = null
@@ -243,7 +240,6 @@ test('verifies the GitHub token during dry-run mode without creating releases', 
 })
 
 test('previews the GitHub release skip during dry-run mode when GITHUB_TOKEN is missing', async () => {
-  context.logger = createMockLogger(logger)
   context.dryRun = true
 
   context.repository = repository

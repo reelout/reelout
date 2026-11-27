@@ -20,7 +20,6 @@ import { temporaryDirectoryTask } from 'tempy'
 import { beforeEach, expect, test, vi } from 'vitest'
 import {
   context,
-  createMockLogger,
   logger,
   repository,
   workspace,
@@ -542,7 +541,6 @@ test('generates changelog compare link using fallback discovered tag when packag
 })
 
 test('skips writing changelog files to disk in dry-run mode', async () => {
-  context.logger = createMockLogger(logger)
   vol.fromJSON({ '/repo': null })
 
   context.dryRun = true

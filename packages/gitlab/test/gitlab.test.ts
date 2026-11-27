@@ -8,7 +8,6 @@ import plugin from '@reelout/gitlab'
 import { beforeEach, expect, test, vi } from 'vitest'
 import {
   context,
-  createMockLogger,
   createMockRepository,
   logger,
 } from '../../../test/mock/context'
@@ -89,7 +88,6 @@ beforeEach(() => {
 })
 
 test('skips GitLab release creation when GITLAB_TOKEN environment variable is missing', async () => {
-  context.logger = createMockLogger(logger)
   context.repository = createMockRepository('gitlab')
 
   context.plans = plans
@@ -181,7 +179,6 @@ test('fails workflow execution when GITLAB_TOKEN fails verification', async () =
 })
 
 test('skips GitLab publishing and stays inactive when repository context is unavailable', async () => {
-  context.logger = createMockLogger(logger)
   context.env = { GITLAB_TOKEN: 'token' }
 
   context.repository = null
@@ -222,7 +219,6 @@ test('stays inactive when the repository is hosted on GitHub, even in strict mod
 })
 
 test('skips creating GitLab releases during dry-run mode', async () => {
-  context.logger = createMockLogger(logger)
   context.env = { GITLAB_TOKEN: 'token' }
 
   context.dryRun = true
@@ -249,7 +245,6 @@ test('skips creating GitLab releases during dry-run mode', async () => {
 })
 
 test('previews the GitLab release skip during dry-run mode when GITLAB_TOKEN environment variable is missing', async () => {
-  context.logger = createMockLogger(logger)
   context.dryRun = true
 
   context.repository = createMockRepository('gitlab')
