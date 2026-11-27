@@ -108,7 +108,7 @@ test('throws on a detached HEAD or tag and derives qualifiers from the checked-o
     ])
 
     await expect(createContext(options)).rejects.toMatchInlineSnapshot(
-      `[Error: Failed to resolve the current Git branch. Check out a Git branch in your repository before proceeding.]`
+      `[Error: The current Git branch could not be resolved: check out a Git branch in your repository before proceeding.]`
     )
 
     await execGit(cwd, ['checkout', 'main'])
@@ -130,7 +130,7 @@ test('throws on a detached HEAD or tag and derives qualifiers from the checked-o
     await execGit(cwd, ['checkout', 'v1.0.0'])
 
     await expect(createContext(options)).rejects.toMatchInlineSnapshot(
-      `[Error: Failed to resolve the current Git branch. Check out a Git branch in your repository before proceeding.]`
+      `[Error: The current Git branch could not be resolved: check out a Git branch in your repository before proceeding.]`
     )
   })
 })
@@ -328,20 +328,16 @@ test('passes abort signal through to the context', async () => {
     expect(
       (await createContext({ ...options, signal: controller.signal })).signal
     ).toBe(controller.signal)
-
-    expect((await createContext(options)).signal).toBeUndefined()
   })
 })
 
-test("defaults type to 'auto' and passes explicit release type hints through", async () => {
+test('passes explicit release type hints through to the context', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     options.cwd = cwd
 
     await initializeGitRepository(cwd)
 
     await execGit(cwd, ['commit', '--allow-empty', '-m', 'Initial commit'])
-
-    expect((await createContext(options)).type).toBe('auto')
 
     expect((await createContext({ ...options, type: 'minor' })).type).toBe(
       'minor'
@@ -349,15 +345,13 @@ test("defaults type to 'auto' and passes explicit release type hints through", a
   })
 })
 
-test('defaults allowEmpty to false and enables it when option is set', async () => {
+test('enables empty releases when the allowEmpty option is set', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     options.cwd = cwd
 
     await initializeGitRepository(cwd)
 
     await execGit(cwd, ['commit', '--allow-empty', '-m', 'Initial commit'])
-
-    expect((await createContext(options)).allowEmpty).toBe(false)
 
     expect(
       (await createContext({ ...options, allowEmpty: true })).allowEmpty

@@ -78,7 +78,7 @@ export async function createContext(
     branch = await getCurrentGitBranch(cwd)
   } catch (err) {
     throw new Error(
-      'Failed to resolve the current Git branch. Check out a Git branch in your repository before proceeding.',
+      'The current Git branch could not be resolved: check out a Git branch in your repository before proceeding.',
       { cause: err }
     )
   }
