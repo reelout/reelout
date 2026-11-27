@@ -77,6 +77,6 @@ test('logs a failed mid-loop rollback without masking the original creation erro
   )
 
   expect(logger.mock.calls).toContainEqual([
-    'A TestHost release could not be rolled back: Rollback failed',
+    'A TestHost release for tag "b@1.0.0" could not be rolled back: Rollback failed',
   ])
 })

@@ -91,26 +91,44 @@ export interface HostReleasePluginOptions {
 }
 
 /**
+ * A rollback callback for a created host release, paired with the tag of
+ * the release it removes.
+ */
+interface ReleaseRollback {
+  /**
+   * Tag of the release the rollback removes.
+   */
+  tag: string
+
+  /**
+   * Callback that removes the created release.
+   */
+  rollback: () => Promise<void>
+}
+
+/**
  * Run the collected release rollbacks, logging individual rollback failures
  * without aborting the remaining rollbacks.
  *
  * @param logger Logger used to report rollback failures
  * @param displayName Human-readable host name used in log messages
- * @param rollbacks Rollback callbacks collected during publishing
+ * @param rollbacks Rollbacks collected during publishing
  */
 const rollbackReleases = async (
   logger: ReleaseContext['logger'],
   displayName: string,
-  rollbacks: (() => Promise<void>)[]
+  rollbacks: readonly ReleaseRollback[]
 ): Promise<void> => {
   const results = await Promise.allSettled(
-    rollbacks.map((rollback) => rollback())
+    rollbacks.map(({ rollback }) => rollback())
   )
 
-  for (const result of results) {
-    if (result.status === 'rejected') {
+  for (const [index, entry] of rollbacks.entries()) {
+    const result = results[index]
+
+    if (result?.status === 'rejected') {
       logger.error(
-        `A ${displayName} release could not be rolled back: ${formatError(result.reason)}`
+        `A ${displayName} release for tag "${entry.tag}" could not be rolled back: ${formatError(result.reason)}`
       )
     }
   }
@@ -198,7 +216,7 @@ export function createHostReleasePlugin(
 
       const repository = context.repository
 
-      const rollbacks: (() => Promise<void>)[] = []
+      const rollbacks: ReleaseRollback[] = []
 
       try {
         // Create releases in reverse order
@@ -213,7 +231,10 @@ export function createHostReleasePlugin(
           )
 
           if (rollback) {
-            rollbacks.push(rollback)
+            rollbacks.push({
+              tag: plan.release?.tag?.name ?? 'unknown',
+              rollback,
+            })
           }
         }
       } catch (err) {

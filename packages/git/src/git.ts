@@ -31,10 +31,12 @@ const deleteLocalTags = async (
     tags.map((tag) => deleteGitTag(context.cwd, tag.name))
   )
 
-  for (const result of results) {
-    if (result.status === 'rejected') {
+  for (const [index, tag] of tags.entries()) {
+    const result = results[index]
+
+    if (result?.status === 'rejected') {
       context.logger.error(
-        `Git tag could not be deleted during rollback: ${formatError(result.reason)}`
+        `Git tag "${tag.name}" could not be deleted during rollback: ${formatError(result.reason)}`
       )
     }
   }

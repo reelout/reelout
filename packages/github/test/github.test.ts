@@ -493,6 +493,6 @@ test('logs a GitHub release rollback failure without masking the original error'
   )
 
   expect(logger.mock.calls).toContainEqual([
-    'A GitHub release could not be rolled back: Deletion failed',
+    'A GitHub release for tag "a@1.0.0" could not be rolled back: Deletion failed',
   ])
 })

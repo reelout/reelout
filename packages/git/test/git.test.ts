@@ -499,7 +499,15 @@ test('logs individual local tag deletion failures during rollback', async () => 
       expect(
         logger.mock.calls.some(([message]) =>
           String(message).includes(
-            'Git tag could not be deleted during rollback: Tag is locked'
+            'Git tag "foo@1.0.0" could not be deleted during rollback: Tag is locked'
+          )
+        )
+      ).toBe(true)
+
+      expect(
+        logger.mock.calls.some(([message]) =>
+          String(message).includes(
+            'Git tag "bar@2.0.0" could not be deleted during rollback: Tag is locked'
           )
         )
       ).toBe(true)
