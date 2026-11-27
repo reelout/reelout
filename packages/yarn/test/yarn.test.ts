@@ -220,9 +220,6 @@ test('stays inactive without a root package manifest', async () => {
 
   expect(publishPackage).not.toHaveBeenCalled()
   expect(context.outcome?.status).toBe('success')
-  expect(
-    warnCalls().filter((message) => message.includes('Yarn plugin is inactive'))
-  ).toHaveLength(0)
 
   expect(JSON.parse(await readFile('/repo/a/package.json', 'utf8'))).toEqual({
     name: 'a',

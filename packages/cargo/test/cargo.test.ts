@@ -149,7 +149,6 @@ beforeEach(() => {
 })
 
 test('stays inactive without a Cargo manifest', async () => {
-  context.dryRun = true
   await executeReleaseWorkflow(context, [plugin()])
 
   expect(context.repository).toBe(null)

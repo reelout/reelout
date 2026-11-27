@@ -345,7 +345,7 @@ test('passes explicit release type hints through to the context', async () => {
   })
 })
 
-test('enables empty releases when the allowEmpty option is set', async () => {
+test('passes the allowEmpty option through to the context', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     options.cwd = cwd
 
