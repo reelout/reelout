@@ -76,7 +76,7 @@ Options:
   --allow-empty                    Run the release workflow even when no releasable changes are detected.
   --dry-run                        Preview the release without writing files, creating commits or tags, or publishing packages or releases.
   --strict                         Turn missing-credential skipping into errors, for pipelines that must publish everything.
-  --debug                          Enable verbose logging for troubleshooting. (default: false)
+  --debug                          Enable verbose logging for troubleshooting. (default: false, or true when the RUNNER_DEBUG or ACTIONS_STEP_DEBUG variable is set)
   -v, --version                    Display the version number.
   -h, --help                       Display command usage and options.
 ```

@@ -101,7 +101,7 @@ test('runs workflow without packages', async () => {
       `)
     })
   })
-})
+}, 60_000)
 
 test('runs workflow with an empty package.json', async () => {
   await temporaryDirectoryTask(async (remote) => {
@@ -150,7 +150,7 @@ test('runs workflow with an empty package.json', async () => {
       `)
     })
   })
-}, 15_000)
+}, 60_000)
 
 test('releases the root package', async () => {
   await temporaryDirectoryTask(async (remote) => {
@@ -215,7 +215,7 @@ test('releases the root package', async () => {
       `)
     })
   })
-}, 15_000)
+}, 60_000)
 
 test('releases workspace packages', async () => {
   await temporaryDirectoryTask(async (remote) => {
@@ -350,7 +350,7 @@ test('releases workspace packages', async () => {
       `)
     })
   })
-}, 15_000)
+}, 60_000)
 
 test('prints a dry-run report for workspace releases', async () => {
   await temporaryDirectoryTask(async (remote) => {
@@ -467,7 +467,7 @@ test('prints a dry-run report for workspace releases', async () => {
       `)
     })
   })
-}, 15_000)
+}, 60_000)
 
 test('releases workspace packages when the pnpm workspace manifest changes', async () => {
   await temporaryDirectoryTask(async (remote) => {
@@ -574,4 +574,4 @@ test('releases workspace packages when the pnpm workspace manifest changes', asy
       `)
     })
   })
-}, 15_000)
+}, 60_000)

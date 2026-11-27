@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
-import type { GitRepository } from '@reelout/core'
+import {
+  formatError,
+  type GitRepository,
+  type ReleaseContext,
+} from '@reelout/core'
 import GitHost from 'hosted-git-info'
 import { readCargoToml } from './readCargoToml'
 
@@ -10,12 +14,16 @@ import { readCargoToml } from './readCargoToml'
  *
  * Reads `[package].repository` in the root `Cargo.toml` and parses it with
  * `hosted-git-info` to identify the host type, owner, repository, and URL.
+ * A manifest that cannot be read or parsed resolves to null and logs a
+ * debug message.
  *
  * @param cwd Directory containing the root Cargo manifest
+ * @param context Release context carrying the logger
  * @returns Git repository details or null if missing or unresolvable
  */
 export async function resolveGitRepositoryFromCargoManifest(
-  cwd: string
+  cwd: string,
+  context: Pick<ReleaseContext, 'logger'>
 ): Promise<GitRepository | null> {
   try {
     const manifest = await readCargoToml(cwd)
@@ -42,7 +50,11 @@ export async function resolveGitRepositoryFromCargoManifest(
         url: info.browse(),
       }
     }
-  } catch {}
+  } catch (error) {
+    context.logger.debug(
+      `Cargo manifest could not be read while resolving the repository: ${formatError(error)}`
+    )
+  }
 
   return null
 }

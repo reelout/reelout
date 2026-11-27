@@ -7,7 +7,10 @@ import type {
   GitCommitTrailer,
   GitCommitType,
 } from '#types'
-import type { CommitBase } from 'conventional-commits-parser'
+import type {
+  Commit as ParsedCommit,
+  CommitBase,
+} from 'conventional-commits-parser'
 import { CommitParser } from 'conventional-commits-parser'
 import { buildTrailerPattern } from '../../util/buildTrailerPattern'
 import { extractMentions } from './extractMentions'
@@ -39,6 +42,28 @@ const BREAKING_MARKERS: readonly string[] = [
 ]
 
 /**
+ * Converge the parser's dynamically-shaped result into the typed commit
+ * shape used for release analysis.
+ *
+ * The parser assigns `type`, `scope`, and `subject` at runtime through its
+ * default header correspondence, so they exist on the result without being
+ * part of its declared return type; `header` is always a string once
+ * parsing succeeds because the parser rejects empty input.
+ *
+ * @param parsed The parser result to converge
+ * @returns The typed commit shape
+ */
+function toCommit(parsed: ParsedCommit): Commit {
+  return {
+    ...parsed,
+    type: parsed.type ?? null,
+    scope: parsed.scope ?? null,
+    subject: parsed.subject ?? '',
+    header: parsed.header ?? '',
+  }
+}
+
+/**
  * Parse a git log entry into a structured commit object.
  *
  * Combines the commit subject and body, extracts conventional commit metadata
@@ -61,7 +86,7 @@ export async function parseGitCommit(
     notesPattern: () => buildTrailerPattern(BREAKING_MARKERS.concat(markers)),
   })
 
-  const commit = parser.parse(message) as CommitBase as Commit
+  const commit = toCommit(parser.parse(message))
 
   const notes: GitCommitNote[] = []
 

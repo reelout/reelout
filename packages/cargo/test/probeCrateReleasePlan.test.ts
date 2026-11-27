@@ -93,6 +93,27 @@ test('rejects plans whose published content cannot be verified as identical', as
   expect(skipped.has(plan)).toBe(false)
 })
 
+test('rejects plans whose published version is yanked', async () => {
+  getRecords.mockResolvedValue({
+    status: 'found',
+    records: [
+      { vers: '1.2.3', cksum: checksumOf('packed-crate'), yanked: true },
+    ],
+  })
+  packLocalCrate.mockResolvedValue(Buffer.from('packed-crate'))
+
+  const skipped = new Set<ReleasePlan>()
+
+  await expect(
+    probeCrateReleasePlan(context, plan, index, skipped)
+  ).rejects.toThrow(
+    'Version "a@1.2.3" was not published: the registry already has this version and it is yanked. Un-yank it and retry the release.'
+  )
+
+  expect(skipped.has(plan)).toBe(false)
+  expect(packLocalCrate).not.toHaveBeenCalled()
+})
+
 test('returns without verifying when the version is absent from the registry', async () => {
   getRecords.mockResolvedValue({ status: 'absent' })
 

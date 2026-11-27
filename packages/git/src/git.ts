@@ -6,13 +6,39 @@ import {
   createGitTag,
   deleteGitTag,
   ensureGitUserConfig,
+  formatError,
   generateReleaseCommitMessage,
   Priority,
   pushGitChanges,
+  type ReleaseContext,
   type ReleasePlugin,
   type Tag,
 } from '@reelout/core'
 import { version } from '../package.json'
+
+/**
+ * Delete local Git tags, logging individual deletion failures without
+ * aborting the remaining deletions.
+ *
+ * @param context Release context providing the working directory and logger
+ * @param tags Tags to delete
+ */
+const deleteLocalTags = async (
+  context: ReleaseContext,
+  tags: readonly Tag[]
+): Promise<void> => {
+  const results = await Promise.allSettled(
+    tags.map((tag) => deleteGitTag(context.cwd, tag.name))
+  )
+
+  for (const result of results) {
+    if (result.status === 'rejected') {
+      context.logger.error(
+        `Git tag could not be deleted during rollback: ${formatError(result.reason)}`
+      )
+    }
+  }
+}
 
 /**
  * Built-in plugin that performs Git lifecycle tasks including user configuration, commit creation, tagging, and pushing.
@@ -94,9 +120,7 @@ const git = (): ReleasePlugin => ({
     } catch (err) {
       /* istanbul ignore else */
       if (!context.dryRun) {
-        await Promise.allSettled(
-          tags.map((tag) => deleteGitTag(context.cwd, tag.name))
-        )
+        await deleteLocalTags(context, tags)
       }
 
       throw err
@@ -107,15 +131,19 @@ const git = (): ReleasePlugin => ({
     } catch (err) {
       /* istanbul ignore else */
       if (tags.length > 0 && !context.dryRun) {
-        await Promise.allSettled(
-          tags.map((tag) => deleteGitTag(context.cwd, tag.name))
-        )
+        await deleteLocalTags(context, tags)
 
-        await pushGitChanges(
-          context.cwd,
-          null,
-          ...tags.map((tag) => `:${tag.name}`)
-        )
+        try {
+          await pushGitChanges(
+            context.cwd,
+            null,
+            ...tags.map((tag) => `:${tag.name}`)
+          )
+        } catch (deleteErr) {
+          context.logger.error(
+            `Remote Git tags could not be deleted during rollback: ${formatError(deleteErr)}`
+          )
+        }
       }
 
       throw err

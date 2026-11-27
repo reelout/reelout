@@ -2,14 +2,21 @@
   "name": "@reelout/context",
   "version": "0.8.4",
   "description": "Creates the release execution context from Git state, resolved configuration, and runtime options.",
+  "keywords": [
+    "release",
+    "versioning",
+    "monorepo",
+    "context",
+    "workflow"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/reelout/reelout.git",
     "directory": "packages/context"
   },
   "license": "MIT",
+  "sideEffects": false,
   "type": "module",
-  "imports": {},
   "exports": {
     "./package.json": {
       "default": "./package.json"
@@ -36,11 +43,16 @@
     "dev": "vite build --ssr --watch"
   },
   "dependencies": {
-    "@reelout/config": "workspace:^",
     "@reelout/core": "workspace:^",
     "consola": "catalog:"
   },
+  "devDependencies": {
+    "@reelout/config": "workspace:^"
+  },
   "engines": {
     "node": ">=24.15"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

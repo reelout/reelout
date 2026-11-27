@@ -56,7 +56,8 @@ interface SectionVersionEdit {
  * @param plans Release plans containing crate metadata and target versions
  * @returns True when at least one manifest was modified
  * @throws If crates inheriting the workspace version were planned at
- * different versions
+ * different versions, or when the shared `[workspace.package]` version
+ * literal cannot be found in the root manifest
  */
 export async function bumpCargoManifests(
   cwd: string,
@@ -140,6 +141,12 @@ export async function bumpCargoManifests(
           'workspace.package',
           plan.release.version
         )
+
+        if (!rootEdit.replaced) {
+          throw new Error(
+            `Crate "${planName}" inherits the workspace version, but the shared version literal could not be found under [workspace.package] in the root manifest.`
+          )
+        }
 
         rootManifest.text = rootEdit.text
       }

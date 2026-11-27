@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Fai
 
 import { generateGitTagName, getGitTagMessage } from '#git'
+import type { EnsureGitTagOptions } from '#git'
 import type { Package, Tag } from '#types'
 import { verifyPackageTag } from './verifyPackageTag'
 
@@ -14,11 +15,13 @@ import { verifyPackageTag } from './verifyPackageTag'
  *
  * @param cwd Repository working directory
  * @param pkg Package descriptor containing version and location context
+ * @param options Dry-run and logging guards for the local tag cleanup
  * @returns A promise resolving to the tag metadata or null when not found
  */
 export async function resolvePackageTag(
   cwd: string,
-  pkg: Package
+  pkg: Package,
+  options?: EnsureGitTagOptions
 ): Promise<Tag | null> {
   if (pkg.tag) {
     return pkg.tag
@@ -34,7 +37,7 @@ export async function resolvePackageTag(
     return null
   }
 
-  if (await verifyPackageTag(cwd, pkg, expectedTagName)) {
+  if (await verifyPackageTag(cwd, pkg, expectedTagName, options)) {
     return {
       name: expectedTagName,
       message: await getGitTagMessage(cwd, expectedTagName),

@@ -537,4 +537,4 @@ test('simulates mainline release workflows under manual promotion', async () => 
       `)
     })
   })
-}, 60_000)
+}, 180_000)

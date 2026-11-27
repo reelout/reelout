@@ -7,7 +7,6 @@ import { extractVersionQualifier } from './extractVersionQualifier'
 
 export interface BumpVersionOptions {
   version: string
-  private?: boolean | undefined
   release: ReleaseType | null | undefined
   identifier?: string | null | undefined
   transition?: VersionTransition | null | undefined

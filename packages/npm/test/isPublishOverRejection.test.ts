@@ -12,6 +12,16 @@ test('matches conflict markers in non-error values', () => {
   ).toBe(true)
 })
 
+test('matches conflict markers in error objects', () => {
+  expect(
+    isPublishOverRejection(
+      new Error(
+        'npm error code EPUBLISHCONFLICT\nnpm error 403 cannot publish over the previously published version'
+      )
+    )
+  ).toBe(true)
+})
+
 test('returns false for non-error values without conflict markers', () => {
   expect(isPublishOverRejection('network unreachable')).toBe(false)
 })

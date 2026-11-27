@@ -8,6 +8,7 @@ import plugin from '@reelout/gitlab'
 import { beforeEach, expect, test, vi } from 'vitest'
 import {
   context,
+  createMockLogger,
   createMockRepository,
   logger,
 } from '../../../test/mock/context'
@@ -88,6 +89,7 @@ beforeEach(() => {
 })
 
 test('skips GitLab release creation when GITLAB_TOKEN environment variable is missing', async () => {
+  context.logger = createMockLogger(logger)
   context.repository = createMockRepository('gitlab')
 
   context.plans = plans
@@ -100,9 +102,6 @@ test('skips GitLab release creation when GITLAB_TOKEN environment variable is mi
   expect(removeReleaseMock).not.toHaveBeenCalled()
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
-      [
-        "GitLab releases will not be created: GITLAB_TOKEN is not set.",
-      ],
       [
         "Status: [32mSUCCESS[39m",
       ],
@@ -182,6 +181,7 @@ test('fails workflow execution when GITLAB_TOKEN fails verification', async () =
 })
 
 test('skips GitLab publishing and stays inactive when repository context is unavailable', async () => {
+  context.logger = createMockLogger(logger)
   context.env = { GITLAB_TOKEN: 'token' }
 
   context.repository = null
@@ -222,6 +222,7 @@ test('stays inactive when the repository is hosted on GitHub, even in strict mod
 })
 
 test('skips creating GitLab releases during dry-run mode', async () => {
+  context.logger = createMockLogger(logger)
   context.env = { GITLAB_TOKEN: 'token' }
 
   context.dryRun = true
@@ -248,6 +249,7 @@ test('skips creating GitLab releases during dry-run mode', async () => {
 })
 
 test('previews the GitLab release skip during dry-run mode when GITLAB_TOKEN environment variable is missing', async () => {
+  context.logger = createMockLogger(logger)
   context.dryRun = true
 
   context.repository = createMockRepository('gitlab')
@@ -262,9 +264,6 @@ test('previews the GitLab release skip during dry-run mode when GITLAB_TOKEN env
   expect(removeReleaseMock).not.toHaveBeenCalled()
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
-      [
-        "GitLab releases will not be created: GITLAB_TOKEN is not set.",
-      ],
       [
         "Status: [32mSUCCESS[39m [33m(dry run)[39m",
       ],
@@ -332,6 +331,29 @@ test('rolls back published GitLab releases when a subsequent plugin fails', asyn
     'v-a',
     'v-root',
   ])
+})
+
+test('rolls back created GitLab releases when a later release creation fails mid-loop', async () => {
+  context.env = { GITLAB_TOKEN: 'token' }
+
+  context.repository = createMockRepository('gitlab')
+
+  context.plans = [
+    createNamedReleasePlan('a', 'v-a'),
+    createNamedReleasePlan('b', 'v-b'),
+  ]
+
+  createReleaseMock
+    .mockResolvedValueOnce(undefined)
+    .mockRejectedValueOnce(new Error('Release creation failed'))
+
+  await expect(executeReleaseWorkflow(context, [plugin()])).rejects.toThrow(
+    'Release creation failed'
+  )
+
+  expect(createReleaseMock).toHaveBeenCalledTimes(2)
+  expect(removeReleaseMock).toHaveBeenCalledTimes(1)
+  expect(removeReleaseMock).toHaveBeenCalledWith(projectId, 'v-b')
 })
 
 test('restores overwritten GitLab releases instead of deleting them during rollback', async () => {

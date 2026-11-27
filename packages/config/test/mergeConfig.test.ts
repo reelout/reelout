@@ -4,7 +4,7 @@
 import { mergeConfig } from '@reelout/config'
 import { expect, test } from 'vitest'
 
-test('merges user config with default config', () => {
+test('overrides defaults with user config, treats undefined as fallback, and leaves inputs untouched', () => {
   const defaultConfig = {
     a: 1,
     b: 2,

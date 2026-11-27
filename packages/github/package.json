@@ -2,14 +2,21 @@
   "name": "@reelout/github",
   "version": "0.8.0",
   "description": "GitHub plugin for publishing releases from ReelOut release plans.",
+  "keywords": [
+    "release",
+    "versioning",
+    "github",
+    "releases",
+    "octokit"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/reelout/reelout.git",
     "directory": "packages/github"
   },
   "license": "MIT",
+  "sideEffects": false,
   "type": "module",
-  "imports": {},
   "exports": {
     "./package.json": {
       "default": "./package.json"
@@ -41,5 +48,8 @@
   },
   "engines": {
     "node": ">=24.15"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

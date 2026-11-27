@@ -14,6 +14,7 @@ import {
   type CompleteReleasePlan,
 } from './isCompleteReleasePlan'
 import { isJsonObject } from './isJsonObject'
+import { isCredentialsRejected } from './isCredentialsRejected'
 import { NOT_FOUND_PATTERN } from './probePublishedVersion'
 import { PLUGIN_NAME } from './PLUGIN_NAME'
 import { prepareAuth, type Env } from './prepareAuth'
@@ -31,12 +32,6 @@ import { INVALID_CREDENTIALS_MESSAGE } from './verifyAuth'
 export type PublishAccessVerdict = 'allowed' | 'denied' | 'unknown'
 
 /**
- * Match registry lookup errors that report rejected credentials.
- */
-const AUTH_REJECTED_PATTERN =
-  /E401|ENEEDAUTH|401 Unauthorized|Response Code: 401|Unable to authenticate|not logged in/i
-
-/**
  * Fail the release when a registry lookup rejects the configured
  * credentials.
  *
@@ -44,7 +39,7 @@ const AUTH_REJECTED_PATTERN =
  * @throws If the error reports rejected registry credentials
  */
 function assertCredentialsAccepted(error: unknown): void {
-  if (AUTH_REJECTED_PATTERN.test(String(formatError(error)))) {
+  if (isCredentialsRejected(error)) {
     throw new Error(INVALID_CREDENTIALS_MESSAGE, { cause: error })
   }
 }
@@ -330,6 +325,10 @@ async function fetchPackument(
 
     assertCredentialsAccepted(error)
 
+    context.logger.debug(
+      `Package metadata could not be fetched for "${name}": ${message}`
+    )
+
     return undefined
   }
 
@@ -457,6 +456,10 @@ async function resolveIdentity(
   } catch (error) {
     assertCredentialsAccepted(error)
 
+    context.logger.debug(
+      `Registry identity could not be resolved: ${formatError(error)}`
+    )
+
     identity = undefined
   }
 
@@ -497,6 +500,10 @@ async function queryNpmCli(
     if (check.npmCliSharesCredentials) {
       assertCredentialsAccepted(error)
     }
+
+    check.context.logger.debug(
+      `The npm CLI query "${args.join(' ')}" could not be run: ${formatError(error)}`
+    )
 
     return undefined
   }

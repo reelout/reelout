@@ -1,3 +1,4 @@
+*.log
 *.pem
 *.tsbuildinfo
 .DS_Store
@@ -7,8 +8,10 @@
 .cursor
 .deveco
 .env
-.env.local
+.env.*
 .idea
+.pnpm-store
+.vercel
 .workbuddy-ai
 .yarn
 coverage

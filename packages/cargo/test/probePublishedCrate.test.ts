@@ -27,9 +27,23 @@ test('reports published versions with their checksum', async () => {
   await expect(probePublishedCrate('a', '1.2.3', { index })).resolves.toEqual({
     status: 'published',
     cksum: 'checksum-new',
+    yanked: false,
   })
 
   expect(getRecords).toHaveBeenCalledWith('a')
+})
+
+test('reports yanked versions as published with their yanked flag', async () => {
+  getRecords.mockResolvedValue({
+    status: 'found',
+    records: [{ vers: '1.2.3', cksum: 'checksum-new', yanked: true }],
+  })
+
+  await expect(probePublishedCrate('a', '1.2.3', { index })).resolves.toEqual({
+    status: 'published',
+    cksum: 'checksum-new',
+    yanked: true,
+  })
 })
 
 test('reports absent versions', async () => {

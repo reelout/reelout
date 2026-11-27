@@ -8,6 +8,7 @@ import {
   readGitFile,
   resolveGitRevision,
 } from '#git'
+import type { EnsureGitTagOptions } from '#git'
 import type { Package, Tag } from '#types'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
@@ -24,11 +25,13 @@ import { verifyPackageTag } from './verifyPackageTag'
  *
  * @param cwd The current working directory
  * @param pkg The package configuration object
+ * @param options Dry-run and logging guards for the local tag cleanup
  * @returns The validated `Tag` object or null if validation fails
  */
 export async function discoverPackageTag(
   cwd: string,
-  pkg: Package
+  pkg: Package,
+  options?: EnsureGitTagOptions
 ): Promise<Tag | null> {
   if (pkg.tag) {
     return pkg.tag
@@ -64,7 +67,7 @@ export async function discoverPackageTag(
     return null
   }
 
-  if (!(await verifyPackageTag(cwd, pkg, expectedTagName))) {
+  if (!(await verifyPackageTag(cwd, pkg, expectedTagName, options))) {
     return null
   }
 

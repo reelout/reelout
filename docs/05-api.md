@@ -1,9 +1,16 @@
 # Programmatic API
 
-The `reelout` package re-exports APIs from `@reelout/cli`, `@reelout/config`,
-`@reelout/context`, and `@reelout/core`. Import integration plugins such as
-`@reelout/npm`, `@reelout/yarn`, `@reelout/cargo`, `@reelout/git`,
-`@reelout/github`, and `@reelout/gitlab` from their respective packages.
+This document is the single source of truth for the `reelout` root package's
+public API surface and is maintained by hand. The generated API reference
+(`pnpm exec typedoc`) covers the workspace packages only, so changes to what
+the root package re-exports must be reflected here.
+
+The `reelout` package re-exports a curated set of APIs from `@reelout/cli`,
+`@reelout/config`, `@reelout/context`, and `@reelout/core`. Import integration
+plugins such as `@reelout/npm`, `@reelout/yarn`, `@reelout/cargo`,
+`@reelout/git`, `@reelout/github`, and `@reelout/gitlab` from their respective
+packages, and import further building blocks directly from the package that
+provides them.
 
 ReelOut is ESM-only and requires Node.js >= 24.15.
 

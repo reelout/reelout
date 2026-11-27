@@ -141,6 +141,14 @@ const writeYarnBerryAmbientCredentials = (cwd: string): Promise<void> =>
     ].join('\n')
   )
 
+const permissionWarnings = (): string[] =>
+  logger.mock.calls.flatMap(([message]) =>
+    typeof message === 'string' &&
+    message.includes('Could not verify publish permission for')
+      ? [message]
+      : []
+  )
+
 const warnCalls = (): string[] =>
   logger.mock.calls.flatMap(([message]) =>
     typeof message === 'string' ? [message] : []
@@ -315,7 +323,7 @@ test('warns when the registry metadata omits maintainers', async () => {
     expect(verdicts.get(plan)).toBe('unknown')
 
     expect(
-      warnCalls().filter((message) =>
+      permissionWarnings().filter((message) =>
         message.includes(
           'Could not verify publish permission for "a@1.2.3": the registry will reject the publish if access is missing.'
         )
@@ -390,7 +398,7 @@ test('warns when the identity cannot be resolved for a new scoped package', asyn
     )
 
     expect(verdicts.get(plan)).toBe('unknown')
-    expect(warnCalls()).toHaveLength(1)
+    expect(permissionWarnings()).toHaveLength(1)
   })
 })
 
@@ -510,7 +518,7 @@ test('warns when the organization roster is valid JSON but neither an array nor 
     )
 
     expect(verdicts.get(plan)).toBe('unknown')
-    expect(warnCalls()).toHaveLength(1)
+    expect(permissionWarnings()).toHaveLength(1)
   })
 })
 
@@ -677,7 +685,7 @@ test('warns when the collaborator list cannot be read', async () => {
     expect(verdicts.get(plan)).toBe('unknown')
 
     expect(
-      warnCalls().filter((message) =>
+      permissionWarnings().filter((message) =>
         message.includes(
           'Could not verify publish permission for "@scope/pkg@1.2.3"'
         )
@@ -706,7 +714,7 @@ test('warns when the collaborator list is valid JSON but not an object', async (
     )
 
     expect(verdicts.get(plan)).toBe('unknown')
-    expect(warnCalls()).toHaveLength(1)
+    expect(permissionWarnings()).toHaveLength(1)
   })
 })
 
@@ -730,7 +738,7 @@ test('warns when the collaborator list cannot be parsed', async () => {
     )
 
     expect(verdicts.get(plan)).toBe('unknown')
-    expect(warnCalls()).toHaveLength(1)
+    expect(permissionWarnings()).toHaveLength(1)
   })
 })
 
@@ -755,7 +763,7 @@ test('warns when a write team member list is valid JSON but not an array', async
     )
 
     expect(verdicts.get(plan)).toBe('unknown')
-    expect(warnCalls()).toHaveLength(1)
+    expect(permissionWarnings()).toHaveLength(1)
   })
 })
 
@@ -901,7 +909,7 @@ test('warns when the registry metadata cannot be read', async () => {
     )
 
     expect(verdicts.get(plan)).toBe('unknown')
-    expect(warnCalls()).toHaveLength(1)
+    expect(permissionWarnings()).toHaveLength(1)
   })
 })
 
@@ -921,7 +929,7 @@ test('warns when the registry metadata cannot be parsed', async () => {
     )
 
     expect(verdicts.get(plan)).toBe('unknown')
-    expect(warnCalls()).toHaveLength(1)
+    expect(permissionWarnings()).toHaveLength(1)
   })
 })
 
@@ -941,7 +949,7 @@ test('warns when the registry metadata is valid JSON but not an object', async (
     )
 
     expect(verdicts.get(plan)).toBe('unknown')
-    expect(warnCalls()).toHaveLength(1)
+    expect(permissionWarnings()).toHaveLength(1)
   })
 })
 
@@ -964,7 +972,7 @@ test('warns when the identity lookup returns no username', async () => {
     )
 
     expect(verdicts.get(plan)).toBe('unknown')
-    expect(warnCalls()).toHaveLength(1)
+    expect(permissionWarnings()).toHaveLength(1)
   })
 })
 
@@ -987,7 +995,7 @@ test('warns for every package without running commands when only OIDC tokens are
     expect(execCommand).not.toHaveBeenCalled()
 
     expect(
-      warnCalls().filter((message) =>
+      permissionWarnings().filter((message) =>
         message.includes('Could not verify publish permission for')
       )
     ).toHaveLength(2)
@@ -1012,7 +1020,7 @@ test('warns without running commands when NPM_TOKEN and OIDC tokens are both ava
 
     expect(verdicts.get(plan)).toBe('unknown')
     expect(execCommand).not.toHaveBeenCalled()
-    expect(warnCalls()).toHaveLength(1)
+    expect(permissionWarnings()).toHaveLength(1)
   })
 })
 
@@ -1091,6 +1099,11 @@ test('stays silent for plans whose trusted publishing was already verified', asy
     context.cwd = cwd
     context.env = { NPM_ID_TOKEN: 'mock-id-token' }
 
+    await writeFile(
+      path.join(cwd, 'package.json'),
+      JSON.stringify({ name: 'a', version: '1.2.3' })
+    )
+
     const plan = createPlan({ name: 'a' })
 
     const verdicts = await verifyPublishAccess(
@@ -1111,6 +1124,11 @@ test('warns for plans missing from the verified trusted publishing set', async (
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd
     context.env = { NPM_ID_TOKEN: 'mock-id-token' }
+
+    await writeFile(
+      path.join(cwd, 'package.json'),
+      JSON.stringify({ name: 'a', version: '1.2.3' })
+    )
 
     const verified = createPlan({ name: 'verified-a' })
     const plan = createPlan({ name: 'a' })
@@ -1173,7 +1191,7 @@ test('warns without running commands when no registry credentials are available'
     )
 
     expect(verdicts.get(plan)).toBe('unknown')
-    expect(warnCalls()).toHaveLength(1)
+    expect(permissionWarnings()).toHaveLength(1)
     expect(execCommand).not.toHaveBeenCalled()
   })
 })
@@ -1676,7 +1694,7 @@ test('warns when Yarn Berry ambient credentials cannot authenticate the collabor
     expect(verdicts.get(plan)).toBe('unknown')
 
     expect(
-      warnCalls().filter((message) =>
+      permissionWarnings().filter((message) =>
         message.includes(
           'Could not verify publish permission for "@scope/pkg@1.2.3": the registry will reject the publish if access is missing.'
         )
@@ -1728,7 +1746,7 @@ Response Code: 404`
     expect(verdicts.get(plan)).toBe('unknown')
 
     expect(
-      warnCalls().filter((message) =>
+      permissionWarnings().filter((message) =>
         message.includes(
           'Could not verify publish permission for "@scope/new@1.2.3": the registry will reject the publish if access is missing.'
         )
@@ -1786,7 +1804,7 @@ test('warns when Yarn Berry ambient credentials take precedence over an injected
     expect(verdicts.get(plan)).toBe('unknown')
 
     expect(
-      warnCalls().filter((message) =>
+      permissionWarnings().filter((message) =>
         message.includes(
           'Could not verify publish permission for "@scope/pkg@1.2.3": the registry will reject the publish if access is missing.'
         )

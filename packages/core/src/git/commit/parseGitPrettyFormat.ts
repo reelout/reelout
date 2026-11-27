@@ -60,7 +60,10 @@ export function parseGitPrettyFormat(raw: string): GitLogEntry {
 
   if (!hash || !authorDate || !committerDate || typeof subject !== 'string') {
     throw new Error(
-      `The input "${colors.bold(raw)}" is not in the expected pretty format.`
+      `The input "${colors.bold(raw.slice(0, 200))}" is not in the expected pretty format.`,
+      {
+        cause: new Error(`Pretty-format payload length: ${raw.length}`),
+      }
     )
   }
 

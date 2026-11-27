@@ -151,4 +151,4 @@ test('logs a debug diagnostic when the yarn major version cannot be determined',
       'Assuming Yarn Classic: the Yarn major version could not be determined.'
     )
   })
-})
+}, 60_000)

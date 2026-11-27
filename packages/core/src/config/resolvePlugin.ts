@@ -32,7 +32,7 @@ export async function resolvePlugin(
   }
 
   if (typeof plugin === 'string') {
-    const require = createRequire(pathToFileURL(cwd))
+    const require = createRequire(pathToFileURL(`${cwd}/`))
     plugin = await import(require.resolve(plugin))
   }
 

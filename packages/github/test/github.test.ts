@@ -12,6 +12,7 @@ import plugin from '@reelout/github'
 import { beforeEach, expect, test, vi } from 'vitest'
 import {
   context,
+  createMockLogger,
   createMockRepository,
   logger,
   repository,
@@ -76,6 +77,7 @@ beforeEach(() => {
 })
 
 test('skips GitHub release creation when GITHUB_TOKEN is missing', async () => {
+  context.logger = createMockLogger(logger)
   context.repository = repository
 
   context.plans = [plan]
@@ -86,9 +88,6 @@ test('skips GitHub release creation when GITHUB_TOKEN is missing', async () => {
   expect(context.outcome?.status).toBe('success')
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
-      [
-        "GitHub releases will not be created: GITHUB_TOKEN is not set.",
-      ],
       [
         "Status: [32mSUCCESS[39m",
       ],
@@ -184,6 +183,7 @@ test('fails workflow execution when the GitHub token is invalid during dry-run',
 })
 
 test('skips GitHub publishing and stays inactive when repository context is unavailable', async () => {
+  context.logger = createMockLogger(logger)
   context.env = { GITHUB_TOKEN: 'token' }
 
   context.repository = null
@@ -243,6 +243,7 @@ test('verifies the GitHub token during dry-run mode without creating releases', 
 })
 
 test('previews the GitHub release skip during dry-run mode when GITHUB_TOKEN is missing', async () => {
+  context.logger = createMockLogger(logger)
   context.dryRun = true
 
   context.repository = repository
@@ -254,9 +255,6 @@ test('previews the GitHub release skip during dry-run mode when GITHUB_TOKEN is 
   expect(Octokit).not.toHaveBeenCalled()
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
-      [
-        "GitHub releases will not be created: GITHUB_TOKEN is not set.",
-      ],
       [
         "Status: [32mSUCCESS[39m [33m(dry run)[39m",
       ],
@@ -431,4 +429,70 @@ test('deletes created GitHub releases when a subsequent plugin fails', async () 
     release_id: 42,
   })
   expect(updateRelease).not.toHaveBeenCalled()
+})
+
+test('rolls back created GitHub releases when a later release creation fails mid-loop', async () => {
+  context.env = { GITHUB_TOKEN: 'token' }
+
+  context.repository = repository
+
+  context.plans = [
+    createReleasePlan('a', 'a', { name: 'a@1.0.0', message: 'Notes for a' }),
+    createReleasePlan('b', 'b', { name: 'b@1.0.0', message: 'Notes for b' }),
+  ]
+
+  getReleaseByTag
+    .mockRejectedValueOnce(notFound())
+    .mockRejectedValueOnce(notFound())
+    .mockResolvedValueOnce({ data: { id: 42 } })
+
+  createRelease
+    .mockResolvedValueOnce({ data: { id: 42 } })
+    .mockRejectedValueOnce(new Error('Release creation failed'))
+
+  await expect(executeReleaseWorkflow(context, [plugin()])).rejects.toThrow(
+    'Release creation failed'
+  )
+
+  expect(createRelease).toHaveBeenCalledTimes(2)
+  expect(deleteRelease).toHaveBeenCalledTimes(1)
+  expect(deleteRelease).toHaveBeenCalledWith({
+    owner: 'mock-owner',
+    repo: 'mock-repo',
+    release_id: 42,
+  })
+  expect(updateRelease).not.toHaveBeenCalled()
+})
+
+test('logs a GitHub release rollback failure without masking the original error', async () => {
+  context.env = { GITHUB_TOKEN: 'token' }
+
+  context.repository = repository
+
+  context.plans = [plan]
+
+  getReleaseByTag
+    .mockRejectedValueOnce(notFound())
+    .mockResolvedValueOnce({ data: { id: 42 } })
+
+  deleteRelease.mockRejectedValue(new Error('Deletion failed'))
+
+  const plugins = [
+    plugin(),
+    {
+      name: 'test',
+      version: '1.0.0',
+      publish: () => {
+        throw new Error('Something went wrong')
+      },
+    },
+  ]
+
+  await expect(executeReleaseWorkflow(context, plugins)).rejects.toThrow(
+    'Something went wrong'
+  )
+
+  expect(logger.mock.calls).toContainEqual([
+    'A GitHub release could not be rolled back: Deletion failed',
+  ])
 })

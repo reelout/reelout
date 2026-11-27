@@ -15,10 +15,12 @@ const BANNED_KEYS = ['__proto__', 'constructor', 'prototype']
  * - Backslash escapes are supported for `{`, `}`, `\`, and `.` inside tokens.
  * - Tokens that reference banned keys (`__proto__`, `constructor`, `prototype`)
  *   are left unexpanded to avoid prototype pollution.
- * - Only own properties are followed when resolving paths; if any step is
- *   missing, the original token text is preserved.
+ * - Only own properties are followed when resolving paths; when any step is
+ *   missing, the token is preserved with its escape sequences already
+ *   resolved, so an unresolved `{a\.b}` renders as `{a.b}`.
  * - Resolved non-object, non-null values are stringified and inserted.
- * - Unclosed tokens and a trailing backslash are preserved verbatim.
+ * - Unclosed tokens keep their opening brace and resolved body; a trailing
+ *   backslash is emitted as-is.
  *
  * @param template Template string containing placeholders like `{user.name}`
  * @param data Object used to resolve placeholder paths

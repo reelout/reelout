@@ -313,6 +313,33 @@ test('forwards the strict flag into the context options when the command action 
   expect(createContext.mock.calls[1]?.[0]).toMatchObject({ strict: true })
 })
 
+test('forwards the filter patterns into the context options when the command action runs', async () => {
+  resolveConfig.mockResolvedValue({ plugins: [] })
+
+  createContext.mockResolvedValue({})
+
+  const program = await createProgram(options)
+
+  await program.parseAsync(['node', 'test'])
+
+  expect(createContext.mock.calls).toHaveLength(1)
+  expect(createContext.mock.calls[0]?.[0]).not.toHaveProperty('filter')
+
+  await program.parseAsync([
+    'node',
+    'test',
+    '--filter',
+    '@scope/pkg-*',
+    '--filter',
+    '!@scope/internal',
+  ])
+
+  expect(createContext.mock.calls).toHaveLength(2)
+  expect(createContext.mock.calls[1]?.[0]).toMatchObject({
+    filter: ['@scope/pkg-*', '!@scope/internal'],
+  })
+})
+
 test('enables debug option when --debug flag is provided', async () => {
   resolveConfig.mockResolvedValue({ plugins: [] })
 

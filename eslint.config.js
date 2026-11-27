@@ -9,10 +9,6 @@ export default defineConfig([
     ignores: ['**/coverage', '**/dist', '**/generated'],
   },
   {
-    files: ['**/*.cjs'],
-    languageOptions: { globals: globals.commonjs },
-  },
-  {
     languageOptions: { globals: globals.node },
   },
 

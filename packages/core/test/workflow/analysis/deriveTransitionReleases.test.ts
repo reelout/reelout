@@ -12,7 +12,6 @@ function getBumpedVersions(
     from: plan.package.version,
     to: bumpVersion({
       version: plan.package.version,
-      private: plan.package.private,
       release: plan.release?.type,
       transition: plan.release?.transition,
       identifier: args[1],

@@ -106,7 +106,7 @@ test('prefers ambient registry credentials over the NPM_TOKEN fallback', async (
   })
 })
 
-test('falls back to NPM_TOKEN bearer credentials without ambient credentials', async () => {
+test('falls back to NPM_TOKEN when the tarball is served by the publish registry', async () => {
   context.env = { NPM_TOKEN: 'mock-npm-token' }
 
   mockSuccessfulResponse('published-tarball')
@@ -204,6 +204,24 @@ test('downloads without credentials when the tarball URL is unparseable', async 
   mockSuccessfulResponse('published-tarball')
 
   await downloadPublishedTarball(context, plan, npm, 'not-a-registry-url')
+
+  expect(fetchMock.mock.calls[0]?.[1]).toEqual({
+    headers: {},
+    signal: undefined,
+  })
+})
+
+test('sends no NPM_TOKEN when the tarball is served by a third-party host', async () => {
+  context.env = { NPM_TOKEN: 'mock-npm-token' }
+
+  mockSuccessfulResponse('published-tarball')
+
+  await downloadPublishedTarball(
+    context,
+    plan,
+    npm,
+    'https://npm.pkg.github.com/a/-/a-1.2.3.tgz'
+  )
 
   expect(fetchMock.mock.calls[0]?.[1]).toEqual({
     headers: {},

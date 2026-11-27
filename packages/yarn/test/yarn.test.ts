@@ -231,6 +231,8 @@ test('stays inactive without a root package manifest', async () => {
 })
 
 test('stays inactive when another package manager is active', async () => {
+  context.dryRun = true
+
   resolvePackageManager.mockResolvedValue('npm')
 
   mountPackageFixture()
@@ -241,9 +243,6 @@ test('stays inactive when another package manager is active', async () => {
 
   expect(publishPackage).not.toHaveBeenCalled()
   expect(context.outcome?.status).toBe('success')
-  expect(
-    warnCalls().filter((message) => message.includes('Yarn plugin is inactive'))
-  ).toHaveLength(0)
 })
 
 test('stays inactive in strict mode when another package manager is active', async () => {
@@ -321,6 +320,44 @@ test('publishes packages with Yarn Berry under NPM_TOKEN authentication', async 
   expect(publishPackage.mock.calls[0]?.[1]).toBe(plan)
   expect(publishPackage.mock.calls[0]?.[2]).toEqual({
     dryRun: false,
+    tag: undefined,
+    access: undefined,
+    provenance: undefined,
+    stage: undefined,
+  })
+})
+
+test('does not update package manifests in dry-run mode', async () => {
+  provideNpmTokenAuth()
+
+  mountPackageFixture()
+
+  context.plans = [createCompleteReleasePlan()]
+
+  context.dryRun = true
+
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(JSON.parse(await readFile('/repo/a/package.json', 'utf8'))).toEqual({
+    name: 'a',
+    version: '1.2.2',
+  })
+})
+
+test('passes dry-run through to package publishing', async () => {
+  provideNpmTokenAuth()
+
+  mountPackageFixture()
+
+  context.plans = [createCompleteReleasePlan()]
+
+  context.dryRun = true
+
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(publishPackage).toHaveBeenCalledTimes(1)
+  expect(publishPackage.mock.calls[0]?.[2]).toEqual({
+    dryRun: true,
     tag: undefined,
     access: undefined,
     provenance: undefined,

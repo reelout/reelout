@@ -189,9 +189,6 @@ test('skips npm publishing and GitHub releases while completing the release when
             "[33mPackages will not be published: NPM_TOKEN is required for NPM authentication.[39m",
           ],
           [
-            "GitHub releases will not be created: GITHUB_TOKEN is not set.",
-          ],
-          [
             "Status: [32mSUCCESS[39m",
           ],
           [
@@ -306,9 +303,6 @@ test('previews missing credentials without side effects in dry-run', async () =>
         [
           [
             "[33mPackages will not be published: NPM_TOKEN is required for NPM authentication.[39m",
-          ],
-          [
-            "GitHub releases will not be created: GITHUB_TOKEN is not set.",
           ],
           [
             "Status: [32mSUCCESS[39m [33m(dry run)[39m",

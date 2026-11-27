@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Fai
 
 import { resolvePlugin } from '@reelout/core'
-import { writeFile } from 'node:fs/promises'
+import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { temporaryDirectoryTask } from 'tempy'
 import { expect, test } from 'vitest'
@@ -165,5 +165,52 @@ test('returns plugin object when given options tuple with plain object export', 
     const plugin = await resolvePlugin(cwd, [filePath, { debug: true }])
 
     expect(plugin).toEqual({ name: 'plugin' })
+  })
+})
+
+test('resolves bare package specifiers relative to the working directory', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    await writeFile(
+      path.join(cwd, 'package.json'),
+      JSON.stringify({ type: 'module' })
+    )
+
+    const pluginDir = path.join(cwd, 'node_modules', 'my-plugin')
+
+    await mkdir(pluginDir, { recursive: true })
+
+    await writeFile(
+      path.join(pluginDir, 'package.json'),
+      JSON.stringify({ name: 'my-plugin', type: 'module', main: 'index.js' })
+    )
+
+    await writeFile(
+      path.join(pluginDir, 'index.js'),
+      `export default { name: 'my-plugin' }`
+    )
+
+    expect(await resolvePlugin(cwd, 'my-plugin')).toEqual({
+      name: 'my-plugin',
+    })
+  })
+})
+
+test('resolves relative module specifiers relative to the working directory', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    await writeFile(
+      path.join(cwd, 'package.json'),
+      JSON.stringify({ type: 'module' })
+    )
+
+    await mkdir(path.join(cwd, 'plugins'))
+
+    await writeFile(
+      path.join(cwd, 'plugins', 'my-plugin.js'),
+      `export default { name: 'my-plugin' }`
+    )
+
+    expect(await resolvePlugin(cwd, './plugins/my-plugin.js')).toEqual({
+      name: 'my-plugin',
+    })
   })
 })

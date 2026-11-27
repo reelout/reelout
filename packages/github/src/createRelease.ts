@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
-import { Octokit } from '@octokit/rest'
 import type { GitRepository, ReleaseContext, ReleasePlan } from '@reelout/core'
+import { createOctokit } from './createOctokit'
 import { deleteRelease } from './deleteRelease'
 import { fetchRelease } from './fetchRelease'
 
@@ -38,11 +38,7 @@ export async function createRelease(
 
   const { name: tagName, message } = plan.release.tag
 
-  /* istanbul ignore next */
-  const octokit = new Octokit({
-    auth: token,
-    log: { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} },
-  })
+  const octokit = createOctokit(token)
 
   const existing = await fetchRelease(octokit, repository, tagName)
 

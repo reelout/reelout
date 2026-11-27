@@ -32,8 +32,6 @@ import {
   verifyTrustedPublishing,
 } from './verifyTrustedPublishing'
 
-export { PLUGIN_NAME }
-
 /** The verified registry credentials of a release. */
 interface RegistryAuth {
   token: string
@@ -72,7 +70,8 @@ export interface PluginOptions {
  *   root `Cargo.toml` leave the plugin inactive.
  * - `discover`: Discovers the crates of the Cargo workspace, filters them
  *   against the `filter` patterns, and loads crate metadata into context.
- * - `write`: Bumps crate versions and internal dependency requirements in
+ * - `write`: Skips manifest updates when the plugin is inactive. Bumps
+ *   crate versions and internal dependency requirements in
  *   `Cargo.toml` files (skipped in dry-run) and refreshes `Cargo.lock`
  *   with `cargo update --workspace` when a manifest changed.
  * - `publish`: Verifies the authenticated registry user may publish each
@@ -112,7 +111,10 @@ const cargo = (options: PluginOptions = {}): ReleasePlugin => {
 
       active = true
 
-      const repo = await resolveGitRepositoryFromCargoManifest(context.cwd)
+      const repo = await resolveGitRepositoryFromCargoManifest(
+        context.cwd,
+        context
+      )
 
       context.repository = repo ?? context.repository
 
@@ -187,6 +189,10 @@ const cargo = (options: PluginOptions = {}): ReleasePlugin => {
       return next(context)
     },
     write: async (context, next) => {
+      if (!active) {
+        return next(context)
+      }
+
       if (context.dryRun) {
         context.logger.debug('[DRY RUN] Cargo manifests will not be updated.')
       } else {
@@ -230,12 +236,22 @@ const cargo = (options: PluginOptions = {}): ReleasePlugin => {
       let publishToken: string | undefined
 
       if (publishable.length > 0) {
+        if (context.dryRun) {
+          context.logger.debug(
+            '[DRY RUN] Crates will still be probed against the registry and packaged locally, but nothing will be uploaded.'
+          )
+        }
+
         if (auth) {
           await verifyPublishAccess(context, publishable, {
             token: auth.token,
             login: auth.login,
             index,
           })
+        } else if (context.dryRun) {
+          context.logger.debug(
+            '[DRY RUN] The trusted-publishing token exchange will not be performed.'
+          )
         } else {
           publishToken = await verifyTrustedPublishing(context)
         }

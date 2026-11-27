@@ -30,8 +30,6 @@ import { verifyPublishAccess } from './verifyPublishAccess'
 import { verifyAuth } from './verifyAuth'
 import { verifyTrustedPublishing } from './verifyTrustedPublishing'
 
-export { PLUGIN_NAME }
-
 export interface PluginOptions {
   workspace?: Partial<Workspace>
   access?: PublishAccess | null | undefined

@@ -51,6 +51,15 @@ export function execCommand(
   const env: NodeJS.ProcessEnv = {
     HOME: process.env.HOME,
     PATH: process.env.PATH,
+    SSH_AUTH_SOCK: process.env.SSH_AUTH_SOCK,
+    GIT_SSH: process.env.GIT_SSH,
+    GIT_SSH_COMMAND: process.env.GIT_SSH_COMMAND,
+    http_proxy: process.env.http_proxy,
+    https_proxy: process.env.https_proxy,
+    no_proxy: process.env.no_proxy,
+    HTTP_PROXY: process.env.HTTP_PROXY,
+    HTTPS_PROXY: process.env.HTTPS_PROXY,
+    NO_PROXY: process.env.NO_PROXY,
     ...options.env,
   }
 

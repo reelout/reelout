@@ -87,6 +87,31 @@ vi.mock(
   }
 )
 
+/**
+ * Deterministic git timestamps (and therefore commit hashes) are injected in
+ * two places, and both are order-coupled. Read this before pinning a hash or
+ * a date in an inline snapshot.
+ *
+ * 1. `execCommand` (see `packages/core/src/util/execCommand.ts`) keeps a
+ *    module-level counter that stamps every mutating `git` command (`commit`,
+ *    `tag`, `cherry-pick`, `rebase`, `merge`, `revert`, `commit-tree`,
+ *    `mktag`) with a deterministic author/committer date, starting at
+ *    2026-01-01T00:00:00Z and advancing one second per command. The counter is
+ *    never reset within a test file, so the date — and with it the commit
+ *    hash — of the Nth mutating command depends on every mutating command
+ *    issued earlier in the same file. Inserting, removing, or reordering a
+ *    test mid-file shifts every later date by one second per changed command,
+ *    and the resulting snapshot diff shows only unexplainable hash churn.
+ * 2. `createMockCommit` below keeps its own `now` cursor for in-memory
+ *    commits. It is reset in `beforeEach`, so it only couples the dates of
+ *    commits created within a single test.
+ *
+ * Guidance: prefer projecting large snapshots down to subjects/headers, the
+ * hash length, or the presence of the 2026-01-01 base date. Pin full hashes
+ * and dates only where they are the behavior under test (for example in
+ * `execCommand`, `createGitCommit`, `getCurrentGitCommit`, or
+ * `resolveGitRevision` tests).
+ */
 let now: number
 
 export async function createMockCommit(

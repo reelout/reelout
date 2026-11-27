@@ -16,10 +16,11 @@ export interface ProbePublishedCrateOptions {
  *
  * - `absent`: the registry does not hold the crate version.
  * - `published`: the registry holds the crate version, along with the
- *   checksum of its published `.crate` file.
+ *   checksum of its published `.crate` file and whether the version is
+ *   yanked.
  */
 export type PublishedCrateStatus =
-  { status: 'absent' } | { status: 'published'; cksum: string }
+  { status: 'absent' } | { status: 'published'; cksum: string; yanked: boolean }
 
 /**
  * Probe the sparse index for a crate version.
@@ -54,5 +55,9 @@ export async function probePublishedCrate(
     return { status: 'absent' }
   }
 
-  return { status: 'published', cksum: record.cksum }
+  return {
+    status: 'published',
+    cksum: record.cksum,
+    yanked: record.yanked,
+  }
 }

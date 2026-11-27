@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Fai
 
 import { formatFile } from '#util'
+import type { ConsolaInstance } from 'consola/core'
 import { fromMarkdown } from 'mdast-util-from-markdown'
 import { toMarkdown } from 'mdast-util-to-markdown'
 import fs from 'node:fs/promises'
@@ -16,11 +17,13 @@ const defaultChangelogTitle = 'Changelog'
  *
  * @param filePath Path to the changelog file
  * @param revision Changelog content to prepend
+ * @param logger Optional logger that receives formatting failures
  * @returns Promise that resolves when the changelog is written
  */
 export async function prependChangelog(
   filePath: string,
-  revision: string
+  revision: string,
+  logger?: ConsolaInstance
 ): Promise<void> {
   let content = ''
 
@@ -53,7 +56,7 @@ export async function prependChangelog(
 
   content = toMarkdown(root)
 
-  content = await formatFile(filePath, content)
+  content = await formatFile(filePath, content, logger)
 
   await fs.writeFile(filePath, content)
 }

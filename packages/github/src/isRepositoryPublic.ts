@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
-import { Octokit } from '@octokit/rest'
 import type { GitRepository } from '@reelout/core'
+import { createOctokit } from './createOctokit'
 
 /**
  * Check if the target GitHub repository is public.
@@ -18,11 +18,7 @@ export async function isRepositoryPublic(
   token: string,
   repository: GitRepository
 ): Promise<boolean> {
-  /* istanbul ignore next */
-  const octokit = new Octokit({
-    auth: token,
-    log: { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} },
-  })
+  const octokit = createOctokit(token)
 
   const { data } = await octokit.rest.repos.get({
     owner: repository.owner,

@@ -88,7 +88,9 @@ Resolution rules:
   user's project as dependencies or workspace packages.
 - The resolved module must load through Node's ESM `import()`. A
   string-referenced module must default-export a plugin object or factory;
-  its default export is unwrapped during resolution.
+  its default export is unwrapped during resolution. A module whose default
+  export is neither a function nor an object with a string `name` is
+  silently ignored, so keep plugin shapes valid.
 - To use a local file directly, import it in the config and pass the plugin
   object or factory.
 - Tuple entries pass their options to a factory. `false`, `null`, and
@@ -123,9 +125,9 @@ const middleware = async (context, next) => {
 ```
 
 - On the successful path, call `next(context)` exactly once. Omitting it
-  short-circuits the remaining hooks and phases without throwing, so the
-  workflow can still report success. Repeated calls are no-ops; do not rely
-  on them.
+  short-circuits the remaining middleware and skips subsequent phases
+  without throwing, so the workflow can still report success; `finalize`
+  still runs. Repeated calls are no-ops; do not rely on them.
 - Higher priority values run first. Bare middleware uses
   `Priority.Normal` (`0`); use `{ priority, middleware }` to set another
   priority.
@@ -198,16 +200,17 @@ Rules:
 
 Middleware receives a mutable `ReleaseContext`. Commonly used fields:
 
-| Fields                                                     | Meaning                                                                                                   |
-| ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `cwd`, `env`, `signal`                                     | Working directory, environment, and optional abort signal                                                 |
-| `logger`                                                   | `ConsolaInstance`; use `logger.debug` for verbose details                                                 |
-| `repository`                                               | `GitRepository \| null`; check before making host API calls                                               |
-| `ref`, `commit`, `author`                                  | Current branch, HEAD commit, and release commit author                                                    |
-| `dryRun`                                                   | Whether the workflow must avoid real side effects                                                         |
-| `packages`, `plans`                                        | Resolved packages and their `ReleasePlan`s; `plan.release` is `null` until a release is derived and built |
-| `outcome`                                                  | `ReleaseOutcome \| null`; set before `finalize`, with status, error, and failing phase                    |
-| `type`, `versionQualifier`, `releaseChannel`, `allowEmpty` | Resolved CLI overrides                                                                                    |
+| Fields                                                               | Meaning                                                                                                   |
+| -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `cwd`, `env`, `signal`                                               | Working directory, environment, and optional abort signal                                                 |
+| `logger`                                                             | `ConsolaInstance`; use `logger.debug` for verbose details                                                 |
+| `repository`                                                         | `GitRepository \| null`; check before making host API calls                                               |
+| `ref`, `commit`, `author`                                            | Current branch, HEAD commit, and release commit author                                                    |
+| `dryRun`                                                             | Whether the workflow must avoid real side effects                                                         |
+| `strict`                                                             | Whether missing credentials must throw instead of skipping (`--strict`)                                   |
+| `packages`, `plans`                                                  | Resolved packages and their `ReleasePlan`s; `plan.release` is `null` until a release is derived and built |
+| `outcome`                                                            | `ReleaseOutcome \| null`; set before `finalize`, with status, error, and failing phase                    |
+| `type`, `versionQualifier`, `releaseChannel`, `allowEmpty`, `filter` | Resolved CLI overrides                                                                                    |
 
 Apply these rules to all middleware:
 

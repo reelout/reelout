@@ -6,11 +6,7 @@ import { structUtils } from '@yarnpkg/core'
 import { npmConfigUtils } from '@yarnpkg/plugin-npm'
 import type { PackageManagerInfo } from './inspectPackageManager'
 import { loadConfig } from './loadConfig'
-import {
-  loadYarnConfig,
-  type YarnRegistryConfig,
-  type YarnScopeConfig,
-} from './loadYarnConfig'
+import { loadYarnConfig, type YarnConfigurationSection } from './loadYarnConfig'
 import { normalizeRegistry } from './normalizeRegistry'
 import {
   DEFAULT_REGISTRY,
@@ -34,7 +30,7 @@ import {
  */
 export async function hasAuth(
   context: ReleaseContext,
-  pkg: Package,
+  pkg: Pick<Package, 'location' | 'name'>,
   packageManager: Partial<PackageManagerInfo>
 ): Promise<boolean> {
   const registry = await resolvePublishRegistry(context, pkg, packageManager)
@@ -44,7 +40,9 @@ export async function hasAuth(
   }
 
   if (packageManager.isYarnBerry) {
-    const hasTokenOrIdent = (config: YarnRegistryConfig | null | undefined) => {
+    const hasTokenOrIdent = (
+      config: YarnConfigurationSection | null | undefined
+    ) => {
       return Boolean(config?.get('npmAuthToken') || config?.get('npmAuthIdent'))
     }
 
@@ -55,7 +53,7 @@ export async function hasAuth(
     const scopeConfiguration = npmConfigUtils.getScopeConfiguration(
       ident ? ident.scope : null,
       { configuration }
-    ) as YarnScopeConfig | null
+    )
 
     if (hasTokenOrIdent(scopeConfiguration)) {
       return true
@@ -64,7 +62,7 @@ export async function hasAuth(
     const registryConfiguration = npmConfigUtils.getRegistryConfiguration(
       registry,
       { configuration }
-    ) as YarnRegistryConfig | null
+    )
 
     if (hasTokenOrIdent(registryConfiguration)) {
       return true

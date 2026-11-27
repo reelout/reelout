@@ -150,6 +150,24 @@ specifiers from the working directory first, then from the context of
 See the [Plugins guide](./04-plugins.md) for plugin authoring and registration
 details.
 
+### Plugin options
+
+Tuple entries pass an options object to the plugin factory. The built-in
+registry plugins accept the following options:
+
+| Plugin           | Option       | Effect                                                                                                                                           |
+| ---------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `@reelout/npm`   | `workspace`  | Overrides workspace discovery: `entry` sets the root manifest directory (default `.`), `members` replaces the discovered workspace member globs. |
+| `@reelout/npm`   | `access`     | Sets the npm publish access (`public` or `restricted`).                                                                                          |
+| `@reelout/npm`   | `provenance` | Publishes with npm provenance attestation (`--provenance`).                                                                                      |
+| `@reelout/npm`   | `stage`      | Publishes through npm staged publishing (`npm stage publish`) instead of a direct publish.                                                       |
+| `@reelout/yarn`  | `workspace`  | Overrides Yarn workspace discovery the same way as the npm plugin.                                                                               |
+| `@reelout/yarn`  | `access`     | Sets the publish access for Yarn publishes.                                                                                                      |
+| `@reelout/yarn`  | `provenance` | Publishes with npm provenance attestation.                                                                                                       |
+| `@reelout/yarn`  | `stage`      | Publishes through staged publishing where the package manager supports it; unsupported under Yarn Classic.                                       |
+| `@reelout/cargo` | `allowDirty` | Passes `--allow-dirty` to `cargo publish` so uncommitted changes do not block the publish.                                                       |
+| `@reelout/cargo` | `noVerify`   | Passes `--no-verify` to skip the verification build before the crate is published.                                                               |
+
 ## Defaults and merging
 
 ReelOut's default configuration targets monorepos hosted on GitHub or GitLab:

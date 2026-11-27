@@ -86,6 +86,7 @@ test('uses default ttl when none is provided', () => {
 
   cache.set('defaultKey', 'defaultValue')
 
+  // The default TTL is 60 seconds; this is 1 ms before the boundary.
   vi.advanceTimersByTime(59_999)
 
   expect(cache.has('defaultKey')).toBe(true)

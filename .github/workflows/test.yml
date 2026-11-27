@@ -17,13 +17,16 @@ env:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ['24.15', 'lts/*']
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
-          node-version: 'lts/*'
+          node-version: ${{ matrix.node-version }}
           cache: 'pnpm'
-      - run: pnpm install
+      - run: pnpm install --frozen-lockfile
       - run: pnpm validate
       - uses: codecov/codecov-action@v7

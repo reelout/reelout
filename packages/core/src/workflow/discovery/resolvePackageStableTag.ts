@@ -3,8 +3,8 @@
 
 import { DEFAULT_CHANGELOG_FILE } from '#config'
 import { generateGitTagName, getGitTagMessage } from '#git'
+import type { EnsureGitTagOptions } from '#git'
 import type { Package, Tag } from '#types'
-import assert from 'node:assert'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import semver from 'semver'
@@ -18,15 +18,21 @@ import { verifyPackageTag } from './verifyPackageTag'
  * semver order. Ignores prerelease versions unless transitioning across major
  * or prerelease boundaries, and verifies that the matching Git tag exists.
  *
+ * Stable releases below `1.0.0` are only considered when the preceding
+ * version was a prerelease, so a repository with exclusively 0.x releases
+ * resolves to no stable tag.
+ *
  * @param cwd Absolute path to the root working directory
  * @param pkg Package configuration object
+ * @param options Dry-run and logging guards for the local tag cleanup
  * @returns Verified tag metadata object or `null` if no stable tag is resolved
  * @throws If a version is invalid, versions are not in strict descending
  * order, or the corresponding Git tag is missing
  */
 export async function resolvePackageStableTag(
   cwd: string,
-  pkg: Package
+  pkg: Package,
+  options?: EnsureGitTagOptions
 ): Promise<Tag | null> {
   const changelogFile = pkg.changelogFile || DEFAULT_CHANGELOG_FILE
 
@@ -51,10 +57,9 @@ export async function resolvePackageStableTag(
   for (const version of iterateChangelogVersions(changelogContent)) {
     const currentVersion = semver.parse(version)
 
-    assert(
-      currentVersion,
-      `Version "${version}" is not a valid semantic version.`
-    )
+    if (!currentVersion) {
+      throw new Error(`Version "${version}" is not a valid semantic version.`)
+    }
 
     if (precedingVersion && semver.gte(currentVersion, precedingVersion)) {
       throw new Error(
@@ -69,7 +74,7 @@ export async function resolvePackageStableTag(
     ) {
       const tagName = generateGitTagName(pkg.entry, pkg.name, version)
 
-      if (!(await verifyPackageTag(cwd, pkg, tagName))) {
+      if (!(await verifyPackageTag(cwd, pkg, tagName, options))) {
         throw new Error(
           `Git tag "${tagName}" is not associated with package "${pkg.name ?? ''}" in directory "${pkg.location}".`
         )

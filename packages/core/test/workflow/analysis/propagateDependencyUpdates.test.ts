@@ -24,6 +24,16 @@ vi.mock(import('@reelout/core/git/history/mergeGitHistory'), () => ({
   mergeGitHistory,
 }))
 
+async function getPropagatedPlans(
+  ...args: Parameters<typeof propagateDependencyUpdates>
+) {
+  return (await propagateDependencyUpdates(...args)).map((plan) => ({
+    name: plan.package.name,
+    type: plan.release?.type,
+    history: plan.history.map((commit) => commit.hash),
+  }))
+}
+
 test('propagates patch release to dependents', async () => {
   const plans = [
     {
@@ -48,138 +58,38 @@ test('propagates patch release to dependents', async () => {
     },
   ] as ReleasePlan[]
 
-  expect(await propagateDependencyUpdates(context.cwd, plans))
-    .toMatchInlineSnapshot(`
-      [
-        {
-          "history": [
-            {
-              "authorDate": "2026-01-01T00:00:00.000Z",
-              "body": null,
-              "committerDate": "2026-01-01T00:00:01.000Z",
-              "files": [],
-              "footer": null,
-              "hash": "c1",
-              "header": "feat: add something",
-              "mentions": [],
-              "merge": null,
-              "notes": [],
-              "parent": [],
-              "references": [],
-              "revert": null,
-              "scope": null,
-              "subject": "add something",
-              "trailers": [],
-              "type": "feat",
-            },
-          ],
-          "package": {
-            "dependencies": [],
-            "name": "a",
-          },
-          "release": {
-            "type": "minor",
-          },
-        },
-        {
-          "history": [
-            {
-              "authorDate": "2026-01-01T00:00:00.000Z",
-              "body": null,
-              "committerDate": "2026-01-01T00:00:01.000Z",
-              "files": [],
-              "footer": null,
-              "hash": "c1",
-              "header": "feat: add something",
-              "mentions": [],
-              "merge": null,
-              "notes": [],
-              "parent": [],
-              "references": [],
-              "revert": null,
-              "scope": null,
-              "subject": "add something",
-              "trailers": [],
-              "type": "feat",
-            },
-          ],
-          "package": {
-            "dependencies": [
-              "d",
-            ],
-            "name": "b",
-          },
-          "release": {
-            "type": "patch",
-          },
-        },
-        {
-          "history": [
-            {
-              "authorDate": "2026-01-01T00:00:00.000Z",
-              "body": null,
-              "committerDate": "2026-01-01T00:00:01.000Z",
-              "files": [],
-              "footer": null,
-              "hash": "c1",
-              "header": "feat: add something",
-              "mentions": [],
-              "merge": null,
-              "notes": [],
-              "parent": [],
-              "references": [],
-              "revert": null,
-              "scope": null,
-              "subject": "add something",
-              "trailers": [],
-              "type": "feat",
-            },
-          ],
-          "package": {
-            "dependencies": [
-              "a",
-              "b",
-            ],
-            "name": "c",
-          },
-          "release": {
-            "type": "patch",
-          },
-        },
-        {
-          "history": [
-            {
-              "authorDate": "2026-01-01T00:00:00.000Z",
-              "body": null,
-              "committerDate": "2026-01-01T00:00:01.000Z",
-              "files": [],
-              "footer": null,
-              "hash": "c1",
-              "header": "feat: add something",
-              "mentions": [],
-              "merge": null,
-              "notes": [],
-              "parent": [],
-              "references": [],
-              "revert": null,
-              "scope": null,
-              "subject": "add something",
-              "trailers": [],
-              "type": "feat",
-            },
-          ],
-          "package": {
-            "dependencies": [
-              "c",
-            ],
-            "name": "d",
-          },
-          "release": {
-            "type": "patch",
-          },
-        },
-      ]
-    `)
+  expect(await getPropagatedPlans(context.cwd, plans)).toMatchInlineSnapshot(`
+    [
+      {
+        "history": [
+          "c1",
+        ],
+        "name": "a",
+        "type": "minor",
+      },
+      {
+        "history": [
+          "c1",
+        ],
+        "name": "b",
+        "type": "patch",
+      },
+      {
+        "history": [
+          "c1",
+        ],
+        "name": "c",
+        "type": "patch",
+      },
+      {
+        "history": [
+          "c1",
+        ],
+        "name": "d",
+        "type": "patch",
+      },
+    ]
+  `)
 })
 
 test('propagates patch releases even with missing package names', async () => {
@@ -221,229 +131,56 @@ test('propagates patch releases even with missing package names', async () => {
     },
   ] as ReleasePlan[]
 
-  expect(await propagateDependencyUpdates(context.cwd, plans))
-    .toMatchInlineSnapshot(`
-      [
-        {
-          "history": [
-            {
-              "authorDate": "2026-01-01T00:00:00.000Z",
-              "body": null,
-              "committerDate": "2026-01-01T00:00:01.000Z",
-              "files": [],
-              "footer": null,
-              "hash": "c1",
-              "header": "feat: add something",
-              "mentions": [],
-              "merge": null,
-              "notes": [],
-              "parent": [],
-              "references": [],
-              "revert": null,
-              "scope": null,
-              "subject": "add something",
-              "trailers": [],
-              "type": "feat",
-            },
-          ],
-          "package": {
-            "dependencies": [
-              "a",
-              "c",
-            ],
-            "name": undefined,
-          },
-          "release": {
-            "type": "patch",
-          },
-        },
-        {
-          "history": [
-            {
-              "authorDate": "2026-01-01T00:00:00.000Z",
-              "body": null,
-              "committerDate": "2026-01-01T00:00:01.000Z",
-              "files": [],
-              "footer": null,
-              "hash": "c1",
-              "header": "feat: add something",
-              "mentions": [],
-              "merge": null,
-              "notes": [],
-              "parent": [],
-              "references": [],
-              "revert": null,
-              "scope": null,
-              "subject": "add something",
-              "trailers": [],
-              "type": "feat",
-            },
-          ],
-          "package": {
-            "dependencies": [
-              "b",
-              "c",
-            ],
-            "name": "a",
-          },
-          "release": {
-            "type": "patch",
-          },
-        },
-        {
-          "history": [
-            {
-              "authorDate": "2026-01-01T00:00:00.000Z",
-              "body": null,
-              "committerDate": "2026-01-01T00:00:01.000Z",
-              "files": [],
-              "footer": null,
-              "hash": "c1",
-              "header": "feat: add something",
-              "mentions": [],
-              "merge": null,
-              "notes": [],
-              "parent": [],
-              "references": [],
-              "revert": null,
-              "scope": null,
-              "subject": "add something",
-              "trailers": [],
-              "type": "feat",
-            },
-          ],
-          "package": {
-            "dependencies": [
-              "a",
-            ],
-            "name": "b",
-          },
-          "release": {
-            "type": "major",
-          },
-        },
-        {
-          "history": [
-            {
-              "authorDate": "2026-01-01T00:00:02.000Z",
-              "body": null,
-              "committerDate": "2026-01-01T00:00:03.000Z",
-              "files": [],
-              "footer": null,
-              "hash": "c1",
-              "header": "feat: add something",
-              "mentions": [],
-              "merge": null,
-              "notes": [],
-              "parent": [],
-              "references": [],
-              "revert": null,
-              "scope": null,
-              "subject": "add something",
-              "trailers": [],
-              "type": "feat",
-            },
-          ],
-          "package": {
-            "dependencies": [],
-            "name": "c",
-          },
-          "release": {
-            "type": "minor",
-          },
-        },
-        {
-          "history": [
-            {
-              "authorDate": "2026-01-01T00:00:04.000Z",
-              "body": null,
-              "committerDate": "2026-01-01T00:00:05.000Z",
-              "files": [],
-              "footer": null,
-              "hash": "c2",
-              "header": "feat: add something",
-              "mentions": [],
-              "merge": null,
-              "notes": [],
-              "parent": [],
-              "references": [],
-              "revert": null,
-              "scope": null,
-              "subject": "add something",
-              "trailers": [],
-              "type": "feat",
-            },
-          ],
-          "package": {
-            "dependencies": [],
-            "name": "d",
-          },
-          "release": {
-            "type": "minor",
-          },
-        },
-        {
-          "history": [],
-          "package": {
-            "dependencies": [],
-            "name": "e",
-          },
-          "release": {
-            "type": "unknown",
-          },
-        },
-        {
-          "history": [
-            {
-              "authorDate": "2026-01-01T00:00:04.000Z",
-              "body": null,
-              "committerDate": "2026-01-01T00:00:05.000Z",
-              "files": [],
-              "footer": null,
-              "hash": "c2",
-              "header": "feat: add something",
-              "mentions": [],
-              "merge": null,
-              "notes": [],
-              "parent": [],
-              "references": [],
-              "revert": null,
-              "scope": null,
-              "subject": "add something",
-              "trailers": [],
-              "type": "feat",
-            },
-            {
-              "authorDate": "2026-01-01T00:00:00.000Z",
-              "body": null,
-              "committerDate": "2026-01-01T00:00:01.000Z",
-              "files": [],
-              "footer": null,
-              "hash": "c1",
-              "header": "feat: add something",
-              "mentions": [],
-              "merge": null,
-              "notes": [],
-              "parent": [],
-              "references": [],
-              "revert": null,
-              "scope": null,
-              "subject": "add something",
-              "trailers": [],
-              "type": "feat",
-            },
-          ],
-          "package": {
-            "dependencies": [
-              "a",
-              "d",
-            ],
-            "name": "",
-          },
-          "release": {
-            "type": "patch",
-          },
-        },
-      ]
-    `)
+  expect(await getPropagatedPlans(context.cwd, plans)).toMatchInlineSnapshot(`
+    [
+      {
+        "history": [
+          "c1",
+        ],
+        "name": undefined,
+        "type": "patch",
+      },
+      {
+        "history": [
+          "c1",
+        ],
+        "name": "a",
+        "type": "patch",
+      },
+      {
+        "history": [
+          "c1",
+        ],
+        "name": "b",
+        "type": "major",
+      },
+      {
+        "history": [
+          "c1",
+        ],
+        "name": "c",
+        "type": "minor",
+      },
+      {
+        "history": [
+          "c2",
+        ],
+        "name": "d",
+        "type": "minor",
+      },
+      {
+        "history": [],
+        "name": "e",
+        "type": "unknown",
+      },
+      {
+        "history": [
+          "c2",
+          "c1",
+        ],
+        "name": "",
+        "type": "patch",
+      },
+    ]
+  `)
 })

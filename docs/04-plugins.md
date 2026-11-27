@@ -11,15 +11,15 @@ Plugins register middleware for named hooks, which run in this order:
 configure → discover → analyze → build → write → publish → finalize
 ```
 
-| Hook        | Purpose                                                          | Built-in users                  |
-| ----------- | ---------------------------------------------------------------- | ------------------------------- |
-| `configure` | Adjust the context and verify credentials before other hooks run | cargo, npm, git, github, gitlab |
-| `discover`  | Find workspace packages and resolve their tags                   | cargo, npm, changelog           |
-| `analyze`   | Classify commits and derive per-package releases                 | analyzer                        |
-| `build`     | Compute versions, tag names, and release notes                   | builder, changelog              |
-| `write`     | Write manifests and changelogs, then create the release commit   | changelog, cargo, npm, git      |
-| `publish`   | Publish packages, push tags, and create hosting releases         | cargo, npm, git, github, gitlab |
-| `finalize`  | Send notifications or clean up                                   | —                               |
+| Hook        | Purpose                                                          | Built-in users                        |
+| ----------- | ---------------------------------------------------------------- | ------------------------------------- |
+| `configure` | Adjust the context and verify credentials before other hooks run | cargo, npm, yarn, git, github, gitlab |
+| `discover`  | Find workspace packages and resolve their tags                   | cargo, npm, yarn, changelog           |
+| `analyze`   | Classify commits and derive per-package releases                 | analyzer                              |
+| `build`     | Compute versions, tag names, and release notes                   | builder, changelog                    |
+| `write`     | Write manifests and changelogs, then create the release commit   | changelog, cargo, npm, yarn, git      |
+| `publish`   | Publish packages, push tags, and create hosting releases         | cargo, npm, yarn, git, github, gitlab |
+| `finalize`  | Send notifications or clean up                                   | —                                     |
 
 Every hook is optional. A plugin typically implements only the hooks it needs.
 
@@ -190,8 +190,10 @@ ReelOut resolves string specifiers from the working directory first, so local
 paths are supported. It then searches from `@reelout/config`, where the default
 integration plugins are installed. The opt-in `@reelout/yarn` plugin is not
 installed through `@reelout/config`; install it in your project before
-referencing it. Entries set to `false` or `null` are
-discarded.
+referencing it. Entries set to `false` or `null` are discarded. A module whose
+default export is neither a function nor an object with a string `name` is
+ignored as well, so a plugin with an invalid shape is silently dropped rather
+than failing the run.
 
 ## Agent skill
 
@@ -205,6 +207,13 @@ npx skills add reelout/reelout --skill create-reelout-plugin
 ```
 
 The skill source lives at [`.agents/skills/create-reelout-plugin/SKILL.md`](https://github.com/reelout/reelout/blob/main/.agents/skills/create-reelout-plugin/SKILL.md).
+
+The repository tracks eight skills under `.agents/skills/`. Four of them
+(`commit-and-review`, `commit-review-and-merge`, `merge-pull-request`, and
+`test-naming`) are synced from the
+[`reelout/skills`](https://github.com/reelout/skills) repository and pinned in
+`skills-lock.json`; the remaining four are maintained locally in this
+repository and are intentionally not part of the lock.
 
 ## Built-in plugins
 
@@ -226,3 +235,24 @@ For programmatic use, `reelout` exports `createPlugin`, `HookDispatcher`,
 `Interceptor`, `Priority`, and `RELEASE_HOOK_NAMES`. See the
 [Programmatic API](./05-api.md) guide or the
 [API reference](https://reelout.overview.vercel.app/).
+
+`@reelout/core` also exports `createHostReleasePlugin`, the shared skeleton
+behind the `github` and `gitlab` plugins. It handles host detection, token
+reading and verification, dry-run behavior, publish ordering, and rollback
+wiring, so a plugin for another git host only needs to provide the host
+client calls:
+
+```ts
+import { createHostReleasePlugin } from '@reelout/core'
+
+const gitea = () =>
+  createHostReleasePlugin({
+    name: 'my-gitea-plugin',
+    version: '1.0.0',
+    host: 'gitea',
+    displayName: 'Gitea',
+    tokenEnvKey: 'GITEA_TOKEN',
+    verifyToken,
+    createRelease,
+  })
+```

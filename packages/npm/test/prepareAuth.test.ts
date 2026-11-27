@@ -9,23 +9,16 @@ import { prepareAuth } from '@reelout/npm'
 import { readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { temporaryDirectoryTask } from 'tempy'
-import { afterEach, expect, test, vi } from 'vitest'
+import { beforeEach, expect, test, vi } from 'vitest'
 import { context } from '../../../test/mock/context'
 
-vi.mock(import('@npmcli/config'), async (importActual) => {
-  const { default: Config, ...mod } = await importActual()
-
-  vi.spyOn(Config.prototype, 'set')
-  vi.spyOn(Config.prototype, 'save')
-
-  return { ...mod, default: Config }
-})
+vi.mock(import('@npmcli/config'), async (importActual) => importActual())
 
 const pkg1 = { location: '.' } as Package
 
-afterEach(() => {
-  vi.resetAllMocks()
-  vi.unstubAllEnvs()
+beforeEach(() => {
+  vi.spyOn(Config.prototype, 'set')
+  vi.spyOn(Config.prototype, 'save')
 })
 
 test('returns undefined when NPM_TOKEN environment variable is absent and authentication does not exist', async () => {

@@ -25,6 +25,11 @@ vi.mock(
   })
 )
 
+// Commit hashes are intentionally pinned here: they prove that each reference
+// (revision range, tag, or fully qualified tag) resolves to the same commit.
+// The date-injection coupling behind these hashes is documented in
+// `test/mock/git.ts`.
+
 beforeAll(() => {
   vi.useFakeTimers()
 })

@@ -71,7 +71,7 @@ test('deletes release when a valid tag name is present', async () => {
   })
 })
 
-test('resolves gracefully when github returns a 404 status', async () => {
+test('resolves gracefully when GitHub returns a 404 status', async () => {
   getReleaseByTagMock.mockRejectedValueOnce({ status: 404 })
 
   await expect(

@@ -50,7 +50,10 @@ const analyzer = (): ReleasePlugin => ({
       if (plan.package.entry || plan.package.name) {
         const tag =
           plan.package.tag ??
-          (await resolvePackageTag(context.cwd, plan.package))
+          (await resolvePackageTag(context.cwd, plan.package, {
+            logger: context.logger,
+            dryRun: context.dryRun,
+          }))
 
         if (tag && !plan.package.tag) {
           plan.package.tag = tag
@@ -59,7 +62,9 @@ const analyzer = (): ReleasePlugin => ({
         history = readPackageHistory(
           context.cwd,
           plan.package,
-          tag ? { until: tag.name } : undefined
+          tag
+            ? { until: tag.name, logger: context.logger }
+            : { logger: context.logger }
         )
       }
 

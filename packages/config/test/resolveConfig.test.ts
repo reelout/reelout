@@ -127,3 +127,15 @@ test('searches for tool-specific configuration file when custom module name is p
     })
   })
 })
+
+test('rejects an invalid rules value with a subject-first error', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    const filepath = path.join(cwd, '.reeloutrc.json')
+
+    await writeFile(filepath, JSON.stringify({ rules: 'main' }))
+
+    await expect(resolveConfig(cwd)).rejects.toThrowError(
+      `Configuration file "${filepath}" contains an invalid "rules" value: expected an array, received string.`
+    )
+  })
+})

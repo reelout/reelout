@@ -28,8 +28,13 @@ async function writeChangelog(dir: string, version: string, changes?: string) {
 function summarizePlans(plans: typeof context.plans) {
   return plans.map((plan) => ({
     name: plan.package.name,
+    version: plan.package.version,
+    tag: plan.package.tag?.name ?? null,
     history: plan.history.map((commit) => commit.header),
     type: plan.release?.type ?? null,
+    transition: plan.release?.transition ?? null,
+    releaseVersion: plan.release?.version ?? null,
+    changelog: plan.release?.changelog ?? null,
   }))
 }
 
@@ -326,20 +331,30 @@ test('slices each package history from its own verified release tag', async () =
     expect(summarizePlans(context.plans)).toMatchInlineSnapshot(`
       [
         {
+          "changelog": null,
           "history": [
             "fix(foo): update entry",
           ],
           "name": "foo",
+          "releaseVersion": null,
+          "tag": "foo@1.0.0",
+          "transition": null,
           "type": "patch",
+          "version": "1.0.0",
         },
         {
+          "changelog": null,
           "history": [
             "feat(bar): update entry",
             "feat(bar): add entry",
             "chore: init pkgs",
           ],
           "name": "bar",
+          "releaseVersion": null,
+          "tag": null,
+          "transition": null,
           "type": "minor",
+          "version": "0.0.0",
         },
       ]
     `)
@@ -399,20 +414,30 @@ test('treats a tag that does not point at a package commit as unverified', async
     expect(summarizePlans(context.plans)).toMatchInlineSnapshot(`
       [
         {
+          "changelog": null,
           "history": [
             "feat(foo): add entry",
             "chore: init pkgs",
           ],
           "name": "foo",
+          "releaseVersion": null,
+          "tag": null,
+          "transition": null,
           "type": "minor",
+          "version": "1.0.0",
         },
         {
+          "changelog": null,
           "history": [
             "feat(bar): add entry",
             "chore: init pkgs",
           ],
           "name": "bar",
+          "releaseVersion": null,
+          "tag": null,
+          "transition": null,
           "type": "minor",
+          "version": "0.0.0",
         },
       ]
     `)
@@ -713,19 +738,29 @@ test('releases pre-seeded plans regardless of the filter', async () => {
     expect(summarizePlans(context.plans)).toMatchInlineSnapshot(`
       [
         {
+          "changelog": null,
           "history": [
             "chore: init pkgs",
           ],
           "name": "foo",
+          "releaseVersion": null,
+          "tag": null,
+          "transition": null,
           "type": null,
+          "version": "0.0.0",
         },
         {
+          "changelog": null,
           "history": [
             "feat(bar): add entry",
             "chore: init pkgs",
           ],
           "name": "bar",
+          "releaseVersion": null,
+          "tag": null,
+          "transition": null,
           "type": "minor",
+          "version": "0.0.0",
         },
       ]
     `)
