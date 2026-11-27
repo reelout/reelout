@@ -18,7 +18,7 @@ import {
   getGitTags,
   initializeGitRepository,
 } from '../../../../../test/mock/git'
-import { createMockLogger, logger } from '../../../../../test/mock/context'
+import { createMockLogger } from '../../../../../test/mock/context'
 
 vi.mock(import('@reelout/core/util/execGit'), async (importActual) => ({
   execGit: vi.fn((await importActual()).execGit),
@@ -306,7 +306,7 @@ test('removes local tag when the remote tag is deleted', async () => {
   })
 })
 
-test('warns before deleting a stale local tag and keeps it in dry-run mode', async () => {
+test('warns before deleting a stale local tag, keeps it in dry-run mode, and deletes it otherwise', async () => {
   await temporaryDirectoryTask(async (remote) => {
     await temporaryDirectoryTask(async (cwd) => {
       await initializeGitRepository(cwd, remote)
@@ -322,7 +322,8 @@ test('warns before deleting a stale local tag and keeps it in dry-run mode', asy
 
       await deleteGitTag(remote, 'v1')
 
-      const tagLogger = createMockLogger()
+      const tagLoggerMock = vi.fn()
+      const tagLogger = createMockLogger(tagLoggerMock)
 
       expect(
         await ensureGitTag(cwd, 'v1', { logger: tagLogger, dryRun: true })
@@ -335,21 +336,21 @@ test('warns before deleting a stale local tag and keeps it in dry-run mode', asy
       `)
 
       expect(
-        logger.mock.calls.some(
+        tagLoggerMock.mock.calls.some(
           ([message]) =>
             message ===
             '[DRY RUN] Local tag "v1" would be deleted because the remote no longer reports it.'
         )
       ).toBe(true)
 
-      logger.mockClear()
+      tagLoggerMock.mockClear()
 
       expect(await ensureGitTag(cwd, 'v1', { logger: tagLogger })).toBe(false)
 
       expect(await getGitTags(cwd)).toMatchInlineSnapshot(`[]`)
 
       expect(
-        logger.mock.calls.some(
+        tagLoggerMock.mock.calls.some(
           ([message]) =>
             message ===
             'Local tag "v1" is being deleted because the remote no longer reports it.'

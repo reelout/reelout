@@ -94,13 +94,7 @@ test('verifies local presence of a given tag', async () => {
         ['v2.1.0', false],
         ['v1.0.0', false],
       ] as const) {
-        expect({
-          tag,
-          expected: await isGitTagPresent(cwd, tag),
-        }).toEqual({
-          tag,
-          expected,
-        })
+        expect(await isGitTagPresent(cwd, tag), `tag: ${tag}`).toBe(expected)
       }
 
       expect(await getGitTags(cwd)).toMatchInlineSnapshot(`

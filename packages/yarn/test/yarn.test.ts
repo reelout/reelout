@@ -231,8 +231,6 @@ test('stays inactive without a root package manifest', async () => {
 })
 
 test('stays inactive when another package manager is active', async () => {
-  context.dryRun = true
-
   resolvePackageManager.mockResolvedValue('npm')
 
   mountPackageFixture()

@@ -128,7 +128,7 @@ test('searches for tool-specific configuration file when custom module name is p
   })
 })
 
-test('rejects an invalid rules value with a subject-first error', async () => {
+test('rejects a configuration file whose rules value is not an array', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     const filepath = path.join(cwd, '.reeloutrc.json')
 
