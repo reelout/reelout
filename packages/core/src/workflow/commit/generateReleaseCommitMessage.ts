@@ -4,7 +4,7 @@
 import { GIT_TRAILER_RELEASE_AGENT } from '#config'
 import { mergeGitHistory } from '#git'
 import type { GitCommit, GitCommitType, ReleasePlan } from '#types'
-import { version } from '../../../package.json'
+import { version } from '../../../package.json' with { type: 'json' }
 
 const NOTABLE_TYPES: readonly GitCommitType[] = [
   'feat',

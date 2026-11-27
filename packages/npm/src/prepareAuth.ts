@@ -25,7 +25,7 @@ export interface Env extends Readonly<NodeJS.ProcessEnv>, AsyncDisposable {}
  */
 export async function prepareAuth(
   context: ReleaseContext,
-  pkg: Package,
+  pkg: Pick<Package, 'location' | 'name'>,
   packageManager: Partial<PackageManagerInfo>
 ): Promise<Env | undefined> {
   const token = context.env.NPM_TOKEN?.trim()
@@ -37,26 +37,31 @@ export async function prepareAuth(
   const registry = await resolvePublishRegistry(context, pkg, packageManager)
 
   if (packageManager.isYarnBerry) {
-    return conceal<Env>({
+    return hideSymbols<Env>({
       YARN_NPM_AUTH_TOKEN: token,
       async [Symbol.asyncDispose]() {},
     })
   }
 
   if (packageManager.isPnpm) {
-    return conceal<Env>({
+    return hideSymbols<Env>({
       [`pnpm_config_${getAuthTokenKey(registry)}`]: token,
       async [Symbol.asyncDispose]() {},
     })
   }
 
-  return conceal<Env>({
+  return hideSymbols<Env>({
     [`npm_config_${getAuthTokenKey(registry)}`]: token,
     async [Symbol.asyncDispose]() {},
   })
 }
 
-function conceal<T extends object>(object: T): T {
+/**
+ * Hide symbol-keyed properties, such as `Symbol.asyncDispose`, from
+ * enumeration so spreading the environment object into a child process
+ * environment drops them.
+ */
+function hideSymbols<T extends object>(object: T): T {
   for (const key of Reflect.ownKeys(object)) {
     if (typeof key === 'symbol') {
       Object.defineProperty(object, key, {

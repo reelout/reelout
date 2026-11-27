@@ -60,5 +60,8 @@ export async function readCargoToml(dir: string): Promise<CargoToml> {
     )
   }
 
+  // The manifest structure is intentionally not validated here: downstream
+  // consumers probe every field with typeof checks, so a foreign manifest
+  // degrades to undefined fields instead of runtime errors.
   return manifest as CargoToml
 }

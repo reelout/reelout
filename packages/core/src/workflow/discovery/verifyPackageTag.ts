@@ -7,6 +7,7 @@ import {
   getParsedGitCommit,
   isGitTagConnected,
 } from '#git'
+import type { EnsureGitTagOptions } from '#git'
 import type { GitCommit, Package } from '#types'
 import { packageContainsCommit } from '../analysis/packageContainsCommit'
 
@@ -20,14 +21,16 @@ import { packageContainsCommit } from '../analysis/packageContainsCommit'
  * @param cwd Repository working directory path
  * @param pkg Package descriptor containing version and location context
  * @param tagName Name of the Git tag to verify
+ * @param options Dry-run and logging guards for the local tag cleanup
  * @returns True if the tag is valid and connected; otherwise, false
  */
 export async function verifyPackageTag(
   cwd: string,
   pkg: Package,
-  tagName: string
+  tagName: string,
+  options?: EnsureGitTagOptions
 ): Promise<boolean> {
-  await ensureGitTag(cwd, tagName)
+  await ensureGitTag(cwd, tagName, options)
 
   const tagRef = `refs/tags/${tagName}`
 
@@ -43,7 +46,7 @@ export async function verifyPackageTag(
     return false
   }
 
-  await expandGitHistory(cwd, { until: tagRef })
+  await expandGitHistory(cwd, { until: tagRef, logger: options?.logger })
 
   return isGitTagConnected(cwd, tagName)
 }

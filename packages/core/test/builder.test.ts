@@ -1112,6 +1112,12 @@ test('leaves tag message undefined when release notes generation throws an error
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
       [
+        "[33mRelease notes could not be generated for tag "[1mv2.0.0[22m" of package at "[1mpkg1[22m": Cannot read properties of null (reading 'Symbol(Symbol.asyncIterator)')[39m",
+      ],
+      [
+        "[33mRelease notes could not be generated for tag "[1mpkg2@2.0.0[22m" of package at "[1mpkg2[22m": Cannot read properties of null (reading 'Symbol(Symbol.asyncIterator)')[39m",
+      ],
+      [
         "Status: [32mSUCCESS[39m",
       ],
       [

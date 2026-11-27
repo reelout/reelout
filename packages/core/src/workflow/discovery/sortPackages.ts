@@ -11,12 +11,13 @@ interface PackageNode {
 /**
  * Sort workspace packages topologically based on their dependency graphs.
  *
- * Deepest dependents are placed first in the resulting array, ensuring that
- * a package always precedes its own dependencies. Ties and circular dependencies
- * are resolved deterministically using an alphabetical sort on the package directory (`dir`).
+ * Deepest dependencies are placed first in the resulting array, ensuring that
+ * a package always follows its own dependencies. Ties and circular dependencies
+ * are resolved deterministically using an alphabetical sort on the package
+ * location (`location`).
  *
  * @param packages The workspace packages to sort.
- * @returns A new array of packages sorted by dependency depth and directory path.
+ * @returns A new array of packages sorted by dependency depth and location.
  */
 export function sortPackages(packages: readonly Package[]): Package[] {
   const packageNodes: PackageNode[] = []

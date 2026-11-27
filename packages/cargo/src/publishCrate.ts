@@ -17,9 +17,9 @@ export interface PublishCrateOptions {
  *
  * Runs `cargo publish -p <name>` from the repository root, forwarding the
  * dry-run, allow-dirty, and no-verify flags when they are enabled. Dry
- * runs imply `--allow-dirty`: nothing is uploaded, so cargo's check for
- * uncommitted changes would only reject the working state the dry run
- * previews. Skips execution if the crate is private, unversioned, or
+ * runs still invoke a real `cargo publish --dry-run --allow-dirty`: the
+ * crate is packaged and verified locally, but nothing is uploaded. Skips
+ * execution with a debug log if the crate is private, unversioned, or
  * missing a name. The environment is passed through untouched, so `cargo`
  * reads `CARGO_REGISTRY_TOKEN` itself, unless a trusted-publishing
  * `registryToken` is provided and injected as `CARGO_REGISTRY_TOKEN`.
@@ -35,12 +35,20 @@ export async function publishCrate(
   options: PublishCrateOptions = {}
 ): Promise<void> {
   if (plan.package.private || !plan.package.name || !plan.release?.version) {
+    context.logger.debug(
+      'Crate publish was skipped: the crate is private, unnamed, or unversioned.'
+    )
+
     return
   }
 
   const commandArgs: string[] = ['publish', '-p', plan.package.name]
 
   if (options.dryRun) {
+    context.logger.debug(
+      '[DRY RUN] Running "cargo publish --dry-run": the crate will be packaged and verified locally but not uploaded.'
+    )
+
     commandArgs.push('--dry-run', '--allow-dirty')
   } else if (options.allowDirty) {
     commandArgs.push('--allow-dirty')

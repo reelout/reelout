@@ -347,15 +347,6 @@ test('publishes package successfully using pnpm with git check bypass flags and 
   `)
 })
 
-test('skips publishing when dry-run option is enabled for yarn version 1', async () => {
-  resolvePackageManager.mockResolvedValue('yarn')
-  getPackageManagerVersion.mockResolvedValue(1)
-
-  await publishPackage(context, plan, { dryRun: true })
-
-  expect(execCommand).not.toHaveBeenCalled()
-})
-
 test('logs a debug diagnostic when a yarn 1 dry-run publish is skipped', async () => {
   resolvePackageManager.mockResolvedValue('yarn')
   getPackageManagerVersion.mockResolvedValue(1)

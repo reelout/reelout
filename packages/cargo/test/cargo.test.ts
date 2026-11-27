@@ -403,6 +403,30 @@ test('skips the trusted-publishing exchange when no plan is publishable', async 
   expect(context.outcome?.status).toBe('success')
 })
 
+test('skips the trusted-publishing token exchange during dry-run', async () => {
+  mountManifest()
+
+  resolveCargoToken.mockResolvedValue(undefined)
+
+  hasTrustedPublishingAuth.mockReturnValue(true)
+
+  context.dryRun = true
+
+  const plan = createCompletePlan()
+
+  context.plans = [plan]
+
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(verifyTrustedPublishing).not.toHaveBeenCalled()
+  expect(publishCrate).toHaveBeenCalledTimes(1)
+  expect(publishCrate.mock.calls[0]?.[2]).toMatchObject({
+    dryRun: true,
+    registryToken: undefined,
+  })
+  expect(context.outcome?.status).toBe('success')
+})
+
 test('warns and skips publishing when the cargo command is not available', async () => {
   mountManifest()
 

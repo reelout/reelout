@@ -1,9 +1,16 @@
 # Programmatic API
 
-The `reelout` package re-exports APIs from `@reelout/cli`, `@reelout/config`,
-`@reelout/context`, and `@reelout/core`. Import integration plugins such as
-`@reelout/npm`, `@reelout/yarn`, `@reelout/cargo`, `@reelout/git`,
-`@reelout/github`, and `@reelout/gitlab` from their respective packages.
+This document is the single source of truth for the `reelout` root package's
+public API surface and is maintained by hand. The generated API reference
+(`pnpm exec typedoc`) covers the workspace packages only, so changes to what
+the root package re-exports must be reflected here.
+
+The `reelout` package re-exports a curated set of APIs from `@reelout/cli`,
+`@reelout/config`, `@reelout/context`, and `@reelout/core`. Import integration
+plugins such as `@reelout/npm`, `@reelout/yarn`, `@reelout/cargo`,
+`@reelout/git`, `@reelout/github`, and `@reelout/gitlab` from their respective
+packages, and import further building blocks directly from the package that
+provides them.
 
 ReelOut is ESM-only and requires Node.js >= 24.15.
 
@@ -55,7 +62,12 @@ flag.
 ## Resolving configuration
 
 ```ts
-import { resolveConfig, defaultConfig, mergeConfig } from 'reelout'
+import {
+  resolveConfig,
+  defaultConfig,
+  mergeConfig,
+  validateUserConfig,
+} from 'reelout'
 
 // Discover configuration, merge it over defaults, and normalize it
 const config = await resolveConfig(process.cwd())
@@ -67,6 +79,10 @@ const merged = mergeConfig(defaultConfig, {
 ```
 
 See the [Configuration](./02-config.md) guide for the config format and defaults.
+
+`validateUserConfig(config, filepath)` applies the same validation
+`resolveConfig` runs, so custom tooling can reject an invalid
+configuration before a release starts.
 
 ## Building a custom CLI
 
@@ -101,7 +117,7 @@ The re-exported packages expose the workflow's building blocks, which you can us
 
 - **Versioning** — `bumpVersion`, `generateGitTagName`, `generateReleaseCommitMessage`, `buildReleaseNotes`
 - **Git** — `parseGitCommit`, `pushGitChanges`, `restoreFullGitHistory`, `readGitHistory`
-- **Plugin system** — `HookDispatcher`, `Interceptor`, `Priority`, `RELEASE_HOOK_NAMES`, `createPlugin`
+- **Plugin system** — `HookDispatcher`, `Interceptor`, `Priority`, `RELEASE_HOOK_NAMES`, `createPlugin`, `createHostReleasePlugin`
 - **npm** (from `@reelout/npm`) — `readPackageJson`, `writePackageJson`, `resolveWorkspaceMembers`, `prepareAuth`, `publishPackage`
 
 Browse the full surface in the [API reference](https://reelout.overview.vercel.app/).

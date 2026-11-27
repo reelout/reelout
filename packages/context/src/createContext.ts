@@ -69,7 +69,7 @@ export async function createContext(
     commit = await getCurrentGitCommit(cwd, [GIT_TRAILER_RELEASE_AGENT])
   } catch (err) {
     throw new Error(
-      'Initialize a Git repository with at least one commit before running this command.',
+      'The current Git commit could not be resolved: the repository needs at least one commit.',
       { cause: err }
     )
   }
@@ -78,7 +78,7 @@ export async function createContext(
     branch = await getCurrentGitBranch(cwd)
   } catch (err) {
     throw new Error(
-      'Check out a Git branch in your repository before proceeding.',
+      'The current Git branch could not be resolved: check out a Git branch in your repository before proceeding.',
       { cause: err }
     )
   }

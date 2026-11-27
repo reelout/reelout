@@ -18,6 +18,7 @@ import {
   getGitTags,
   initializeGitRepository,
 } from '../../../../../test/mock/git'
+import { createMockLogger } from '../../../../../test/mock/context'
 
 vi.mock(import('@reelout/core/util/execGit'), async (importActual) => ({
   execGit: vi.fn((await importActual()).execGit),
@@ -301,6 +302,60 @@ test('removes local tag when the remote tag is deleted', async () => {
           "Initial commit",
         ]
       `)
+    })
+  })
+})
+
+test('warns before deleting a stale local tag, keeps it in dry-run mode, and deletes it otherwise', async () => {
+  await temporaryDirectoryTask(async (remote) => {
+    await temporaryDirectoryTask(async (cwd) => {
+      await initializeGitRepository(cwd, remote)
+
+      await execGit(cwd, ['commit', '--allow-empty', '-m', 'Initial commit'])
+      await execGit(cwd, ['tag', 'v1', '-a', '-m', 'v1'])
+
+      await pushGitChanges(cwd, 'main', '--tags')
+    })
+
+    await temporaryDirectoryTask(async (cwd) => {
+      await cloneGitRepository(cwd, remote)
+
+      await deleteGitTag(remote, 'v1')
+
+      const tagLoggerMock = vi.fn()
+      const tagLogger = createMockLogger(tagLoggerMock)
+
+      expect(
+        await ensureGitTag(cwd, 'v1', { logger: tagLogger, dryRun: true })
+      ).toBe(false)
+
+      expect(await getGitTags(cwd)).toMatchInlineSnapshot(`
+        [
+          "v1 v1",
+        ]
+      `)
+
+      expect(
+        tagLoggerMock.mock.calls.some(
+          ([message]) =>
+            message ===
+            '[DRY RUN] Local tag "v1" would be deleted because the remote no longer reports it.'
+        )
+      ).toBe(true)
+
+      tagLoggerMock.mockClear()
+
+      expect(await ensureGitTag(cwd, 'v1', { logger: tagLogger })).toBe(false)
+
+      expect(await getGitTags(cwd)).toMatchInlineSnapshot(`[]`)
+
+      expect(
+        tagLoggerMock.mock.calls.some(
+          ([message]) =>
+            message ===
+            'Local tag "v1" is being deleted because the remote no longer reports it.'
+        )
+      ).toBe(true)
     })
   })
 })

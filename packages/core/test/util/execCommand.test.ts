@@ -4,7 +4,7 @@
 import { execCommand, type ExecCommandOptions } from '@reelout/core'
 import { Writable } from 'node:stream'
 import { temporaryDirectoryTask } from 'tempy'
-import { beforeEach, expect, test } from 'vitest'
+import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 
 let options: ExecCommandOptions
 
@@ -13,6 +13,10 @@ beforeEach(() => {
     cwd: '/repo',
     env: undefined,
   }
+})
+
+afterEach(() => {
+  vi.unstubAllEnvs()
 })
 
 test('returns standard output string when executable finishes successfully', async () => {
@@ -58,6 +62,37 @@ test('injects custom environment variables into spawned process environment when
       "custom-value
       "
     `)
+  })
+})
+
+test('passes SSH and proxy environment variables through to the spawned process', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    options.cwd = cwd
+
+    const expected: Record<string, string> = {
+      SSH_AUTH_SOCK: '/tmp/ssh-agent.sock',
+      GIT_SSH: '/usr/local/bin/ssh-wrapper',
+      GIT_SSH_COMMAND: 'ssh -o StrictHostKeyChecking=no',
+      http_proxy: 'http://127.0.0.1:8080',
+      https_proxy: 'http://127.0.0.1:8443',
+      no_proxy: 'localhost,127.0.0.1',
+      HTTP_PROXY: 'http://10.0.0.1:8080',
+      HTTPS_PROXY: 'http://10.0.0.1:8443',
+      NO_PROXY: '.internal',
+    }
+
+    for (const [key, value] of Object.entries(expected)) {
+      vi.stubEnv(key, value)
+    }
+
+    const keys = Object.keys(expected)
+    const script = `console.log(JSON.stringify(Object.fromEntries(${JSON.stringify(
+      keys
+    )}.map((key) => [key, process.env[key]]))))`
+
+    const result = await execCommand('node', ['-e', script], options)
+
+    expect(JSON.parse(result)).toEqual(expected)
   })
 })
 

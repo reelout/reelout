@@ -8,6 +8,7 @@ import {
   inspectPackageManager,
   type PackageManagerInfo,
 } from './inspectPackageManager'
+import { isCredentialsRejected } from './isCredentialsRejected'
 import { prepareAuth, type Env } from './prepareAuth'
 import { resolvePublishRegistry } from './resolvePublishRegistry'
 
@@ -37,8 +38,9 @@ export type AuthKind = 'none' | 'oidc' | 'token'
  * registry offers no OIDC exchange for Yarn, so their OIDC environment
  * tokens are ignored and token-shaped credentials decide. Token-shaped
  * credentials are validated with a `whoami` pre-flight against the publish
- * registry so expired tokens fail before packages are published; OIDC
- * tokens are trusted without verification.
+ * registry so expired tokens fail before packages are published, reporting
+ * rejected credentials as invalid and other failures as an unreachable
+ * registry; OIDC tokens are trusted without verification.
  *
  * The `oidc` classification is deliberately registry-agnostic. Verification
  * runs before packages are discovered, and a release may publish to several
@@ -54,7 +56,10 @@ export async function verifyAuth(
   context: ReleaseContext,
   packageManager?: PackageManagerInfo
 ): Promise<AuthKind> {
-  const rootPackage = { location: '.', name: undefined } as Package
+  const rootPackage: Pick<Package, 'location' | 'name'> = {
+    location: '.',
+    name: undefined,
+  }
 
   const manager =
     packageManager ??
@@ -86,11 +91,24 @@ export async function verifyAuth(
 }
 
 /**
+ * Report that the publish registry could not be reached to verify
+ * credentials.
+ *
+ * @param registry The publish registry that could not be reached
+ * @returns The unreachable-registry error message
+ */
+function registryUnreachableMessage(registry: string): string {
+  return `The publish registry "${registry}" could not be reached to verify credentials.`
+}
+
+/**
  * Confirm registry credentials by querying the authenticated registry user.
  *
  * Runs the package manager's `whoami` command against the publish registry
- * and wraps failures in an error naming the invalid credentials, so invalid
- * or expired tokens abort the release before anything is published.
+ * and classifies failures: rejections that report invalid or expired
+ * credentials are rethrown naming the invalid credentials, and any other
+ * failure is rethrown naming the unreachable registry, so a network outage
+ * is not misreported as a credentials problem.
  *
  * @param context Release context containing environment and working directory
  * @param pkg Target package metadata object
@@ -101,7 +119,7 @@ export async function verifyAuth(
  */
 async function assertRegistryAuth(
   context: ReleaseContext,
-  pkg: Package,
+  pkg: Pick<Package, 'location' | 'name'>,
   packageManager: Partial<PackageManagerInfo>,
   env?: Env
 ): Promise<void> {
@@ -128,6 +146,10 @@ async function assertRegistryAuth(
       }
     )
   } catch (error) {
-    throw new Error(INVALID_CREDENTIALS_MESSAGE, { cause: error })
+    if (isCredentialsRejected(error)) {
+      throw new Error(INVALID_CREDENTIALS_MESSAGE, { cause: error })
+    }
+
+    throw new Error(registryUnreachableMessage(registry), { cause: error })
   }
 }

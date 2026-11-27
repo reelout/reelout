@@ -35,7 +35,10 @@ export async function getParsedGitCommit(
 
   const entry = parseGitPrettyFormat(stdout)
 
-  const key = `${entry.hash}:${entry.parent}:${markers}`
+  // The working directory is intentionally absent from the key: commit
+  // hashes are content-addressed, so the same hash resolves to the same
+  // commit in every repository that shares the object.
+  const key = JSON.stringify([entry.hash, entry.parent, markers])
 
   const cached = cache.get(key)
 

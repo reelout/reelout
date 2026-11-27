@@ -9,6 +9,7 @@ import {
   writeChangelogString,
   type CommitKnownProps,
   type FinalTemplateContext,
+  type Options,
   type TemplateContext,
 } from 'conventional-changelog-writer'
 import path from 'node:path'
@@ -21,10 +22,26 @@ export interface BuildChangelogOptions {
   currentTag?: string | null | undefined
 }
 
-const preset = await createPreset()
+interface ConventionalCommitsPreset {
+  writer: Options
+}
 
-const headerPartial = (context: FinalTemplateContext) => {
-  return context.version ? preset.writer.headerPartial?.(context) : undefined
+let presetCache: ConventionalCommitsPreset | undefined
+
+/**
+ * Load the conventional commits preset on first use.
+ *
+ * Creating the preset performs setup work that used to run at import time
+ * through a module-level await; loading it lazily keeps importing this
+ * module synchronous and skips the cost for consumers that never build a
+ * changelog.
+ *
+ * @returns The cached preset, created on the first call
+ */
+async function loadPreset(): Promise<ConventionalCommitsPreset> {
+  presetCache ??= await createPreset()
+
+  return presetCache
 }
 
 /**
@@ -44,6 +61,8 @@ export async function buildChangelog(
   history: Iterable<GitCommit> | AsyncIterable<GitCommit>,
   options: BuildChangelogOptions = {}
 ): Promise<string> {
+  const preset = await loadPreset()
+
   const repository = context.repository?.url || undefined
 
   const version = options.version || undefined
@@ -57,6 +76,10 @@ export async function buildChangelog(
     options.packageDir || '.',
     options.changelogFile || DEFAULT_CHANGELOG_FILE
   )
+
+  const headerPartial = (context: FinalTemplateContext) => {
+    return context.version ? preset.writer.headerPartial?.(context) : undefined
+  }
 
   const content = await writeChangelogString<CommitKnownProps>(
     history,
@@ -75,5 +98,5 @@ export async function buildChangelog(
     preset.writer
   )
 
-  return formatFile(filePath, content)
+  return formatFile(filePath, content, context.logger)
 }

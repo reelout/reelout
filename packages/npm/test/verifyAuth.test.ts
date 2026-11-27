@@ -327,6 +327,26 @@ test('rejects when the whoami pre-flight check fails for ambient credentials', a
   })
 })
 
+test('rejects with the registry url when the whoami pre-flight check cannot reach the registry', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_TOKEN: 'mock-npm-token' }
+
+    resolvePackageManager.mockResolvedValue('npm')
+
+    const networkError = new Error('getaddrinfo ENOTFOUND registry.npmjs.org')
+
+    execCommand.mockRejectedValueOnce(networkError)
+
+    const error: unknown = await verifyAuth(context).catch((err) => err)
+
+    expect(error).toMatchInlineSnapshot(
+      `[Error: The publish registry "https://registry.npmjs.org/" could not be reached to verify credentials.]`
+    )
+    expect((error as Error).cause).toBe(networkError)
+  })
+})
+
 test('verifies existing ambient credentials without injection when NPM_TOKEN is also set', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd

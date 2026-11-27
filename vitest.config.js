@@ -4,10 +4,9 @@ export default defineConfig({
   test: {
     globals: true,
     pool: 'threads',
-    coverage: {
-      provider: 'istanbul',
-      skipFull: true,
-    },
+    coverage: { provider: 'istanbul', skipFull: true },
+    restoreMocks: true,
+    unstubEnvs: true,
     projects: [
       {
         extends: true,

@@ -202,6 +202,39 @@ test('loads the root crate and the workspace members in directory order', async 
   })
 })
 
+test('rejects a crate name with characters outside [A-Za-z0-9_-]', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    await writeManifest(cwd, [
+      '[package]',
+      'name = "../evil"',
+      'version = "0.1.0"',
+    ])
+
+    const results = await loadCargoPackages(cwd)
+
+    expect(results).toHaveLength(1)
+    expect(results[0]?.status).toBe('rejected')
+    expect(rejectionMessage(results[0])).toBe(
+      'Crate name "../evil" in "." contains characters outside [A-Za-z0-9_-].'
+    )
+  })
+})
+
+test('accepts crate names containing hyphens and underscores', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    await writeManifest(cwd, [
+      '[package]',
+      'name = "my_crate-name"',
+      'version = "0.1.0"',
+    ])
+
+    const results = await loadCargoPackages(cwd)
+
+    expect(results).toHaveLength(1)
+    expect(fulfilledPackage(results[0])?.name).toBe('my_crate-name')
+  })
+})
+
 test('loads only the members of a virtual manifest', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     await writeManifest(cwd, [

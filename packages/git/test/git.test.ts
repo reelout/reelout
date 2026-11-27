@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Fai
 
 import {
+  deleteGitTag,
   execGit,
   executeReleaseWorkflow,
   getGitConfigValue,
@@ -28,6 +29,10 @@ vi.mock(
     pushGitChanges: vi.fn((await importActual()).pushGitChanges),
   })
 )
+
+vi.mock(import('@reelout/core/git/tag/deleteGitTag'), async (importActual) => ({
+  deleteGitTag: vi.fn((await importActual()).deleteGitTag),
+}))
 
 beforeEach(() => {
   vi.resetAllMocks()
@@ -385,6 +390,127 @@ test('rolls back local and remote tags when a subsequent plugin fails', async ()
       expect(await getGitTags(cwd)).toEqual([])
 
       expect(await getGitTags(remote)).toEqual([])
+    })
+  })
+})
+
+test('keeps the original error when remote tag deletion fails during rollback', async () => {
+  const { pushGitChanges: actualPushGitChanges } = await vi.importActual<{
+    pushGitChanges: typeof pushGitChanges
+  }>('@reelout/core/git/repository/pushGitChanges')
+
+  await temporaryDirectoryTask(async (remote) => {
+    await temporaryDirectoryTask(async (cwd) => {
+      using _ = vi.spyOn(context, 'cwd', 'get').mockReturnValue(cwd)
+
+      vi.mocked(pushGitChanges).mockImplementation(
+        async (cwd: string, branch: string | null, ...refs: string[]) => {
+          if (branch === null) {
+            throw new Error('Failed to delete remote tags')
+          }
+
+          return actualPushGitChanges(cwd, branch, ...refs)
+        }
+      )
+
+      await initializeGitRepository(cwd, remote)
+
+      await writePackageJson(path.join(cwd, 'foo'), { version: '1.0.0' })
+
+      context.repository = repository
+
+      context.plans = [
+        {
+          package: { location: 'foo', name: 'foo' },
+          history: [] as GitCommit[],
+          release: { version: '1.0.0', tag: { name: 'foo@1.0.0' } },
+        },
+      ] as ReleasePlan[]
+
+      const plugins = [
+        plugin(),
+        {
+          name: 'test',
+          version: '1.0.0',
+          publish: () => {
+            throw new Error('Something went wrong')
+          },
+        },
+      ]
+
+      await expect(executeReleaseWorkflow(context, plugins)).rejects.toThrow(
+        'Something went wrong'
+      )
+
+      expect(await getGitTags(cwd)).toEqual([])
+
+      expect(await getGitTags(remote)).toEqual(['foo@1.0.0'])
+
+      expect(
+        logger.mock.calls.some(([message]) =>
+          String(message).includes(
+            'Remote Git tags could not be deleted during rollback: Failed to delete remote tags'
+          )
+        )
+      ).toBe(true)
+    })
+  })
+})
+
+test('logs individual local tag deletion failures during rollback', async () => {
+  await temporaryDirectoryTask(async (remote) => {
+    await temporaryDirectoryTask(async (cwd) => {
+      using _ = vi.spyOn(context, 'cwd', 'get').mockReturnValue(cwd)
+
+      vi.mocked(pushGitChanges).mockImplementation(async () => {
+        throw new Error('Failed to push Git tags')
+      })
+
+      vi.mocked(deleteGitTag).mockRejectedValue(new Error('Tag is locked'))
+
+      await initializeGitRepository(cwd, remote)
+
+      await writePackageJson(path.join(cwd, 'foo'), { version: '1.0.0' })
+      await writePackageJson(path.join(cwd, 'bar'), { version: '2.0.0' })
+
+      context.repository = repository
+
+      context.plans = [
+        {
+          package: { location: 'foo', name: 'foo' },
+          history: [] as GitCommit[],
+          release: { version: '1.0.0', tag: { name: 'foo@1.0.0' } },
+        },
+        {
+          package: { location: 'bar', name: 'bar' },
+          history: [] as GitCommit[],
+          release: { version: '2.0.0', tag: { name: 'bar@2.0.0' } },
+        },
+      ] as ReleasePlan[]
+
+      await expect(executeReleaseWorkflow(context, [plugin()])).rejects.toThrow(
+        'Failed to push Git tags'
+      )
+
+      expect(await getGitTags(cwd)).toEqual(['bar@2.0.0', 'foo@1.0.0'])
+
+      expect(await getGitTags(remote)).toEqual([])
+
+      expect(
+        logger.mock.calls.some(([message]) =>
+          String(message).includes(
+            'Git tag "foo@1.0.0" could not be deleted during rollback: Tag is locked'
+          )
+        )
+      ).toBe(true)
+
+      expect(
+        logger.mock.calls.some(([message]) =>
+          String(message).includes(
+            'Git tag "bar@2.0.0" could not be deleted during rollback: Tag is locked'
+          )
+        )
+      ).toBe(true)
     })
   })
 })

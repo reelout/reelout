@@ -239,7 +239,11 @@ test('resolves target file path using package directory and custom changelog fil
     "
   `)
 
-  expect(vi.mocked(formatFile).mock.calls).toMatchInlineSnapshot(`
+  expect(
+    vi
+      .mocked(formatFile)
+      .mock.calls.map(([filePath, content]) => [filePath, content])
+  ).toMatchInlineSnapshot(`
     [
       [
         "/repo/packages/foo/HISTORY.md",

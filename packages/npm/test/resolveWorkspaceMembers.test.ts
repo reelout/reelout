@@ -60,3 +60,20 @@ test('returns null if no workspace files are present', async () => {
 
   expect(patterns).toBeNull()
 })
+
+test('rejects when pnpm-workspace.yaml is malformed', async () => {
+  const cwd = '/repo'
+
+  vol.fromJSON({
+    '/repo/pnpm-workspace.yaml': 'packages: [',
+    '/repo/package.json': JSON.stringify({
+      version: '1.0.0',
+      workspaces: ['packages/*'],
+    }),
+  })
+
+  const error: unknown = await resolveWorkspaceMembers(cwd).catch((err) => err)
+
+  expect(error).toBeInstanceOf(Error)
+  expect((error as Error).name).toBe('YAMLParseError')
+})

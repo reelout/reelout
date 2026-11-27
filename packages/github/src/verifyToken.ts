@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
-import { Octokit } from '@octokit/rest'
 import type { GitRepository } from '@reelout/core'
+import { createOctokit } from './createOctokit'
 
 /**
  * Verify that a GitHub token can access the repository it releases to.
@@ -23,11 +23,7 @@ export async function verifyToken(
   token: string,
   repository: GitRepository
 ): Promise<void> {
-  /* istanbul ignore next */
-  const octokit = new Octokit({
-    auth: token,
-    log: { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} },
-  })
+  const octokit = createOctokit(token)
 
   try {
     await octokit.rest.repos.get({

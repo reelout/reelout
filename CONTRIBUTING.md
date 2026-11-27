@@ -59,6 +59,23 @@ node dist/cli.js --help
 node dist/cli.js --dry-run
 ```
 
+## Source exports
+
+Every published package resolves its `module`, `development`, and `types`
+export conditions to TypeScript sources under `src/`, keeping the workspace
+testable without a build step — Vitest resolves workspace packages through
+these conditions and reads `src/*.ts` directly. This makes the published
+packages require TS-aware consumers: bundlers handle `src/*.ts` directly, and
+plain Node needs type stripping (`>=22.18`, already covered by the `>=24.15`
+engines floor). Each package also ships a `default` condition pointing at the
+compiled `dist/*.js`, which bundlers running in production mode and legacy
+resolvers use instead, and the `files` list publishes both `dist/` and `src/`
+so every condition resolves inside the published tarball. Do not reorder or
+repoint these conditions: `module`/`development`/`types` staying on `src/` is
+what keeps workspace tests resolving sources and keeps sourcemaps aligned with
+the shipped `types`. Do not add syntax that Node's type stripping cannot
+erase, such as `enum` declarations or parameter properties.
+
 ## Validate changes
 
 Run the smallest relevant checks during development:
@@ -69,9 +86,10 @@ pnpm lint
 pnpm build
 ```
 
-Before submitting a pull request, run `pnpm validate`. It installs
-dependencies, removes generated output, runs linting, generates the API
-reference, builds the workspace, and runs the test suite with coverage.
+CI runs `pnpm validate` on every pull request. It installs dependencies,
+removes generated output, runs linting, generates the API reference, builds
+the workspace, and runs the test suite with coverage, so the full pipeline
+does not need to run locally.
 
 ## Documentation
 
@@ -106,6 +124,7 @@ Ensure your changes meet all of the following criteria before requesting a revie
 
 - [ ] The change has a focused scope and contains no unrelated changes.
 - [ ] Public API changes are documented in the PR description.
-- [ ] Relevant tests pass; run the full suite with `pnpm test run`.
-- [ ] `pnpm validate` succeeds.
+- [ ] Relevant tests pass; run the focused suite with
+      `pnpm test run <file-or-pattern>`.
+- [ ] `pnpm lint` and `pnpm build` succeed.
 - [ ] All CI pipeline checks pass.

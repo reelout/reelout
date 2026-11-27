@@ -11,6 +11,7 @@ import { buildDependencyGraph } from '../discovery'
  * Marks packages that depend on a releasing package for a `patch` release
  * when they do not already have a release type.
  *
+ * @param cwd Working directory path used to read Git history
  * @param plans Array of release plans to update
  * @returns Updated array of release plans
  */

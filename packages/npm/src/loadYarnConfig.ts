@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
-import type { ConfigurationValueMap } from '@yarnpkg/core'
 import { Configuration } from '@yarnpkg/core'
 import { npath } from '@yarnpkg/fslib'
 import NpmPlugin from '@yarnpkg/plugin-npm'
@@ -22,10 +21,13 @@ export function loadYarnConfig(cwd: string) {
   })
 }
 
-export type GetMapValue<T> = T extends Map<unknown, infer V> ? V : never
-
-export type YarnScopeConfig = GetMapValue<ConfigurationValueMap['npmScopes']>
-
-export type YarnRegistryConfig = GetMapValue<
-  ConfigurationValueMap['npmRegistries']
->
+/**
+ * Minimal shape shared by Yarn Berry scope, registry, and top-level
+ * configuration sections.
+ *
+ * The npm plugin hands these back as opaque `MapLike` values, so only key
+ * lookup can be assumed and consumers must narrow what a lookup returns.
+ */
+export interface YarnConfigurationSection {
+  get(key: string): unknown
+}

@@ -40,7 +40,7 @@ const discoverPackageTag = vi.hoisted(() =>
 )
 
 vi.mock(import('@reelout/core/workflow/discovery/discoverPackageTag'), () => ({
-  discoverPackageTag: async (cwd, ...args) => discoverPackageTag(...args),
+  discoverPackageTag: async (cwd, pkg) => discoverPackageTag(pkg),
 }))
 
 beforeEach(() => {

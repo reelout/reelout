@@ -33,7 +33,10 @@ const changelog = (): ReleasePlugin => ({
       context.packages = await Promise.all(
         context.packages.map(async (pkg): Promise<Package> => ({
           ...pkg,
-          tag: await resolvePackageTag(context.cwd, pkg),
+          tag: await resolvePackageTag(context.cwd, pkg, {
+            logger: context.logger,
+            dryRun: context.dryRun,
+          }),
         }))
       )
 
@@ -57,12 +60,20 @@ const changelog = (): ReleasePlugin => ({
 
         let changelog: string | null | undefined
 
-        let previousTag = (await resolvePackageTag(context.cwd, plan.package))
-          ?.name
+        let previousTag = (
+          await resolvePackageTag(context.cwd, plan.package, {
+            logger: context.logger,
+            dryRun: context.dryRun,
+          })
+        )?.name
 
         if (!previousTag) {
-          previousTag = (await discoverPackageTag(context.cwd, plan.package))
-            ?.name
+          previousTag = (
+            await discoverPackageTag(context.cwd, plan.package, {
+              logger: context.logger,
+              dryRun: context.dryRun,
+            })
+          )?.name
         }
 
         try {
@@ -96,7 +107,7 @@ const changelog = (): ReleasePlugin => ({
       context.logger.debug('[DRY RUN] Changelog files will not be written.')
     } else {
       for (const plan of context.plans) {
-        await writeChangelog(context.cwd, plan)
+        await writeChangelog(context.cwd, plan, context.logger)
       }
     }
 

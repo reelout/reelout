@@ -174,6 +174,97 @@ test('rejects inheriting crates planned at different versions', async () => {
   })
 })
 
+test('rejects inheriting crates when the root manifest lacks the workspace package section', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    await writeManifest(cwd, ['[workspace]', 'members = ["crates/a"]'])
+    await writeManifest(path.join(cwd, 'crates/a'), [
+      '[package]',
+      'name = "a"',
+      'version.workspace = true',
+    ])
+
+    await expect(
+      bumpCargoManifests(cwd, [
+        createPlan({
+          name: 'a',
+          location: 'crates/a',
+          releaseVersion: '1.2.3',
+        }),
+      ])
+    ).rejects.toThrow(
+      'Crate "a" inherits the workspace version, but the shared version literal could not be found under [workspace.package] in the root manifest.'
+    )
+
+    expect(await readManifest(cwd)).toBe(
+      '[workspace]\nmembers = ["crates/a"]\n'
+    )
+    expect(await readManifest(path.join(cwd, 'crates/a'))).toBe(
+      '[package]\nname = "a"\nversion.workspace = true\n'
+    )
+  })
+})
+
+test('rejects inheriting crates when the workspace package section has no version literal', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    await writeManifest(cwd, [
+      '[workspace]',
+      'members = ["crates/a"]',
+      '',
+      '[workspace.package]',
+      'edition = "2021"',
+    ])
+    await writeManifest(path.join(cwd, 'crates/a'), [
+      '[package]',
+      'name = "a"',
+      'version.workspace = true',
+    ])
+
+    await expect(
+      bumpCargoManifests(cwd, [
+        createPlan({
+          name: 'a',
+          location: 'crates/a',
+          releaseVersion: '1.2.3',
+        }),
+      ])
+    ).rejects.toThrow(
+      'Crate "a" inherits the workspace version, but the shared version literal could not be found under [workspace.package] in the root manifest.'
+    )
+
+    expect(await readManifest(cwd)).toContain('edition = "2021"')
+    expect(await readManifest(cwd)).not.toContain('version = ')
+  })
+})
+
+test('rejects inheriting crates when the workspace package version is declared as an inline table', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    await writeManifest(cwd, [
+      '[workspace]',
+      'members = ["crates/a"]',
+      'package = { version = "1.2.2" }',
+    ])
+    await writeManifest(path.join(cwd, 'crates/a'), [
+      '[package]',
+      'name = "a"',
+      'version.workspace = true',
+    ])
+
+    await expect(
+      bumpCargoManifests(cwd, [
+        createPlan({
+          name: 'a',
+          location: 'crates/a',
+          releaseVersion: '1.2.3',
+        }),
+      ])
+    ).rejects.toThrow(
+      'Crate "a" inherits the workspace version, but the shared version literal could not be found under [workspace.package] in the root manifest.'
+    )
+
+    expect(await readManifest(cwd)).toContain('package = { version = "1.2.2" }')
+  })
+})
+
 test('bumps the shared workspace version once for inheriting crates planned at the same version', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     await writeManifest(cwd, [

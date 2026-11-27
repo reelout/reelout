@@ -7,11 +7,7 @@ import { structUtils } from '@yarnpkg/core'
 import { npmConfigUtils } from '@yarnpkg/plugin-npm'
 import type { PackageManagerInfo } from './inspectPackageManager'
 import { loadConfig } from './loadConfig'
-import {
-  loadYarnConfig,
-  type YarnRegistryConfig,
-  type YarnScopeConfig,
-} from './loadYarnConfig'
+import { loadYarnConfig, type YarnConfigurationSection } from './loadYarnConfig'
 import { normalizeRegistry } from './normalizeRegistry'
 import { resolvePublishRegistry } from './resolvePublishRegistry'
 
@@ -173,7 +169,7 @@ async function resolveYarnRegistryAuthorization(
   const scopeConfiguration = npmConfigUtils.getScopeConfiguration(
     ident ? ident.scope : null,
     { configuration }
-  ) as YarnScopeConfig | null
+  )
 
   const scopeAuthorization = authorizationFromYarnConfig(scopeConfiguration)
 
@@ -184,7 +180,7 @@ async function resolveYarnRegistryAuthorization(
   const registryConfiguration = npmConfigUtils.getRegistryConfiguration(
     registry,
     { configuration }
-  ) as YarnRegistryConfig | null
+  )
 
   const registryAuthorization = authorizationFromYarnConfig(
     registryConfiguration
@@ -251,7 +247,7 @@ async function resolveNpmRegistryAuthorization(
  * @returns The authorization header value, or undefined without credentials
  */
 function authorizationFromYarnConfig(
-  config: YarnRegistryConfig | null | undefined
+  config: YarnConfigurationSection | null | undefined
 ): string | undefined {
   const token = config?.get('npmAuthToken')
 

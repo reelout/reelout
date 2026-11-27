@@ -49,7 +49,7 @@ test('formats with unknown parser', async () => {
   })
 })
 
-test('throws when parser cannot be inferred', async () => {
+test('returns content unchanged when parser cannot be inferred', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     await fs.writeFile(
       path.join(cwd, '.prettierrc.json'),

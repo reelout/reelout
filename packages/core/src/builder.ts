@@ -41,7 +41,6 @@ const builder = (): ReleasePlugin => ({
         try {
           version = bumpVersion({
             version: plan.package.version,
-            private: plan.package.private,
             release: plan.release.type,
             identifier: context.versionQualifier,
             transition: plan.release.transition,
@@ -84,11 +83,15 @@ const builder = (): ReleasePlugin => ({
               isSameReleaseCycle(plan.package.version, plan.release.version)
             ) {
               const previousTag = (
-                await resolvePackageStableTag(context.cwd, plan.package)
+                await resolvePackageStableTag(context.cwd, plan.package, {
+                  logger: context.logger,
+                  dryRun: context.dryRun,
+                })
               )?.name
 
               const history = readPackageHistory(context.cwd, plan.package, {
                 until: previousTag,
+                logger: context.logger,
               })
 
               tagMessage = await buildReleaseNotes(context, history)
@@ -96,7 +99,13 @@ const builder = (): ReleasePlugin => ({
               tagMessage = await buildReleaseNotes(context, plan.history)
             }
           }
-        } catch {}
+        } catch (err) {
+          context.logger.warn(
+            colors.yellow(
+              `Release notes could not be generated for tag "${colors.bold(tagName ?? '')}" of package at "${colors.bold(plan.package.location)}": ${formatError(err)}`
+            )
+          )
+        }
 
         if (tagName) {
           plan.release.tag = {

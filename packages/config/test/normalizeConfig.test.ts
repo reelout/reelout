@@ -27,7 +27,7 @@ test('applies default git author when author configuration is empty', async () =
   })
 })
 
-test('applies default git author email when only name is provided', async () => {
+test('replaces a partial git author with the default author when only a name is provided', async () => {
   const config: Required<ReleaseConfig> = {
     author: { name: 'Test User' },
     classifier: {},
@@ -46,7 +46,7 @@ test('applies default git author email when only name is provided', async () => 
   })
 })
 
-test('applies default git author name when only email is provided', async () => {
+test('replaces a partial git author with the default author when only an email is provided', async () => {
   const config: Required<ReleaseConfig> = {
     author: { email: 'test@example.com' },
     classifier: {},

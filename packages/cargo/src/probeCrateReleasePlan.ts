@@ -18,8 +18,8 @@ import type { SparseIndexClient } from './sparseIndex'
  * @param skipped Set collecting plans whose publish is skipped
  * @returns A promise that resolves when the plan's registry version is
  * probed
- * @throws If the registry version holds content that cannot be verified as
- * identical to the local crate
+ * @throws If the registry version is yanked, or holds content that cannot be
+ * verified as identical to the local crate
  */
 export async function probeCrateReleasePlan(
   context: ReleaseContext,
@@ -37,6 +37,12 @@ export async function probeCrateReleasePlan(
 
   if (probe.status === 'absent') {
     return
+  }
+
+  if (probe.yanked) {
+    throw new Error(
+      `Version "${target}" was not published: the registry already has this version and it is yanked. Un-yank it and retry the release.`
+    )
   }
 
   const identical = await proveSameCratePublication(context, plan, probe.cksum)

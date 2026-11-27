@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Fai
 
 import type { Package, ReleaseContext } from '@reelout/core'
+import { formatError } from '@reelout/core'
 import path from 'node:path'
 import { extractPackageScope } from './extractPackageScope'
 import type { PackageManagerInfo } from './inspectPackageManager'
@@ -28,7 +29,7 @@ export const DEFAULT_YARN_REGISTRY = 'https://registry.yarnpkg.com/'
  */
 export async function resolvePublishRegistry(
   context: ReleaseContext,
-  pkg: Package,
+  pkg: Pick<Package, 'location' | 'name'>,
   packageManager: Partial<PackageManagerInfo>
 ): Promise<string> {
   const packageDir = path.resolve(context.cwd, pkg.location)
@@ -43,7 +44,17 @@ export async function resolvePublishRegistry(
     if (registry) {
       return registry
     }
-  } catch {}
+  } catch (error) {
+    const cause = (error as { cause?: unknown }).cause
+
+    if ((cause as NodeJS.ErrnoException | undefined)?.code !== 'ENOENT') {
+      throw error
+    }
+
+    context.logger.debug(
+      `Package manifest could not be read while resolving the publish registry: ${formatError(error)}`
+    )
+  }
 
   if (packageManager.isYarnBerry) {
     try {
@@ -68,7 +79,11 @@ export async function resolvePublishRegistry(
       if (registry) {
         return registry
       }
-    } catch {}
+    } catch (error) {
+      context.logger.debug(
+        `Yarn configuration could not be loaded while resolving the publish registry: ${formatError(error)}`
+      )
+    }
 
     return DEFAULT_YARN_REGISTRY
   } else {
@@ -90,7 +105,11 @@ export async function resolvePublishRegistry(
       if (registry) {
         return registry
       }
-    } catch {}
+    } catch (error) {
+      context.logger.debug(
+        `npm configuration could not be loaded while resolving the publish registry: ${formatError(error)}`
+      )
+    }
   }
 
   return DEFAULT_REGISTRY

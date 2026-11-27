@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
-import * as core from '@reelout/core'
-import { createGitTag, pushGitChanges } from '@reelout/core'
+import { createGitTag, execGit, pushGitChanges } from '@reelout/core'
 import { updatePackageJson, writePackageJson } from '@reelout/npm'
 import { temporaryDirectoryTask } from 'tempy'
-import { expect, test, vi } from 'vitest'
+import { expect, test } from 'vitest'
 import {
   getGitCommitSubjects,
   getGitTags,
@@ -15,8 +14,6 @@ import {
 test('pushes branch and tags atomically', async () => {
   await temporaryDirectoryTask(async (remote) => {
     await temporaryDirectoryTask(async (cwd) => {
-      using execGit = vi.spyOn(core, 'execGit')
-
       await initializeGitRepository(cwd, remote)
 
       await writePackageJson(cwd, { version: '0.0.0' })

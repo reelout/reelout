@@ -10,7 +10,8 @@ import { execGit } from '#util'
  * Useful before operations that require full history.
  *
  * @param cwd Repository working directory
- * @returns `true` if shallow, `false` if full clone, or `null` on error
+ * @returns `true` if shallow, `false` if full clone
+ * @throws If the underlying Git command fails
  */
 export async function isGitShallowRepository(cwd: string): Promise<boolean> {
   const stdout = (

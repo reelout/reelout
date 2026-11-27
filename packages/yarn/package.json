@@ -2,14 +2,21 @@
   "name": "@reelout/yarn",
   "version": "0.1.1",
   "description": "Yarn plugin for discovering workspaces, updating manifests and dependency ranges, and publishing packages with Yarn Classic and Yarn Berry.",
+  "keywords": [
+    "release",
+    "versioning",
+    "yarn",
+    "registry",
+    "berry"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/reelout/reelout.git",
     "directory": "packages/yarn"
   },
   "license": "MIT",
+  "sideEffects": false,
   "type": "module",
-  "imports": {},
   "exports": {
     "./package.json": {
       "default": "./package.json"
@@ -43,5 +50,8 @@
   },
   "engines": {
     "node": ">=24.15"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

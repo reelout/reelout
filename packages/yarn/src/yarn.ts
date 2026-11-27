@@ -31,8 +31,6 @@ import { colors } from 'consola/utils'
 import { version } from '../package.json'
 import { PLUGIN_NAME } from './PLUGIN_NAME'
 
-export { PLUGIN_NAME }
-
 export interface PluginOptions {
   workspace?: Partial<Workspace>
   access?: PublishAccess | null | undefined

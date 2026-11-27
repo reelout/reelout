@@ -13,8 +13,10 @@ export interface LoadConfigOptions {
 /**
  * Load npm configuration settings for a given directory.
  *
- * Resolves the system npm binary path to initialize an `@npmcli/config` instance,
- * loading options from `.npmrc` files and environment variables.
+ * Resolves the system npm binary path to initialize an `@npmcli/config`
+ * instance, loading options from `.npmrc` files and environment variables.
+ * `HOME` and `PATH` fall back to the current process environment only when
+ * the provided environment leaves them unset.
  *
  * @param cwd Working directory path to search for config files
  * @param options Runtime environment and configuration settings
@@ -24,7 +26,16 @@ export async function loadConfig(
   cwd: string,
   options: LoadConfigOptions
 ): Promise<Config> {
-  const npmBin = await realpath(resolve(process.execPath, '..', 'npm'))
+  let npmBin: string
+
+  try {
+    npmBin = await realpath(resolve(process.execPath, '..', 'npm'))
+  } catch (error) {
+    throw new Error(
+      `The npm CLI could not be resolved next to the Node.js executable at "${process.execPath}".`,
+      { cause: error }
+    )
+  }
 
   const npmPath = resolve(npmBin, '..', '..')
 
@@ -33,9 +44,9 @@ export async function loadConfig(
     npmPath,
     cwd,
     env: {
-      HOME: process.env.HOME,
-      PATH: process.env.PATH,
       ...options.env,
+      HOME: options.env?.HOME ?? process.env.HOME,
+      PATH: options.env?.PATH ?? process.env.PATH,
     },
   })
 

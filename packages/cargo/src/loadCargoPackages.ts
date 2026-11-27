@@ -13,6 +13,9 @@ import {
 } from './readCargoToml'
 import type { CargoToml } from './types'
 
+/** Characters a crate name may contain when passed to `cargo publish -p` or used in sparse index paths. */
+const CRATE_NAME_PATTERN = /^[A-Za-z0-9_-]+$/
+
 /** Inputs for building metadata for one crate of a Cargo workspace. */
 interface BuildCargoPackageOptions {
   rootDir: string
@@ -200,8 +203,9 @@ function buildWorkspaceRootFilePattern(memberDirs: readonly string[]): string {
  *
  * @param options Crate build inputs
  * @returns Crate metadata object
- * @throws If the manifest defines no `[package]` table, or the crate has no
- * version or a version that is not valid semver
+ * @throws If the manifest defines no `[package]` table, the crate has no
+ * version or a version that is not valid semver, or the crate name contains
+ * characters outside `[A-Za-z0-9_-]`
  */
 async function buildCargoPackage(
   options: BuildCargoPackageOptions
@@ -235,8 +239,16 @@ async function buildCargoPackage(
     )
   }
 
+  const name = typeof pkg.name === 'string' ? pkg.name : undefined
+
+  if (name !== undefined && !CRATE_NAME_PATTERN.test(name)) {
+    throw new Error(
+      `Crate name "${name}" in "${packageDir}" contains characters outside [A-Za-z0-9_-].`
+    )
+  }
+
   return {
-    name: typeof pkg.name === 'string' ? pkg.name : undefined,
+    name,
     version: resolvedVersion,
     private: pkg.publish === false || Array.isArray(pkg.publish),
     root: packageDir === '.',

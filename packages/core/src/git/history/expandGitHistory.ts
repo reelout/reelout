@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
-import { execGit } from '#util'
+import { execGit, formatError } from '#util'
+import type { ConsolaInstance } from 'consola/core'
 import { isGitShallowRepository } from '../repository/isGitShallowRepository'
 import { withShallowLock } from '../repository/withShallowLock'
 import { isGitAncestor } from '../revision/isGitAncestor'
@@ -26,6 +27,11 @@ export interface ExpandGitHistoryOptions {
    * If provided the function will first attempt a single fetch to reach this commit
    */
   until?: string | null | undefined
+
+  /**
+   * Optional logger that receives failed fetch attempts at debug level
+   */
+  logger?: ConsolaInstance | undefined
 }
 
 /**
@@ -73,7 +79,11 @@ export async function expandGitHistory(
         ])
 
         return true
-      } catch {}
+      } catch (error: unknown) {
+        options.logger?.debug(
+          `Shallow fetch to reach "${until}" failed and incremental deepening will be attempted: ${formatError(error)}`
+        )
+      }
     }
 
     // Incremental deepening: account for existing local depth when `from` is set
@@ -105,7 +115,11 @@ export async function expandGitHistory(
       ])
 
       return true
-    } catch {
+    } catch (error: unknown) {
+      options.logger?.debug(
+        `Shallow history at "${cwd}" could not be deepened by ${pageSize} commits: ${formatError(error)}`
+      )
+
       return false
     }
   })

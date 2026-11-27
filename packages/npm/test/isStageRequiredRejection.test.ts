@@ -12,6 +12,16 @@ test('matches the stage-required error code in non-error values', () => {
   ).toBe(true)
 })
 
+test('matches the stage-required error code in error objects', () => {
+  expect(
+    isStageRequiredRejection(
+      new Error(
+        'npm error code E_STAGE_REQUIRED\nnpm error 403 Forbidden - direct publishing is disabled for this package: use staged publishing'
+      )
+    )
+  ).toBe(true)
+})
+
 test('returns false for non-error values without the stage-required error code', () => {
   expect(isStageRequiredRejection('network unreachable')).toBe(false)
 })

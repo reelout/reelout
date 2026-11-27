@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
-import type { ReleaseContext } from '@reelout/core'
+import { formatError, type ReleaseContext } from '@reelout/core'
 import fs from 'node:fs/promises'
 import { homedir } from 'node:os'
 import path from 'node:path'
@@ -18,14 +18,16 @@ function credentialsFilePath(cargoHome: string): string {
  * Prefers a non-empty `CARGO_REGISTRY_TOKEN` environment variable, then
  * falls back to the `token` value under `[registry]` in the cargo
  * credentials file, `$CARGO_HOME/credentials.toml` (default
- * `~/.cargo/credentials.toml`). The resolved token is passed through to
- * `cargo` commands untouched; it is never written or logged.
+ * `~/.cargo/credentials.toml`). A credentials file that exists but is not
+ * valid TOML resolves to no token and logs a debug message. The resolved
+ * token is passed through to `cargo` commands untouched; it is never
+ * written or logged.
  *
- * @param context Release context containing environment variables
+ * @param context Release context containing environment variables and logger
  * @returns The resolved token, or undefined when no credentials exist
  */
 export async function resolveCargoToken(
-  context: Pick<ReleaseContext, 'env'>
+  context: Pick<ReleaseContext, 'env' | 'logger'>
 ): Promise<string | undefined> {
   const envToken = context.env.CARGO_REGISTRY_TOKEN?.trim()
 
@@ -51,7 +53,11 @@ export async function resolveCargoToken(
 
   try {
     data = parse(credentials)
-  } catch {
+  } catch (error) {
+    context.logger.debug(
+      `Cargo credentials could not be parsed: ${formatError(error)}`
+    )
+
     return undefined
   }
 

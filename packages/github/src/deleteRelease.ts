@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Fai
 
-import { Octokit } from '@octokit/rest'
 import type { GitRepository, ReleasePlan } from '@reelout/core'
+import { createOctokit } from './createOctokit'
 
 /**
  * Delete a GitHub release associated with a package tag.
@@ -25,11 +25,7 @@ export async function deleteRelease(
   }
 
   try {
-    /* istanbul ignore next */
-    const octokit = new Octokit({
-      auth: token,
-      log: { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} },
-    })
+    const octokit = createOctokit(token)
 
     const { data: release } = await octokit.rest.repos.getReleaseByTag({
       owner: repository.owner,

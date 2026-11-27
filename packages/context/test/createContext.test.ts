@@ -5,7 +5,6 @@ import { defaultConfig, resolveConfig } from '@reelout/config'
 import { createContext, type CreateContextOptions } from '@reelout/context'
 import {
   compact,
-  execCommand,
   execGit,
   normalizeReleaseRule,
   type ResolvedReleaseConfig,
@@ -44,14 +43,14 @@ beforeEach(() => {
   }
 })
 
-test('throws error when repository contains no commits', async () => {
+test('throws without a commit and resolves the ref and commit once one exists', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     options.cwd = cwd
 
     await initializeGitRepository(cwd)
 
     await expect(createContext(options)).rejects.toMatchInlineSnapshot(
-      `[Error: Initialize a Git repository with at least one commit before running this command.]`
+      `[Error: The current Git commit could not be resolved: the repository needs at least one commit.]`
     )
 
     await execGit(cwd, ['commit', '--allow-empty', '-m', 'Initial commit'])
@@ -93,7 +92,7 @@ test('throws error when repository contains no commits', async () => {
   })
 })
 
-test('throws error when checked out on a detached HEAD or tag instead of a branch', async () => {
+test('throws on a detached HEAD or tag and derives qualifiers from the checked-out branch', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     options.cwd = cwd
 
@@ -109,7 +108,7 @@ test('throws error when checked out on a detached HEAD or tag instead of a branc
     ])
 
     await expect(createContext(options)).rejects.toMatchInlineSnapshot(
-      `[Error: Check out a Git branch in your repository before proceeding.]`
+      `[Error: The current Git branch could not be resolved: check out a Git branch in your repository before proceeding.]`
     )
 
     await execGit(cwd, ['checkout', 'main'])
@@ -131,7 +130,7 @@ test('throws error when checked out on a detached HEAD or tag instead of a branc
     await execGit(cwd, ['checkout', 'v1.0.0'])
 
     await expect(createContext(options)).rejects.toMatchInlineSnapshot(
-      `[Error: Check out a Git branch in your repository before proceeding.]`
+      `[Error: The current Git branch could not be resolved: check out a Git branch in your repository before proceeding.]`
     )
   })
 })
@@ -143,10 +142,8 @@ test('populates context with default configuration, plugins, and metadata upon s
     await initializeGitRepository(cwd)
 
     await writePackageJson(cwd, {})
-    await execCommand('corepack', ['use', 'pnpm@10.30.1'], options)
-    await execCommand('pnpm', ['add', process.cwd()], options)
-    await execGit(cwd, ['add', '.'])
-    await execGit(cwd, ['commit', '-m', 'chore: init'])
+
+    await execGit(cwd, ['commit', '--allow-empty', '-m', 'Initial commit'])
 
     const context = await createContext(options)
 
@@ -197,7 +194,7 @@ test('populates context with default configuration, plugins, and metadata upon s
       outcome: null,
     })
   })
-}, 15_000)
+})
 
 test('uses custom logger instance when provided in options', async () => {
   await temporaryDirectoryTask(async (cwd) => {
@@ -301,6 +298,64 @@ test('enables verbose logging level when debug option is enabled', async () => {
     const context = await createContext({ ...options, debug: true })
 
     expect(context.logger.level).toBe(LogLevels.verbose)
+  })
+})
+
+test('passes environment variables through to the context', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    options.cwd = cwd
+
+    await initializeGitRepository(cwd)
+
+    await execGit(cwd, ['commit', '--allow-empty', '-m', 'Initial commit'])
+
+    const env = { REELOUT_REGISTRY_TOKEN: 'secret-token' }
+
+    expect((await createContext({ ...options, env })).env).toBe(env)
+  })
+})
+
+test('passes abort signal through to the context', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    options.cwd = cwd
+
+    await initializeGitRepository(cwd)
+
+    await execGit(cwd, ['commit', '--allow-empty', '-m', 'Initial commit'])
+
+    const controller = new AbortController()
+
+    expect(
+      (await createContext({ ...options, signal: controller.signal })).signal
+    ).toBe(controller.signal)
+  })
+})
+
+test('passes explicit release type hints through to the context', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    options.cwd = cwd
+
+    await initializeGitRepository(cwd)
+
+    await execGit(cwd, ['commit', '--allow-empty', '-m', 'Initial commit'])
+
+    expect((await createContext({ ...options, type: 'minor' })).type).toBe(
+      'minor'
+    )
+  })
+})
+
+test('passes the allowEmpty option through to the context', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    options.cwd = cwd
+
+    await initializeGitRepository(cwd)
+
+    await execGit(cwd, ['commit', '--allow-empty', '-m', 'Initial commit'])
+
+    expect(
+      (await createContext({ ...options, allowEmpty: true })).allowEmpty
+    ).toBe(true)
   })
 })
 

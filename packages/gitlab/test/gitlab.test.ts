@@ -101,9 +101,6 @@ test('skips GitLab release creation when GITLAB_TOKEN environment variable is mi
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
       [
-        "GitLab releases will not be created: GITLAB_TOKEN is not set.",
-      ],
-      [
         "Status: [32mSUCCESS[39m",
       ],
       [
@@ -262,9 +259,6 @@ test('previews the GitLab release skip during dry-run mode when GITLAB_TOKEN env
   expect(removeReleaseMock).not.toHaveBeenCalled()
   expect(logger.mock.calls).toMatchInlineSnapshot(`
     [
-      [
-        "GitLab releases will not be created: GITLAB_TOKEN is not set.",
-      ],
       [
         "Status: [32mSUCCESS[39m [33m(dry run)[39m",
       ],

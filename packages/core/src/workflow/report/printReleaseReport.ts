@@ -74,7 +74,12 @@ export function printReleaseReport(
 
       version = ` ${version} `
 
-      const type = plan.release.type && colors.gray(` ${plan.release.type} `)
+      // `Release.type` is non-optional on the type level, but report data built
+      // by hooks and tests can reach this view without a derived type, so the
+      // guard keeps the report readable instead of printing "undefined".
+      const type = plan.release.type
+        ? colors.gray(` ${plan.release.type} `)
+        : undefined
 
       const summary = [
         name,

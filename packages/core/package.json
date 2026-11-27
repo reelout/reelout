@@ -2,12 +2,21 @@
   "name": "@reelout/core",
   "version": "0.13.0",
   "description": "Release engine for commit analysis, version planning, lifecycle hooks, and release notes.",
+  "keywords": [
+    "release",
+    "versioning",
+    "monorepo",
+    "changelog",
+    "conventional-commits",
+    "plugin"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/reelout/reelout.git",
     "directory": "packages/core"
   },
   "license": "MIT",
+  "sideEffects": false,
   "type": "module",
   "imports": {
     "#*": [
@@ -60,5 +69,8 @@
   },
   "engines": {
     "node": ">=24.15"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

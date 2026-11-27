@@ -46,5 +46,5 @@ export async function buildReleaseNotes(
 
   const filePath = path.join(context.cwd, DEFAULT_CHANGELOG_FILE)
 
-  return formatFile(filePath, toMarkdown(root))
+  return formatFile(filePath, toMarkdown(root), context.logger)
 }
