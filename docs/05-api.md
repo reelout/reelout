@@ -62,7 +62,12 @@ flag.
 ## Resolving configuration
 
 ```ts
-import { resolveConfig, defaultConfig, mergeConfig } from 'reelout'
+import {
+  resolveConfig,
+  defaultConfig,
+  mergeConfig,
+  validateUserConfig,
+} from 'reelout'
 
 // Discover configuration, merge it over defaults, and normalize it
 const config = await resolveConfig(process.cwd())
@@ -74,6 +79,10 @@ const merged = mergeConfig(defaultConfig, {
 ```
 
 See the [Configuration](./02-config.md) guide for the config format and defaults.
+
+`validateUserConfig(config, filepath)` applies the same validation
+`resolveConfig` runs, so custom tooling can reject an invalid
+configuration before a release starts.
 
 ## Building a custom CLI
 
@@ -108,7 +117,7 @@ The re-exported packages expose the workflow's building blocks, which you can us
 
 - **Versioning** — `bumpVersion`, `generateGitTagName`, `generateReleaseCommitMessage`, `buildReleaseNotes`
 - **Git** — `parseGitCommit`, `pushGitChanges`, `restoreFullGitHistory`, `readGitHistory`
-- **Plugin system** — `HookDispatcher`, `Interceptor`, `Priority`, `RELEASE_HOOK_NAMES`, `createPlugin`
+- **Plugin system** — `HookDispatcher`, `Interceptor`, `Priority`, `RELEASE_HOOK_NAMES`, `createPlugin`, `createHostReleasePlugin`
 - **npm** (from `@reelout/npm`) — `readPackageJson`, `writePackageJson`, `resolveWorkspaceMembers`, `prepareAuth`, `publishPackage`
 
 Browse the full surface in the [API reference](https://reelout.overview.vercel.app/).
