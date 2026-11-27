@@ -122,7 +122,7 @@ const rollbackReleases = async (
  * Produces the shared skeleton behind the host release plugins. The plugin
  * stays inactive unless the release repository is hosted on the given host,
  * and verifies the token during the `configure` stage: a missing token
- * skips the plugin's `publish` step with a warning — or fails the run in
+ * skips the plugin's `publish` step with a debug message — or fails the run in
  * strict mode — and a provided token is verified against the release
  * repository before any mutation. During `publish`, host releases are
  * created in reverse alphabetical package order (ensuring the root package

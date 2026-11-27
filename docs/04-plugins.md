@@ -92,8 +92,9 @@ crates are incidental. Override [`plugins`](./02-config.md#plugins) to remove
 the unwanted integration in that case.
 
 Credential skipping is different: an **active** plugin that lacks its token
-logs a warning and skips its step, and `--strict` fails the run instead (see
-[Skipping steps](#skipping-steps)).
+skips its step, and `--strict` fails the run instead (see
+[Skipping steps](#skipping-steps)). npm and cargo announce the skip with a
+warning; the github and gitlab hosting plugins log it at `debug` level.
 
 ## Priorities
 
