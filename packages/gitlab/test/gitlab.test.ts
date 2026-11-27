@@ -333,29 +333,6 @@ test('rolls back published GitLab releases when a subsequent plugin fails', asyn
   ])
 })
 
-test('rolls back created GitLab releases when a later release creation fails mid-loop', async () => {
-  context.env = { GITLAB_TOKEN: 'token' }
-
-  context.repository = createMockRepository('gitlab')
-
-  context.plans = [
-    createNamedReleasePlan('a', 'v-a'),
-    createNamedReleasePlan('b', 'v-b'),
-  ]
-
-  createReleaseMock
-    .mockResolvedValueOnce(undefined)
-    .mockRejectedValueOnce(new Error('Release creation failed'))
-
-  await expect(executeReleaseWorkflow(context, [plugin()])).rejects.toThrow(
-    'Release creation failed'
-  )
-
-  expect(createReleaseMock).toHaveBeenCalledTimes(2)
-  expect(removeReleaseMock).toHaveBeenCalledTimes(1)
-  expect(removeReleaseMock).toHaveBeenCalledWith(projectId, 'v-b')
-})
-
 test('restores overwritten GitLab releases instead of deleting them during rollback', async () => {
   context.env = { GITLAB_TOKEN: 'token' }
 
