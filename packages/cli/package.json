@@ -1,6 +1,6 @@
 {
   "name": "@reelout/cli",
-  "version": "0.7.4",
+  "version": "0.8.0",
   "description": "Command-line interface for configuring and running ReelOut release workflows.",
   "keywords": [
     "release",

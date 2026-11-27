@@ -1,6 +1,6 @@
 {
   "name": "@reelout/npm",
-  "version": "0.14.1",
+  "version": "0.15.0",
   "description": "npm plugin for discovering workspaces, updating manifests and dependency ranges, and publishing packages.",
   "keywords": [
     "release",

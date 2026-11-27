@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.15.0](https://github.com/reelout/reelout/compare/%40reelout%2Fnpm%400.14.1...%40reelout%2Fnpm%400.15.0) (2026-11-27)
+
+### ⚠ BREAKING CHANGES
+
+- remove the public exports saveConfigSafely
+  (@reelout/npm), extractPreviousVersion and promotePrereleaseVersions
+  (root API), the InMemoryStore subpath (@reelout/context), and the
+  unused private option from the exported BumpVersionOptions type
+  (root API).
+
+### Bug Fixes
+
+- comprehensive codebase remediation across review findings ([#36](https://github.com/reelout/reelout/issues/36)) ([8388949](https://github.com/reelout/reelout/commit/838894957838d47bb45e8408ed0b4f9ce83e3c94))
+
 ## [0.14.1](https://github.com/reelout/reelout/compare/%40reelout%2Fnpm%400.14.0...%40reelout%2Fnpm%400.14.1) (2026-11-26)
 
 ### Bug Fixes
