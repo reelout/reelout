@@ -11,7 +11,7 @@ import {
   CARGO_MANIFEST_FILE,
   readCargoToml,
 } from './readCargoToml'
-import type { CargoToml } from './types'
+import type { CargoPackageTable, CargoToml } from './types'
 
 /** Characters a crate name may contain when passed to `cargo publish -p` or used in sparse index paths. */
 const CRATE_NAME_PATTERN = /^[A-Za-z0-9_-]+$/
@@ -250,13 +250,39 @@ async function buildCargoPackage(
   return {
     name,
     version: resolvedVersion,
-    private: pkg.publish === false || Array.isArray(pkg.publish),
+    private: isPrivateCrate(pkg.publish),
     root: packageDir === '.',
     entry: packageDir === '.',
     dependencies: collectCargoDependencyNames(manifest),
     location: packageDir,
     files,
   }
+}
+
+/**
+ * Determine whether a crate is private and cannot be published to
+ * crates.io.
+ *
+ * Reads the manifest's `publish` restriction the way `cargo publish`
+ * does: `publish = false` and allowlists without `"crates-io"` leave the
+ * crate unpublishable to the crates.io registry this flow targets, while
+ * `publish = true`, an omitted restriction, and allowlists containing
+ * `"crates-io"` keep it publishable.
+ *
+ * @param publish The `publish` restriction of the crate's `[package]`
+ * table
+ * @returns True when the crate cannot be published to crates.io
+ */
+function isPrivateCrate(publish: CargoPackageTable['publish']): boolean {
+  if (publish === false) {
+    return true
+  }
+
+  if (Array.isArray(publish)) {
+    return !publish.includes('crates-io')
+  }
+
+  return false
 }
 
 /**

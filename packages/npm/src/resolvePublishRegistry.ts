@@ -20,12 +20,16 @@ export const DEFAULT_YARN_REGISTRY = 'https://registry.yarnpkg.com/'
  *
  * Inspects `package.json` settings, scoped overrides, and package manager files
  * to determine the target endpoint. Falls back to default npm or Yarn registries
- * when no explicit configuration exists.
+ * when no explicit configuration exists. Configuration files that fail to load
+ * fail the resolution, because silently falling back to a default registry
+ * could publish a package to a registry it was never configured for.
  *
  * @param context Release context containing environment and working directory
  * @param pkg Target package metadata object
  * @param packageManager Information about the active package manager
  * @returns Resolved publish registry URL string
+ * @throws If the package manifest or the active package manager's
+ * configuration could not be read
  */
 export async function resolvePublishRegistry(
   context: ReleaseContext,
@@ -48,7 +52,10 @@ export async function resolvePublishRegistry(
     const cause = (error as { cause?: unknown }).cause
 
     if ((cause as NodeJS.ErrnoException | undefined)?.code !== 'ENOENT') {
-      throw error
+      throw new Error(
+        'The package manifest could not be read while resolving the publish registry.',
+        { cause: error }
+      )
     }
 
     context.logger.debug(
@@ -57,60 +64,84 @@ export async function resolvePublishRegistry(
   }
 
   if (packageManager.isYarnBerry) {
-    try {
-      const config = await loadYarnConfig(context.cwd)
+    const config = await loadYarnConfigOrFail(context)
 
-      if (packageScope) {
-        const scopeSettings = config.get('npmScopes').get(packageScope)
-
-        const registry =
-          normalizeRegistry(scopeSettings?.get('npmPublishRegistry')) ??
-          normalizeRegistry(scopeSettings?.get('npmRegistryServer'))
-
-        if (registry) {
-          return registry
-        }
-      }
+    if (packageScope) {
+      const scopeSettings = config.get('npmScopes').get(packageScope)
 
       const registry =
-        normalizeRegistry(config.get('npmPublishRegistry')) ??
-        normalizeRegistry(config.get('npmRegistryServer'))
+        normalizeRegistry(scopeSettings?.get('npmPublishRegistry')) ??
+        normalizeRegistry(scopeSettings?.get('npmRegistryServer'))
 
       if (registry) {
         return registry
       }
-    } catch (error) {
-      context.logger.debug(
-        `Yarn configuration could not be loaded while resolving the publish registry: ${formatError(error)}`
-      )
+    }
+
+    const registry =
+      normalizeRegistry(config.get('npmPublishRegistry')) ??
+      normalizeRegistry(config.get('npmRegistryServer'))
+
+    if (registry) {
+      return registry
     }
 
     return DEFAULT_YARN_REGISTRY
-  } else {
-    try {
-      const config = await loadConfig(context.cwd, { env: context.env })
+  }
 
-      if (packageScope) {
-        const registry = normalizeRegistry(
-          config.get(`@${packageScope}:registry`) as string
-        )
+  const config = await loadConfigOrFail(context)
 
-        if (registry) {
-          return registry
-        }
-      }
+  if (packageScope) {
+    const registry = normalizeRegistry(
+      config.get(`@${packageScope}:registry`) as string
+    )
 
-      const registry = normalizeRegistry(config.get('registry') as string)
-
-      if (registry) {
-        return registry
-      }
-    } catch (error) {
-      context.logger.debug(
-        `npm configuration could not be loaded while resolving the publish registry: ${formatError(error)}`
-      )
+    if (registry) {
+      return registry
     }
   }
 
+  const registry = normalizeRegistry(config.get('registry') as string)
+
+  if (registry) {
+    return registry
+  }
+
   return DEFAULT_REGISTRY
+}
+
+/**
+ * Load Yarn configuration settings or fail with a contextual error.
+ *
+ * @param context Release context containing environment and working directory
+ * @returns Resolved Yarn configuration instance
+ * @throws If the Yarn configuration could not be loaded
+ */
+async function loadYarnConfigOrFail(context: ReleaseContext) {
+  try {
+    return await loadYarnConfig(context.cwd)
+  } catch (error) {
+    throw new Error(
+      'The Yarn configuration could not be loaded while resolving the publish registry.',
+      { cause: error }
+    )
+  }
+}
+
+/**
+ * Load npm configuration settings or fail with a contextual error.
+ *
+ * @param context Release context containing environment and working directory
+ * @returns Resolved npm configuration instance
+ * @throws If the npm configuration could not be loaded
+ */
+async function loadConfigOrFail(context: ReleaseContext) {
+  try {
+    return await loadConfig(context.cwd, { env: context.env })
+  } catch (error) {
+    throw new Error(
+      'The npm configuration could not be loaded while resolving the publish registry.',
+      { cause: error }
+    )
+  }
 }

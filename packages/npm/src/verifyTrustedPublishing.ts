@@ -3,9 +3,16 @@
 
 import type { ReleaseContext, ReleasePlan } from '@reelout/core'
 import { formatError } from '@reelout/core'
+import { colors } from 'consola/utils'
 import semver from 'semver'
 import { getPackageManagerFullVersion } from './getPackageManagerFullVersion'
-import { hasAuth, hasOIDCAuth } from './hasAuth'
+import {
+  hasAuth,
+  hasConfiguredAuth,
+  hasOIDCAuth,
+  MINIMUM_YARN_OIDC_VERSION,
+  usesYarnOidcTrustedPublishing,
+} from './hasAuth'
 import type { PackageManagerInfo } from './inspectPackageManager'
 import {
   isCompleteReleasePlan,
@@ -13,9 +20,11 @@ import {
 } from './isCompleteReleasePlan'
 import { isJsonObject } from './isJsonObject'
 import { normalizeRegistry } from './normalizeRegistry'
+import { PLUGIN_NAME } from './PLUGIN_NAME'
 import type { PackageManager } from './resolvePackageManager'
 import {
   DEFAULT_REGISTRY,
+  DEFAULT_YARN_REGISTRY,
   resolvePublishRegistry,
 } from './resolvePublishRegistry'
 
@@ -34,7 +43,7 @@ const MINIMUM_OIDC_CLI_VERSIONS: Readonly<
 > = {
   npm: '11.5.1',
   pnpm: '11.0.0',
-  yarn: undefined,
+  yarn: MINIMUM_YARN_OIDC_VERSION,
 }
 
 /**
@@ -47,35 +56,48 @@ const MINIMUM_OIDC_CLI_VERSIONS: Readonly<
  * would issue one, while the publish itself authenticates through the
  * package manager's own OIDC support. Runs when OIDC environment tokens
  * exist — even alongside an `NPM_TOKEN`, which the OIDC authentication
- * takes precedence over — and the package manager is npm or pnpm. Complete
- * plans targeting the public npm registry are verified; complete plans on
- * any other registry fail the release when neither an `NPM_TOKEN` nor
- * ambient registry credentials exist for them, because OIDC authentication
- * cannot publish them. Requires a package manager CLI that can publish
- * with OIDC itself and fails the release when it is too old. Identity
- * token and exchange requests abort after 30 seconds. Fails the
- * release when the identity token cannot be retrieved or an exchange is
- * rejected, before a single package is published.
+ * takes precedence over — and the package manager publishes with OIDC:
+ * npm, pnpm, or Yarn Berry 4.3.0 or newer on a supported CI platform,
+ * 4.4.2 or newer on CircleCI. Complete plans targeting the public npm registry are verified, Yarn
+ * Berry plans on the registry's alias domain included, except Yarn Berry
+ * plans with configured registry credentials, which publish with those
+ * instead. Complete plans on any other registry fail the release when
+ * neither an `NPM_TOKEN` nor ambient registry credentials exist for them,
+ * because OIDC authentication cannot publish them. Requires a package
+ * manager CLI that can publish with OIDC itself and fails the release
+ * when it is too old. Identity token and exchange requests abort after
+ * 30 seconds. A rejected exchange fails the release — Yarn Berry plans
+ * publish with OIDC alone — unless npm or pnpm releases can fall back to
+ * an `NPM_TOKEN` or ambient registry credentials, which are warned about
+ * instead. Fails before a single package is published.
  *
  * @param context Release context containing environment and working directory
  * @param plans Release plans to verify
  * @param packageManager Information about the active package manager
+ * @param pluginName Name of the plugin whose plans are verified, defaulting
+ * to the npm plugin
  * @returns The plans whose trusted publishing was verified; empty when OIDC
  * authentication is not in use
  * @throws If a plan targets a registry without OIDC support and no other
  * credentials exist, or any plan's trusted-publishing token exchange was
- * rejected
+ * rejected without credentials to fall back to
  */
 export async function verifyTrustedPublishing(
   context: ReleaseContext,
   plans: readonly ReleasePlan[],
-  packageManager: PackageManagerInfo
+  packageManager: PackageManagerInfo,
+  pluginName: string = PLUGIN_NAME
 ): Promise<Set<CompleteReleasePlan>> {
   if (!hasOIDCAuth(context.env)) {
     return new Set()
   }
 
-  if (!packageManager.isNpm && !packageManager.isPnpm) {
+  const yarnBerryOidc = usesYarnOidcTrustedPublishing(
+    packageManager,
+    context.env
+  )
+
+  if (!packageManager.isNpm && !packageManager.isPnpm && !yarnBerryOidc) {
     context.logger.debug(
       'Trusted publishing was not verified: the package manager does not support OIDC authentication.'
     )
@@ -91,7 +113,7 @@ export async function verifyTrustedPublishing(
   }> = []
 
   for (const plan of plans) {
-    if (!isCompleteReleasePlan(plan)) {
+    if (!isCompleteReleasePlan(plan, pluginName)) {
       continue
     }
 
@@ -101,11 +123,30 @@ export async function verifyTrustedPublishing(
       packageManager
     )
 
-    if (normalizeRegistry(registry) === DEFAULT_REGISTRY) {
-      targets.push(plan)
-    } else {
+    const normalizedRegistry = normalizeRegistry(registry)
+
+    const isPublicNpmRegistry =
+      normalizedRegistry === DEFAULT_REGISTRY ||
+      (yarnBerryOidc && normalizedRegistry === DEFAULT_YARN_REGISTRY)
+
+    if (!isPublicNpmRegistry) {
       unsupportedRegistryPlans.push({ plan, registry })
+
+      continue
     }
+
+    if (
+      packageManager.isYarnBerry &&
+      (await hasConfiguredAuth(context, plan.package, packageManager))
+    ) {
+      context.logger.debug(
+        `Trusted publishing was not verified for "${plan.package.name}@${plan.release.version}": configured registry credentials take precedence over OIDC with Yarn Berry.`
+      )
+
+      continue
+    }
+
+    targets.push(plan)
   }
 
   const unauthenticated: string[] = []
@@ -138,15 +179,13 @@ export async function verifyTrustedPublishing(
     return new Set()
   }
 
-  await assertOidcCapablePackageManager(context, packageManager.name)
+  await assertOidcCapablePackageManager(context, packageManager)
 
   const identityToken = await resolveIdentityToken(context)
 
-  const failures: string[] = []
+  const failures: Array<{ plan: CompleteReleasePlan; reason: string }> = []
 
   for (const plan of targets) {
-    const target = `${plan.package.name}@${plan.release.version}`
-
     try {
       await exchangeTrustedPublishingToken(
         context,
@@ -154,53 +193,96 @@ export async function verifyTrustedPublishing(
         plan.package.name
       )
     } catch (error) {
-      failures.push(`"${target}" (${formatError(error)})`)
+      failures.push({ plan, reason: String(formatError(error)) })
     }
   }
 
+  const failedPlans = new Set(failures.map((failure) => failure.plan))
+
+  const verified = targets.filter((plan) => !failedPlans.has(plan))
+
   if (failures.length > 0) {
-    throw new Error(
-      `Trusted publishing could not be verified for ${failures.join(', ')}.`
+    const fallbacks: string[] = []
+
+    const fatal: string[] = []
+
+    for (const { plan, reason } of failures) {
+      const target = `"${plan.package.name}@${plan.release.version}" (${reason})`
+
+      const canFallBackToCredentials =
+        !packageManager.isYarnBerry &&
+        (Boolean(context.env.NPM_TOKEN?.trim()) ||
+          (await hasConfiguredAuth(context, plan.package, packageManager)))
+
+      if (canFallBackToCredentials) {
+        fallbacks.push(target)
+      } else {
+        fatal.push(target)
+      }
+    }
+
+    if (fallbacks.length > 0) {
+      context.logger.warn(
+        colors.yellow(
+          `Trusted publishing could not be verified for ${fallbacks.join(', ')}: the release will publish with NPM_TOKEN or ambient registry credentials instead.`
+        )
+      )
+    }
+
+    if (fatal.length > 0) {
+      throw new Error(
+        `Trusted publishing could not be verified for ${fatal.join(', ')}.`
+      )
+    }
+  }
+
+  if (verified.length > 0) {
+    context.logger.info(
+      `Trusted publishing verified for ${verified
+        .map((plan) => `"${plan.package.name}@${plan.release.version}"`)
+        .join(', ')}.`
     )
   }
 
-  context.logger.info(
-    `Trusted publishing verified for ${targets
-      .map((plan) => `"${plan.package.name}@${plan.release.version}"`)
-      .join(', ')}.`
-  )
-
-  return new Set(targets)
+  return new Set(verified)
 }
 
 /**
  * Assert that the active package manager CLI can publish with OIDC trusted
  * publishing.
  *
+ * Reads the CLI version from the inspected package manager, querying it
+ * when the inspection could not resolve one, and fails the release when
+ * the version is unknown or older than the first version with OIDC
+ * publishing support.
+ *
  * @param context Release context containing environment and working directory
- * @param name Name of the active package manager executable
- * @returns A promise that resolves when the CLI can publish with OIDC trusted publishing
+ * @param packageManager Information about the active package manager
+ * @returns A promise that resolves when the CLI can publish with OIDC
+ * trusted publishing
  * @throws If the CLI version is unknown or older than the first version
  * with OIDC publishing support
  */
-async function assertOidcCapablePackageManager(
+export async function assertOidcCapablePackageManager(
   context: ReleaseContext,
-  name: PackageManager
+  packageManager: PackageManagerInfo
 ): Promise<void> {
-  const minimumVersion = MINIMUM_OIDC_CLI_VERSIONS[name]
+  const minimumVersion = MINIMUM_OIDC_CLI_VERSIONS[packageManager.name]
 
   if (minimumVersion === undefined) {
     return
   }
 
-  const version = await getPackageManagerFullVersion(context.cwd, name, {
-    env: context.env,
-    signal: context.signal,
-  })
+  const version =
+    packageManager.version ??
+    (await getPackageManagerFullVersion(context.cwd, packageManager.name, {
+      env: context.env,
+      signal: context.signal,
+    }))
 
   if (version === undefined || semver.lt(version, minimumVersion)) {
     throw new Error(
-      `Trusted publishing requires ${name} >= ${minimumVersion}, but "${version ?? 'an unknown version'}" was found.`
+      `Trusted publishing requires ${packageManager.name} >= ${minimumVersion}, but "${version ?? 'an unknown version'}" was found.`
     )
   }
 }

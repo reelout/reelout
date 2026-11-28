@@ -294,7 +294,7 @@ test('respects workspace exclude patterns', async () => {
   })
 })
 
-test('marks crates restricted to a publish allowlist as private', async () => {
+test('marks crates restricted to a private-registry publish allowlist as private', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     await writeManifest(cwd, [
       '[package]',
@@ -309,6 +309,101 @@ test('marks crates restricted to a publish allowlist as private', async () => {
     expect(fulfilledPackage(results[0])).toMatchObject({
       name: 'a',
       private: true,
+    })
+  })
+})
+
+test('marks crates restricted to an empty publish allowlist as private', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    await writeManifest(cwd, [
+      '[package]',
+      'name = "a"',
+      'version = "1.2.3"',
+      'publish = []',
+    ])
+
+    const results = await loadCargoPackages(cwd)
+
+    expect(results).toHaveLength(1)
+    expect(fulfilledPackage(results[0])).toMatchObject({
+      name: 'a',
+      private: true,
+    })
+  })
+})
+
+test('marks crates publishable to crates-io through a publish allowlist as public', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    await writeManifest(cwd, [
+      '[package]',
+      'name = "a"',
+      'version = "1.2.3"',
+      'publish = ["crates-io"]',
+    ])
+
+    const results = await loadCargoPackages(cwd)
+
+    expect(results).toHaveLength(1)
+    expect(fulfilledPackage(results[0])).toMatchObject({
+      name: 'a',
+      private: false,
+    })
+  })
+})
+
+test('marks crates publishable to crates-io among other registries as public', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    await writeManifest(cwd, [
+      '[package]',
+      'name = "a"',
+      'version = "1.2.3"',
+      'publish = ["private-registry", "crates-io"]',
+    ])
+
+    const results = await loadCargoPackages(cwd)
+
+    expect(results).toHaveLength(1)
+    expect(fulfilledPackage(results[0])).toMatchObject({
+      name: 'a',
+      private: false,
+    })
+  })
+})
+
+test('marks crates with an explicit publish restriction as private', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    await writeManifest(cwd, [
+      '[package]',
+      'name = "a"',
+      'version = "1.2.3"',
+      'publish = false',
+    ])
+
+    const results = await loadCargoPackages(cwd)
+
+    expect(results).toHaveLength(1)
+    expect(fulfilledPackage(results[0])).toMatchObject({
+      name: 'a',
+      private: true,
+    })
+  })
+})
+
+test('marks crates with an explicit publish permission as public', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    await writeManifest(cwd, [
+      '[package]',
+      'name = "a"',
+      'version = "1.2.3"',
+      'publish = true',
+    ])
+
+    const results = await loadCargoPackages(cwd)
+
+    expect(results).toHaveLength(1)
+    expect(fulfilledPackage(results[0])).toMatchObject({
+      name: 'a',
+      private: false,
     })
   })
 })

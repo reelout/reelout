@@ -73,6 +73,80 @@ test('exchanges the pre-issued identity token for a publish token', async () => 
   ])
 })
 
+test('trims the pre-issued identity token before the exchange', async () => {
+  context.env = { CARGO_ID_TOKEN: '  mock-id-token \n' }
+
+  mockExchange()
+
+  await expect(verifyTrustedPublishing(context)).resolves.toBe(
+    'mock-publish-token'
+  )
+
+  expect(fetchMock.mock.calls[0]?.[1]).toMatchObject({
+    body: JSON.stringify({ jwt: 'mock-id-token' }),
+  })
+})
+
+test('trims the identity token returned by GitHub Actions', async () => {
+  context.env = {
+    ACTIONS_ID_TOKEN_REQUEST_URL: 'https://github-actions-token/',
+    ACTIONS_ID_TOKEN_REQUEST_TOKEN: 'mock-request-token',
+  }
+
+  mockIdentityToken('  mock-id-token \n')
+
+  mockExchange()
+
+  await expect(verifyTrustedPublishing(context)).resolves.toBe(
+    'mock-publish-token'
+  )
+
+  expect(fetchMock.mock.calls[1]?.[1]).toMatchObject({
+    body: JSON.stringify({ jwt: 'mock-id-token' }),
+  })
+})
+
+test('trims the publish token returned by the exchange', async () => {
+  context.env = { CARGO_ID_TOKEN: 'mock-id-token' }
+
+  mockExchange(200, { token: '  mock-publish-token \n' })
+
+  await expect(verifyTrustedPublishing(context)).resolves.toBe(
+    'mock-publish-token'
+  )
+})
+
+test('rejects an identity token that is whitespace only', async () => {
+  context.env = {
+    ACTIONS_ID_TOKEN_REQUEST_URL: 'https://github-actions-token/',
+    ACTIONS_ID_TOKEN_REQUEST_TOKEN: 'mock-request-token',
+  }
+
+  mockIdentityToken('   ')
+
+  const error: unknown = await verifyTrustedPublishing(context).catch(
+    (err) => err
+  )
+
+  expect(error).toMatchInlineSnapshot(
+    `[Error: OIDC identity token could not be retrieved from GitHub Actions: the response carries no identity token.]`
+  )
+})
+
+test('rejects a publish token that is whitespace only', async () => {
+  context.env = { CARGO_ID_TOKEN: 'mock-id-token' }
+
+  mockExchange(200, { token: '   ' })
+
+  const error: unknown = await verifyTrustedPublishing(context).catch(
+    (err) => err
+  )
+
+  expect(error).toMatchInlineSnapshot(
+    `[Error: Trusted publishing could not be verified: the response carries no publish token.]`
+  )
+})
+
 test('requests the identity token from GitHub Actions with the crates.io audience', async () => {
   context.env = {
     ACTIONS_ID_TOKEN_REQUEST_URL: 'https://github-actions-token/',

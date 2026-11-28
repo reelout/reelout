@@ -8,6 +8,7 @@ import { isPackageTarballIdentical } from './isPackageTarballIdentical'
 import { isTarballIntegrityMatch } from './isTarballIntegrityMatch'
 import { downloadPublishedTarball } from './downloadPublishedTarball'
 import { packLocalTarball } from './packLocalTarball'
+import { resolvePublishRegistry } from './resolvePublishRegistry'
 
 /**
  * Prove whether a published package version carries the same content as the
@@ -16,9 +17,12 @@ import { packLocalTarball } from './packLocalTarball'
  * Packs the local package with the active package manager and proves the
  * publication without any download when its tarball hash matches the
  * registry-recorded integrity value. Otherwise downloads the published
- * tarball and compares both tarballs by logical content. Failures to obtain
- * either tarball are logged and reported as `false`, so a broken download
- * or pack never passes as identical content.
+ * tarball and compares both tarballs by logical content. The publish
+ * registry is resolved best-effort before the download so its credentials
+ * are preferred; when it cannot be resolved, the download falls back to
+ * the tarball URL's own credentials. Failures to obtain either tarball are
+ * logged and reported as `false`, so a broken download or pack never
+ * passes as identical content.
  *
  * @param context Release context containing environment and working directory
  * @param plan Release plan describing the package to verify
@@ -67,6 +71,20 @@ export async function proveSamePublication(
     return false
   }
 
+  let publishRegistry: string | undefined
+
+  try {
+    publishRegistry = await resolvePublishRegistry(
+      context,
+      plan.package,
+      packageManager
+    )
+  } catch (error) {
+    context.logger.debug(
+      `The publish registry could not be resolved, so the download falls back to URL-derived credentials: ${formatError(error)}`
+    )
+  }
+
   let publishedTarball: Buffer
 
   try {
@@ -74,7 +92,8 @@ export async function proveSamePublication(
       context,
       plan,
       packageManager,
-      tarballUrl
+      tarballUrl,
+      { publishRegistry }
     )
   } catch (error) {
     context.logger.debug(

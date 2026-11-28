@@ -7,7 +7,11 @@ import { colors } from 'consola/utils'
 import path from 'node:path'
 import { extractPackageScope } from './extractPackageScope'
 import { getAuthTokenKey } from './getAuthTokenKey'
-import { hasAuth, usesOidcTrustedPublishing } from './hasAuth'
+import {
+  hasAuth,
+  hasConfiguredAuth,
+  usesOidcTrustedPublishing,
+} from './hasAuth'
 import type { PackageManagerInfo } from './inspectPackageManager'
 import {
   isCompleteReleasePlan,
@@ -134,13 +138,16 @@ export async function verifyPublishAccess(
     // OIDC authentication takes precedence over an injected `NPM_TOKEN`, so
     // the spawned CLI commands would not share the credentials the publish
     // uses and the verdict stays inconclusive. Only the public npm registry
-    // supports OIDC trusted publishing, and Yarn never authenticates with
-    // OIDC tokens, so those plans stay conclusive.
-    const usesOidcAuth = usesOidcTrustedPublishing(
-      packageManager,
-      context.env,
-      registry
-    )
+    // supports OIDC trusted publishing; Yarn Berry publishes with it since
+    // 4.3.0, while Yarn Classic does not. Yarn Berry plans with configured
+    // registry credentials publish with those instead, so their verdict
+    // stays conclusive.
+    const usesOidcAuth =
+      usesOidcTrustedPublishing(packageManager, context.env, registry) &&
+      !(
+        packageManager.isYarnBerry &&
+        (await hasConfiguredAuth(context, plan.package, packageManager))
+      )
 
     const verdict = usesOidcAuth
       ? 'unknown'
@@ -382,14 +389,16 @@ async function manifestPinsPublishRegistry(
  * Resolve the registry identity of the configured credentials, cached per
  * registry and, for Yarn Berry, package scope and directory.
  *
- * Runs the package manager's `whoami` command against the publish registry.
- * Yarn Berry resolves the publish registry the same way `yarn npm publish`
- * does, so the command runs from the plan's package directory with the
+ * Runs the package manager's `whoami` command against the publish registry
+ * from the plan's package directory, the working directory the publish
+ * itself resolves configuration from. Yarn Berry resolves the publish
+ * registry the same way `yarn npm publish` does, running with the
  * `--publish` flag; scoped packages also pass `--scope` to prefer scope
  * credentials, unless the manifest pins `publishConfig.registry`, which
- * `--scope` would skip. Credential rejections fail the release, while other
- * failures and unusable output resolve to undefined so callers can fall
- * back to an unknown verdict.
+ * `--scope` would skip. npm and pnpm also read per-package `.npmrc` and
+ * `publishConfig` settings from the working directory. Credential
+ * rejections fail the release, while other failures and unusable output
+ * resolve to undefined so callers can fall back to an unknown verdict.
  *
  * @param check Shared verification state for the release
  * @param plan The release plan whose credentials are resolved
@@ -442,7 +451,7 @@ async function resolveIdentity(
         packageManager.isPnpm ? 'pnpm' : 'npm',
         ['whoami', '--registry', registry],
         {
-          cwd: context.cwd,
+          cwd: path.resolve(context.cwd, plan.package.location),
           env: { ...context.env, ...env },
           signal: context.signal,
         }

@@ -197,7 +197,7 @@ CLI options override the corresponding release settings for a run:
 | `--allow-empty`                      | Run the workflow even when no releasable changes are detected                                |
 | `--dry-run`                          | Preview the release without writing files or creating or publishing release assets           |
 | `--strict`                           | Turn missing-credential skipping into errors, for pipelines that must publish everything     |
-| `--debug`                            | Enable verbose logging for troubleshooting                                                   |
+| `--debug`                            | Enable verbose logging and stream command output                                             |
 
 For `--qualifier` and `--channel`, `true` uses the matching rule's value when
 one is defined. Without a rule value, `--qualifier true` creates a prerelease

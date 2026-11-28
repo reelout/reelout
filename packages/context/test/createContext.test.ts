@@ -189,6 +189,7 @@ test('populates context with default configuration, plugins, and metadata upon s
       allowEmpty: false,
       dryRun: false,
       strict: false,
+      debug: false,
       packages: [],
       plans: [],
       outcome: null,
@@ -267,6 +268,20 @@ test('sets strict to true when strict option is enabled', async () => {
     const context = await createContext({ ...options, strict: true })
 
     expect(context.strict).toBe(true)
+  })
+})
+
+test('sets debug to true when debug option is enabled', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    options.cwd = cwd
+
+    await initializeGitRepository(cwd)
+
+    await execGit(cwd, ['commit', '--allow-empty', '-m', 'Initial commit'])
+
+    const context = await createContext({ ...options, debug: true })
+
+    expect(context.debug).toBe(true)
   })
 })
 

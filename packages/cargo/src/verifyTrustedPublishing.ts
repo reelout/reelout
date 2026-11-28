@@ -17,9 +17,10 @@ const TRUSTED_PUBLISHING_AUDIENCE = 'crates.io'
  * crates.io publish token at the registry's trusted-publishing endpoint.
  * Unlike the npm registry, the exchanged token is returned to the caller
  * and injected into `cargo publish` as `CARGO_REGISTRY_TOKEN`, because
- * cargo cannot exchange the single-use identity token itself. Fails the
- * release when the identity token cannot be retrieved or the registry
- * rejects the exchange.
+ * cargo cannot exchange the single-use identity token itself. Identity
+ * and publish tokens are trimmed of surrounding whitespace at every
+ * boundary they cross. Fails the release when the identity token cannot
+ * be retrieved or the registry rejects the exchange.
  *
  * @param context Release context containing environment, logger, and abort
  * signal
@@ -123,13 +124,18 @@ async function resolveIdentityToken(context: ReleaseContext): Promise<string> {
 
   const body: unknown = await response.json().catch(() => undefined)
 
-  if (!isJsonObject(body) || typeof body.value !== 'string' || !body.value) {
+  const resolvedIdentityToken =
+    isJsonObject(body) && typeof body.value === 'string'
+      ? body.value.trim()
+      : undefined
+
+  if (!resolvedIdentityToken) {
     throw new Error(
       'OIDC identity token could not be retrieved from GitHub Actions: the response carries no identity token.'
     )
   }
 
-  return body.value
+  return resolvedIdentityToken
 }
 
 /**
@@ -171,9 +177,12 @@ async function exchangeTrustedPublishingToken(
 
   const body: unknown = await response.json().catch(() => undefined)
 
-  const token = isJsonObject(body) ? body.token : undefined
+  const token =
+    isJsonObject(body) && typeof body.token === 'string'
+      ? body.token.trim()
+      : undefined
 
-  if (typeof token !== 'string' || !token) {
+  if (!token) {
     throw new Error('the response carries no publish token.')
   }
 

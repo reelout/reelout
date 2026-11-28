@@ -37,6 +37,7 @@ const createMockContext = (): ReleaseContext => ({
   allowEmpty: false,
   dryRun: false,
   strict: false,
+  debug: false,
   packages: [],
   plans: [],
   outcome: null,

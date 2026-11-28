@@ -92,14 +92,17 @@ export async function publishPackage(
 
   // Package manager output is extremely verbose and the package managers
   // disagree on where it goes: npm writes its whole notice block to stderr
-  // while pnpm keeps everything on stdout. A quiet environment keeps neither,
-  // so both streams are withheld and `execCommand` surfaces the buffered
-  // output, stderr first, when the publish fails.
-  const quiet = isQuietEnvironment(context)
+  // while pnpm keeps everything on stdout. Quiet runs (CI, pipes, and other
+  // non-interactive shells without --debug) keep neither stream: a
+  // successful publish prints nothing, and a failed one surfaces its output
+  // through the `execCommand` diagnostics, stderr first. Loud runs forward
+  // the context streams, so the output streams live into the terminal or
+  // the CI job log.
+  const quiet = !context.debug && isQuietEnvironment(context)
 
   if (quiet) {
     context.logger.debug(
-      'Suppressing publish output because no terminal or CI log is attached.'
+      'Suppressing publish output because no terminal is attached.'
     )
   }
 

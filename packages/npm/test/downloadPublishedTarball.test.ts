@@ -47,6 +47,8 @@ const yarnBerry = { isYarnBerry: true } as PackageManagerInfo
 
 const TARBALL_URL = 'https://registry.npmjs.org/a/-/a-1.2.3.tgz'
 
+const YARNPKG_TARBALL_URL = 'https://registry.yarnpkg.com/a/-/a-1.2.3.tgz'
+
 const mockSuccessfulResponse = (content: string) =>
   fetchMock.mockResolvedValueOnce({
     ok: true,
@@ -83,7 +85,7 @@ test('downloads the published tarball with ambient registry credentials', async 
     TARBALL_URL,
     {
       headers: { authorization: 'Bearer mock-ambient-token' },
-      signal: undefined,
+      signal: expect.any(AbortSignal),
     },
   ])
 })
@@ -102,7 +104,7 @@ test('prefers ambient registry credentials over the NPM_TOKEN fallback', async (
 
   expect(fetchMock.mock.calls[0]?.[1]).toEqual({
     headers: { authorization: 'Bearer mock-ambient-token' },
-    signal: undefined,
+    signal: expect.any(AbortSignal),
   })
 })
 
@@ -115,7 +117,7 @@ test('falls back to NPM_TOKEN when the tarball is served by the publish registry
 
   expect(fetchMock.mock.calls[0]?.[1]).toEqual({
     headers: { authorization: 'Bearer mock-npm-token' },
-    signal: undefined,
+    signal: expect.any(AbortSignal),
   })
 })
 
@@ -128,7 +130,7 @@ test('downloads without credentials when only OIDC tokens exist', async () => {
 
   expect(fetchMock.mock.calls[0]).toEqual([
     TARBALL_URL,
-    { headers: {}, signal: undefined },
+    { headers: {}, signal: expect.any(AbortSignal) },
   ])
 })
 
@@ -147,12 +149,12 @@ test('uses Yarn Berry registry credentials for the download', async () => {
       context,
       plan,
       yarnBerry,
-      'https://registry.yarnpkg.com/a/-/a-1.2.3.tgz'
+      YARNPKG_TARBALL_URL
     )
 
     expect(fetchMock.mock.calls[0]?.[1]).toEqual({
       headers: { authorization: 'Bearer mock-berry-token' },
-      signal: undefined,
+      signal: expect.any(AbortSignal),
     })
   })
 })
@@ -179,7 +181,7 @@ test('sends legacy .npmrc basic-auth credentials as a Basic header', async () =>
 
   expect(fetchMock.mock.calls[0]?.[1]).toEqual({
     headers: { authorization: 'Basic bW9jazphdXRoLWNyZWRlbnRpYWxz' },
-    signal: undefined,
+    signal: expect.any(AbortSignal),
   })
 })
 
@@ -192,10 +194,55 @@ test('forwards the context abort signal to the tarball fetch', async () => {
 
   await downloadPublishedTarball(context, plan, npm, TARBALL_URL)
 
-  expect(fetchMock.mock.calls[0]).toEqual([
+  const signal = fetchMock.mock.calls[0]?.[1]?.signal
+
+  expect(signal).toBeInstanceOf(AbortSignal)
+
+  controller.abort()
+
+  expect(signal?.aborted).toBe(true)
+})
+
+test('aborts the tarball download when the timeout elapses', async () => {
+  fetchMock.mockImplementationOnce(
+    (_url: unknown, init: { signal?: AbortSignal | undefined }) =>
+      new Promise<never>((_resolve, reject) => {
+        init.signal?.addEventListener('abort', () => {
+          reject(new Error('The tarball download timed out.'))
+        })
+      })
+  )
+
+  await expect(
+    downloadPublishedTarball(context, plan, npm, TARBALL_URL, {
+      timeoutMs: 10,
+    })
+  ).rejects.toThrow('The tarball download timed out.')
+})
+
+test('completes tarball downloads that finish within the configured timeout', async () => {
+  fetchMock.mockImplementationOnce(async () => {
+    await new Promise((resolve) => {
+      setTimeout(resolve, 25)
+    })
+
+    return {
+      ok: true,
+      status: 200,
+      arrayBuffer: async () =>
+        new TextEncoder().encode('published-tarball').buffer,
+    }
+  })
+
+  const tarball = await downloadPublishedTarball(
+    context,
+    plan,
+    npm,
     TARBALL_URL,
-    { headers: {}, signal: controller.signal },
-  ])
+    { timeoutMs: 60_000 }
+  )
+
+  expect(tarball.equals(Buffer.from('published-tarball'))).toBe(true)
 })
 
 test('downloads without credentials when the tarball URL is unparseable', async () => {
@@ -207,7 +254,7 @@ test('downloads without credentials when the tarball URL is unparseable', async 
 
   expect(fetchMock.mock.calls[0]?.[1]).toEqual({
     headers: {},
-    signal: undefined,
+    signal: expect.any(AbortSignal),
   })
 })
 
@@ -225,7 +272,7 @@ test('sends no NPM_TOKEN when the tarball is served by a third-party host', asyn
 
   expect(fetchMock.mock.calls[0]?.[1]).toEqual({
     headers: {},
-    signal: undefined,
+    signal: expect.any(AbortSignal),
   })
 })
 
@@ -240,7 +287,7 @@ test('falls back to NPM_TOKEN when the npm configuration cannot be loaded', asyn
 
   expect(fetchMock.mock.calls[0]?.[1]).toEqual({
     headers: { authorization: 'Bearer mock-npm-token' },
-    signal: undefined,
+    signal: expect.any(AbortSignal),
   })
 })
 
@@ -258,7 +305,7 @@ test('withholds NPM_TOKEN when the tarball is served by another origin', async (
 
   expect(fetchMock.mock.calls[0]?.[1]).toEqual({
     headers: {},
-    signal: undefined,
+    signal: expect.any(AbortSignal),
   })
 })
 
@@ -283,7 +330,95 @@ test('sends NPM_TOKEN when the publish registry matches the tarball origin', asy
 
     expect(fetchMock.mock.calls[0]?.[1]).toEqual({
       headers: { authorization: 'Bearer mock-npm-token' },
-      signal: undefined,
+      signal: expect.any(AbortSignal),
+    })
+  })
+})
+
+test('uses the provided publish registry for the NPM_TOKEN fallback', async () => {
+  context.env = { NPM_TOKEN: 'mock-npm-token' }
+
+  mockSuccessfulResponse('published-tarball')
+
+  await downloadPublishedTarball(
+    context,
+    plan,
+    npm,
+    'https://mirror.example.com/a/-/a-1.2.3.tgz',
+    { publishRegistry: 'https://mirror.example.com/' }
+  )
+
+  expect(fetchMock.mock.calls[0]?.[1]).toEqual({
+    headers: { authorization: 'Bearer mock-npm-token' },
+    signal: expect.any(AbortSignal),
+  })
+})
+
+test('prefers publish-registry credentials for a path-based custom registry', async () => {
+  await writeFile(
+    path.join(HOME_DIR, '.npmrc'),
+    '//npm.example.com/custom/:_authToken=mock-path-token'
+  )
+
+  mockSuccessfulResponse('published-tarball')
+
+  await downloadPublishedTarball(
+    context,
+    scopedPlan,
+    npm,
+    'https://npm.example.com/custom/@mock-scope/a/-/a-1.2.3.tgz',
+    { publishRegistry: 'https://npm.example.com/custom/' }
+  )
+
+  expect(fetchMock.mock.calls[0]?.[1]).toEqual({
+    headers: { authorization: 'Bearer mock-path-token' },
+    signal: expect.any(AbortSignal),
+  })
+})
+
+test('keeps the URL-derived lookup when no publish registry is provided', async () => {
+  await writeFile(
+    path.join(HOME_DIR, '.npmrc'),
+    '//npm.example.com/custom/:_authToken=mock-path-token'
+  )
+
+  mockSuccessfulResponse('published-tarball')
+
+  await downloadPublishedTarball(
+    context,
+    scopedPlan,
+    npm,
+    'https://npm.example.com/custom/@mock-scope/a/-/a-1.2.3.tgz'
+  )
+
+  expect(fetchMock.mock.calls[0]?.[1]).toEqual({
+    headers: {},
+    signal: expect.any(AbortSignal),
+  })
+})
+
+test('prefers publish-registry credentials over the tarball host for Yarn Berry', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+
+    await writeFile(
+      path.join(cwd, '.yarnrc.yml'),
+      'npmRegistries:\n  "https://npm.example.com":\n    npmAuthToken: mock-registry-token\n'
+    )
+
+    mockSuccessfulResponse('published-tarball')
+
+    await downloadPublishedTarball(
+      context,
+      plan,
+      yarnBerry,
+      'https://cdn.example.com/a/-/a-1.2.3.tgz',
+      { publishRegistry: 'https://npm.example.com' }
+    )
+
+    expect(fetchMock.mock.calls[0]?.[1]).toEqual({
+      headers: { authorization: 'Bearer mock-registry-token' },
+      signal: expect.any(AbortSignal),
     })
   })
 })
@@ -303,7 +438,7 @@ test('uses Yarn Berry scope credentials for scoped packages', async () => {
 
     expect(fetchMock.mock.calls[0]?.[1]).toEqual({
       headers: { authorization: 'Bearer mock-scope-token' },
-      signal: undefined,
+      signal: expect.any(AbortSignal),
     })
   })
 })
@@ -323,7 +458,27 @@ test('prefers Yarn Berry per-registry credentials from npmRegistries', async () 
 
     expect(fetchMock.mock.calls[0]?.[1]).toEqual({
       headers: { authorization: 'Bearer mock-registry-token' },
-      signal: undefined,
+      signal: expect.any(AbortSignal),
+    })
+  })
+})
+
+test('finds Yarn Berry npmRegistries credentials configured for the aliasing host', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+
+    await writeFile(
+      path.join(cwd, '.yarnrc.yml'),
+      'npmRegistries:\n  "https://registry.yarnpkg.com":\n    npmAuthToken: mock-registry-token\n'
+    )
+
+    mockSuccessfulResponse('published-tarball')
+
+    await downloadPublishedTarball(context, plan, yarnBerry, TARBALL_URL)
+
+    expect(fetchMock.mock.calls[0]?.[1]).toEqual({
+      headers: { authorization: 'Bearer mock-registry-token' },
+      signal: expect.any(AbortSignal),
     })
   })
 })
@@ -343,14 +498,41 @@ test('sends Yarn Berry npmAuthIdent credentials as a Basic header', async () => 
       context,
       plan,
       yarnBerry,
-      'https://registry.yarnpkg.com/a/-/a-1.2.3.tgz'
+      YARNPKG_TARBALL_URL
     )
 
     expect(fetchMock.mock.calls[0]?.[1]).toEqual({
       headers: {
         authorization: 'Basic bW9jazppZGVudC1jcmVkZW50aWFscw==',
       },
-      signal: undefined,
+      signal: expect.any(AbortSignal),
+    })
+  })
+})
+
+test('base64-encodes plaintext user:token Yarn Berry npmAuthIdent values', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+
+    await writeFile(
+      path.join(cwd, '.yarnrc.yml'),
+      'npmRegistryServer: https://registry.yarnpkg.com\nnpmAuthIdent: mock-user:mock-token\n'
+    )
+
+    mockSuccessfulResponse('published-tarball')
+
+    await downloadPublishedTarball(
+      context,
+      plan,
+      yarnBerry,
+      YARNPKG_TARBALL_URL
+    )
+
+    expect(fetchMock.mock.calls[0]?.[1]).toEqual({
+      headers: {
+        authorization: 'Basic bW9jay11c2VyOm1vY2stdG9rZW4=',
+      },
+      signal: expect.any(AbortSignal),
     })
   })
 })
@@ -362,20 +544,35 @@ test('falls back to NPM_TOKEN when the Yarn configuration cannot be loaded', asy
 
   mockSuccessfulResponse('published-tarball')
 
-  await downloadPublishedTarball(
-    context,
-    plan,
-    yarnBerry,
-    'https://registry.yarnpkg.com/a/-/a-1.2.3.tgz'
-  )
+  await downloadPublishedTarball(context, plan, yarnBerry, YARNPKG_TARBALL_URL)
 
   expect(fetchMock.mock.calls[0]?.[1]).toEqual({
     headers: { authorization: 'Bearer mock-npm-token' },
-    signal: undefined,
+    signal: expect.any(AbortSignal),
   })
 })
 
 test('downloads without credentials when the Yarn default registry differs from the tarball registry', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+
+    await writeFile(
+      path.join(cwd, '.yarnrc.yml'),
+      'npmRegistryServer: https://mirror.example.com\nnpmAuthToken: mock-berry-token\n'
+    )
+
+    mockSuccessfulResponse('published-tarball')
+
+    await downloadPublishedTarball(context, plan, yarnBerry, TARBALL_URL)
+
+    expect(fetchMock.mock.calls[0]).toEqual([
+      TARBALL_URL,
+      { headers: {}, signal: expect.any(AbortSignal) },
+    ])
+  })
+})
+
+test('uses top-level Yarn Berry credentials for the aliasing tarball host', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd
 
@@ -388,9 +585,66 @@ test('downloads without credentials when the Yarn default registry differs from 
 
     await downloadPublishedTarball(context, plan, yarnBerry, TARBALL_URL)
 
-    expect(fetchMock.mock.calls[0]).toEqual([
-      TARBALL_URL,
-      { headers: {}, signal: undefined },
-    ])
+    expect(fetchMock.mock.calls[0]?.[1]).toEqual({
+      headers: { authorization: 'Bearer mock-berry-token' },
+      signal: expect.any(AbortSignal),
+    })
+  })
+})
+
+test('uses top-level Yarn Berry npmjs credentials for the aliasing yarnpkg tarball host', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+
+    await writeFile(
+      path.join(cwd, '.yarnrc.yml'),
+      'npmRegistryServer: https://registry.npmjs.org\nnpmAuthToken: mock-berry-token\n'
+    )
+
+    mockSuccessfulResponse('published-tarball')
+
+    await downloadPublishedTarball(
+      context,
+      plan,
+      yarnBerry,
+      YARNPKG_TARBALL_URL
+    )
+
+    expect(fetchMock.mock.calls[0]?.[1]).toEqual({
+      headers: { authorization: 'Bearer mock-berry-token' },
+      signal: expect.any(AbortSignal),
+    })
+  })
+})
+
+test('finds npm credentials configured for the aliasing yarnpkg host', async () => {
+  await writeFile(
+    path.join(HOME_DIR, '.npmrc'),
+    '//registry.yarnpkg.com/:_authToken=mock-alias-token'
+  )
+
+  mockSuccessfulResponse('published-tarball')
+
+  await downloadPublishedTarball(context, plan, npm, TARBALL_URL)
+
+  expect(fetchMock.mock.calls[0]?.[1]).toEqual({
+    headers: { authorization: 'Bearer mock-alias-token' },
+    signal: expect.any(AbortSignal),
+  })
+})
+
+test('finds npm credentials configured for npmjs when the tarball is served by the aliasing host', async () => {
+  await writeFile(
+    path.join(HOME_DIR, '.npmrc'),
+    '//registry.npmjs.org/:_authToken=mock-alias-token'
+  )
+
+  mockSuccessfulResponse('published-tarball')
+
+  await downloadPublishedTarball(context, plan, npm, YARNPKG_TARBALL_URL)
+
+  expect(fetchMock.mock.calls[0]?.[1]).toEqual({
+    headers: { authorization: 'Bearer mock-alias-token' },
+    signal: expect.any(AbortSignal),
   })
 })

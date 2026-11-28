@@ -20,8 +20,6 @@ const loadCargoPackages = vi.hoisted(() => vi.fn())
 
 const resolveCargoToken = vi.hoisted(() => vi.fn())
 
-const verifyRegistryToken = vi.hoisted(() => vi.fn())
-
 const hasTrustedPublishingAuth = vi.hoisted(() => vi.fn())
 
 const verifyTrustedPublishing = vi.hoisted(() => vi.fn())
@@ -72,10 +70,6 @@ vi.mock(import('@reelout/cargo/publishCrate'), () => ({
 
 vi.mock(import('@reelout/cargo/resolveCargoToken'), () => ({
   resolveCargoToken,
-}))
-
-vi.mock(import('@reelout/cargo/verifyRegistryToken'), () => ({
-  verifyRegistryToken,
 }))
 
 vi.mock(import('@reelout/cargo/verifyTrustedPublishing'), () => ({
@@ -141,7 +135,6 @@ beforeEach(() => {
   execCommand.mockResolvedValue('')
   loadCargoPackages.mockResolvedValue([])
   resolveCargoToken.mockResolvedValue('mock-registry-token')
-  verifyRegistryToken.mockResolvedValue('mock-login')
   hasTrustedPublishingAuth.mockReturnValue(false)
   verifyTrustedPublishing.mockResolvedValue('mock-publish-token')
   probePublishedCrate.mockResolvedValue({ status: 'absent' })
@@ -332,7 +325,6 @@ test('publishes through trusted publishing when no registry token exists', async
     )
   ).toBe(false)
 
-  expect(verifyRegistryToken).not.toHaveBeenCalled()
   expect(verifyPublishAccess).not.toHaveBeenCalled()
   expect(verifyTrustedPublishing).toHaveBeenCalledTimes(1)
   expect(verifyTrustedPublishing.mock.calls[0]).toEqual([context])
@@ -359,7 +351,7 @@ test('prefers the registry token over trusted publishing', async () => {
 
   await executeReleaseWorkflow(context, [plugin()])
 
-  expect(verifyRegistryToken).toHaveBeenCalledTimes(1)
+  expect(verifyPublishAccess).toHaveBeenCalledTimes(1)
   expect(verifyTrustedPublishing).not.toHaveBeenCalled()
   expect(publishCrate.mock.calls[0]?.[2]).toMatchObject({
     registryToken: undefined,
@@ -456,16 +448,6 @@ test('rejects in strict mode when the cargo command is not available', async () 
 
   await expect(executeReleaseWorkflow(context, [plugin()])).rejects.toThrow(
     'The cargo command is required for Cargo releases in strict mode.'
-  )
-})
-
-test('rejects when the registry token cannot be verified', async () => {
-  mountManifest()
-
-  verifyRegistryToken.mockRejectedValue(new Error('mock verify failure'))
-
-  await expect(executeReleaseWorkflow(context, [plugin()])).rejects.toThrow(
-    'mock verify failure'
   )
 })
 
@@ -572,9 +554,9 @@ test('verifies access, probes, and publishes each plan', async () => {
   expect(verifyPublishAccess).toHaveBeenCalledTimes(1)
   expect(verifyPublishAccess.mock.calls[0]?.[0]).toBe(context)
   expect(verifyPublishAccess.mock.calls[0]?.[1]).toEqual([plan])
-  expect(verifyPublishAccess.mock.calls[0]?.[2]).toMatchObject({
+  expect(verifyPublishAccess.mock.calls[0]?.[2]).toEqual({
     token: 'mock-registry-token',
-    login: 'mock-login',
+    index: expect.anything(),
   })
 
   expect(probeCrateReleasePlan).toHaveBeenCalledTimes(1)

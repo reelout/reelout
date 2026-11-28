@@ -15,7 +15,7 @@ import { colors } from 'consola/utils'
 import { version } from '../package.json'
 import { bumpPackageDependencies } from './bumpPackageDependencies'
 import { hasPackageManifest } from './hasPackageManifest'
-import { inspectPackageManager } from './inspectPackageManager'
+import { inspectVersionedPackageManager } from './inspectPackageManager'
 import { isCompleteReleasePlan } from './isCompleteReleasePlan'
 import { loadPackages } from './loadPackages'
 import { PLUGIN_NAME } from './PLUGIN_NAME'
@@ -28,7 +28,10 @@ import { resolveWorkspaceMembers } from './resolveWorkspaceMembers'
 import type { PublishAccess } from './types'
 import { verifyPublishAccess } from './verifyPublishAccess'
 import { verifyAuth } from './verifyAuth'
-import { verifyTrustedPublishing } from './verifyTrustedPublishing'
+import {
+  assertOidcCapablePackageManager,
+  verifyTrustedPublishing,
+} from './verifyTrustedPublishing'
 
 export interface PluginOptions {
   workspace?: Partial<Workspace>
@@ -46,7 +49,9 @@ export interface PluginOptions {
  *   no root `package.json` or Yarn is the active package manager. Otherwise
  *   resolves and attaches Git repository metadata from root package
  *   configuration, then verifies registry authentication, failing in strict
- *   mode or skipping the publish phase when no credentials exist.
+ *   mode or skipping the publish phase when no credentials exist, and
+ *   failing when OIDC authentication is detected but the package manager
+ *   CLI predates its first OIDC-publishing release.
  * - `discover`: Skips discovery when the plugin is inactive. Discovers
  *   workspace member packages, filters them against the `filter` patterns,
  *   and loads package metadata into context.
@@ -91,13 +96,7 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
         return next(context)
       }
 
-      const packageManager = await inspectPackageManager(
-        context.cwd,
-        {
-          env: context.env,
-        },
-        context.logger
-      )
+      const packageManager = await inspectVersionedPackageManager(context)
 
       if (packageManager.isYarn) {
         inactive = true
@@ -113,6 +112,10 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
       context.repository = repo ?? context.repository
 
       const authKind = await verifyAuth(context, packageManager)
+
+      if (authKind === 'oidc') {
+        await assertOidcCapablePackageManager(context, packageManager)
+      }
 
       if (authKind === 'none') {
         if (context.strict) {
@@ -213,11 +216,7 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
 
       const packageManager =
         publishable.length > 0
-          ? await inspectPackageManager(
-              context.cwd,
-              { env: context.env },
-              context.logger
-            )
+          ? await inspectVersionedPackageManager(context)
           : undefined
 
       const skipped = new Set<ReleasePlan>()
@@ -226,7 +225,8 @@ const npm = (options: PluginOptions = {}): ReleasePlugin => {
         const trustedPublishing = await verifyTrustedPublishing(
           context,
           publishable,
-          packageManager
+          packageManager,
+          PLUGIN_NAME
         )
 
         await verifyPublishAccess(

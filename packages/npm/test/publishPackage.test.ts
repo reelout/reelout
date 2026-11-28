@@ -83,9 +83,21 @@ test('suppresses publish output when no terminal is attached', async () => {
   ])
 })
 
-test('streams publish output when no terminal is attached but CI records the log', async () => {
+test('keeps publish output out of CI logs when debug is disabled', async () => {
   resolvePackageManager.mockResolvedValue('npm')
   context.env = { ...context.env, CI: 'true' }
+
+  await publishPackage(context, plan)
+
+  expect(outputStreams).toStrictEqual([
+    { stdout: undefined, stderr: undefined },
+  ])
+})
+
+test('streams publish output into the CI job log when debug is enabled', async () => {
+  resolvePackageManager.mockResolvedValue('npm')
+  context.env = { ...context.env, CI: 'true' }
+  context.debug = true
 
   await publishPackage(context, plan)
 
@@ -384,6 +396,7 @@ test('publishes package successfully using yarn version 1 with supported options
         {
           "cwd": "/repo",
           "env": {
+            "NPM_AUTH_TOKEN": "mock-npm-token",
             "NPM_TOKEN": "mock-npm-token",
             "npm_config_//registry.npmjs.org/:_authToken": "mock-npm-token",
           },
@@ -399,6 +412,7 @@ test('publishes package successfully using yarn version 1 with supported options
         {
           "cwd": "/repo",
           "env": {
+            "NPM_AUTH_TOKEN": "mock-npm-token",
             "NPM_TOKEN": "mock-npm-token",
             "npm_config_//registry.npmjs.org/:_authToken": "mock-npm-token",
           },
@@ -414,6 +428,7 @@ test('publishes package successfully using yarn version 1 with supported options
         {
           "cwd": "/repo",
           "env": {
+            "NPM_AUTH_TOKEN": "mock-npm-token",
             "NPM_TOKEN": "mock-npm-token",
             "npm_config_//registry.npmjs.org/:_authToken": "mock-npm-token",
           },
@@ -427,6 +442,7 @@ test('publishes package successfully using yarn version 1 with supported options
         {
           "cwd": "/repo",
           "env": {
+            "NPM_AUTH_TOKEN": "mock-npm-token",
             "NPM_TOKEN": "mock-npm-token",
             "npm_config_//registry.npmjs.org/:_authToken": "mock-npm-token",
           },

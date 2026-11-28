@@ -348,3 +348,30 @@ test('falls back to global npmRegistryServer under Yarn Berry mode when scoped n
     expect(await resolvePublishRegistry(context, pkg2, yarn2)).toBe(GITHUB)
   })
 })
+
+test('fails when the package manifest cannot be read', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+
+    await writeFile(path.join(cwd, 'package.json'), '{ invalid json')
+
+    await expect(resolvePublishRegistry(context, pkg1, {})).rejects.toThrow(
+      'The package manifest could not be read while resolving the publish registry.'
+    )
+  })
+})
+
+test('fails when the Yarn configuration cannot be loaded', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+
+    await writeFile(
+      path.join(cwd, '.yarnrc.yml'),
+      'npmRegistryServer: [unclosed'
+    )
+
+    await expect(resolvePublishRegistry(context, pkg1, yarn2)).rejects.toThrow(
+      'The Yarn configuration could not be loaded while resolving the publish registry.'
+    )
+  })
+})

@@ -60,6 +60,8 @@ const getPackageManagerVersion = vi.hoisted(() => vi.fn())
 
 const verifyTrustedPublishing = vi.hoisted(() => vi.fn())
 
+const assertOidcCapablePackageManager = vi.hoisted(() => vi.fn())
+
 vi.mock(import('@reelout/core/util/execCommand'), () => ({
   execCommand: (command, args, options) => execCommand(command, args, options),
 }))
@@ -108,6 +110,7 @@ vi.mock(import('@reelout/npm/resolvePackageManager'), () => ({
 }))
 
 vi.mock(import('@reelout/npm/verifyTrustedPublishing'), () => ({
+  assertOidcCapablePackageManager,
   verifyTrustedPublishing,
 }))
 
@@ -1862,7 +1865,8 @@ test('verifies trusted publishing before probing publishable plans', async () =>
   expect(verifyTrustedPublishing).toHaveBeenCalledWith(
     context,
     context.plans,
-    expect.objectContaining({ name: 'npm', isNpm: true })
+    expect.objectContaining({ name: 'npm', isNpm: true }),
+    PLUGIN_NAME
   )
 })
 
@@ -1878,6 +1882,47 @@ test('verifies trusted publishing in dry-run mode', async () => {
   await executeReleaseWorkflow(context, [plugin()])
 
   expect(verifyTrustedPublishing).toHaveBeenCalledTimes(1)
+})
+
+test('fails configuration when the package manager cannot publish with OIDC trusted publishing', async () => {
+  provideOIDCAuth()
+
+  mountPackageFixture()
+
+  context.plans = [createCompleteReleasePlan()]
+
+  assertOidcCapablePackageManager.mockRejectedValueOnce(
+    new Error(
+      'Trusted publishing requires npm >= 11.5.1, but "11.0.0" was found.'
+    )
+  )
+
+  await expect(executeReleaseWorkflow(context, [plugin()])).rejects.toThrow(
+    'Trusted publishing requires npm >= 11.5.1, but "11.0.0" was found.'
+  )
+
+  expect(assertOidcCapablePackageManager).toHaveBeenCalledTimes(1)
+
+  expect(assertOidcCapablePackageManager).toHaveBeenCalledWith(
+    context,
+    expect.objectContaining({ name: 'npm', isNpm: true })
+  )
+
+  expect(publishPackage).not.toHaveBeenCalled()
+})
+
+test('skips the OIDC capability assertion when publishing with tokens', async () => {
+  context.env = { NPM_TOKEN: 'mock-npm-token' }
+
+  mountPackageFixture()
+
+  context.plans = [createCompleteReleasePlan()]
+
+  await executeReleaseWorkflow(context, [plugin()])
+
+  expect(assertOidcCapablePackageManager).not.toHaveBeenCalled()
+
+  expect(publishPackage).toHaveBeenCalledTimes(1)
 })
 
 test('previews the authentication skip identically in dry-run mode', async () => {

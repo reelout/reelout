@@ -58,11 +58,11 @@ export async function publishCrate(
     commandArgs.push('--no-verify')
   }
 
-  const quiet = isQuietEnvironment(context)
+  const quiet = !context.debug && isQuietEnvironment(context)
 
   if (quiet) {
     context.logger.debug(
-      'Suppressing publish output because no terminal or CI log is attached.'
+      'Suppressing publish output because no terminal is attached.'
     )
   }
 

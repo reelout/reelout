@@ -5,6 +5,7 @@ import '../../../test/mock/env'
 
 import type { ReleasePlan } from '@reelout/core'
 import {
+  assertOidcCapablePackageManager,
   PLUGIN_NAME,
   verifyTrustedPublishing,
   type PackageManagerInfo,
@@ -754,4 +755,312 @@ test('forwards the abort signal to the identity token request and the exchange',
     expect(identityOptions.signal?.aborted).toBe(true)
     expect(exchangeOptions.signal?.aborted).toBe(true)
   })
+})
+
+test('verifies trusted publishing for Yarn Berry releases on a supported CI platform', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = {
+      NPM_ID_TOKEN: 'mock-id-token',
+      GITHUB_ACTIONS: 'true',
+    }
+
+    mockExchange()
+
+    const verified = await verifyTrustedPublishing(
+      context,
+      [createPlan({ name: 'a' })],
+      { ...createPackageManager('yarn', true), version: '4.3.0' }
+    )
+
+    expect(verified.size).toBe(1)
+
+    expect(fetchMock.mock.calls).toEqual([
+      [
+        exchangeEndpoint('a'),
+        {
+          method: 'POST',
+          headers: { authorization: 'Bearer mock-id-token' },
+          signal: expect.any(AbortSignal),
+        },
+      ],
+    ])
+
+    expect(infoMessages()).toEqual([
+      'Trusted publishing verified for "a@1.2.3".',
+    ])
+  })
+})
+
+test('verifies trusted publishing for Yarn Berry releases on CircleCI', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_ID_TOKEN: 'mock-id-token', CIRCLECI: 'true' }
+
+    mockExchange()
+
+    const verified = await verifyTrustedPublishing(
+      context,
+      [createPlan({ name: 'a' })],
+      { ...createPackageManager('yarn', true), version: '4.4.2' }
+    )
+
+    expect(verified.size).toBe(1)
+  })
+})
+
+test('skips trusted publishing for Yarn Berry releases that predate the CircleCI OIDC gate', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_ID_TOKEN: 'mock-id-token', CIRCLECI: 'true' }
+
+    const verified = await verifyTrustedPublishing(
+      context,
+      [createPlan({ name: 'a' })],
+      { ...createPackageManager('yarn', true), version: '4.3.0' }
+    )
+
+    expect(verified.size).toBe(0)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+})
+
+test('skips trusted publishing for Yarn Berry releases without a supported CI platform', async () => {
+  context.env = { NPM_ID_TOKEN: 'mock-id-token' }
+
+  const verified = await verifyTrustedPublishing(
+    context,
+    [createPlan({ name: 'a' })],
+    { ...createPackageManager('yarn', true), version: '4.3.0' }
+  )
+
+  expect(verified.size).toBe(0)
+  expect(fetchMock).not.toHaveBeenCalled()
+  expect(logger.mock.calls).toEqual([])
+})
+
+test('skips trusted publishing when the Yarn Berry release predates OIDC support', async () => {
+  context.env = {
+    NPM_ID_TOKEN: 'mock-id-token',
+    GITHUB_ACTIONS: 'true',
+  }
+
+  const verified = await verifyTrustedPublishing(
+    context,
+    [createPlan({ name: 'a' })],
+    { ...createPackageManager('yarn', true), version: '4.2.0' }
+  )
+
+  expect(verified.size).toBe(0)
+  expect(fetchMock).not.toHaveBeenCalled()
+  expect(logger.mock.calls).toEqual([])
+})
+
+test('skips trusted publishing when the Yarn Berry version is unknown', async () => {
+  context.env = {
+    NPM_ID_TOKEN: 'mock-id-token',
+    GITHUB_ACTIONS: 'true',
+  }
+
+  const verified = await verifyTrustedPublishing(
+    context,
+    [createPlan({ name: 'a' })],
+    createPackageManager('yarn', true)
+  )
+
+  expect(verified.size).toBe(0)
+  expect(fetchMock).not.toHaveBeenCalled()
+  expect(logger.mock.calls).toEqual([])
+})
+
+test('skips Yarn Berry plans that publish with configured registry credentials', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = {
+      NPM_ID_TOKEN: 'mock-id-token',
+      GITHUB_ACTIONS: 'true',
+    }
+
+    await writeFile(
+      path.join(cwd, '.yarnrc.yml'),
+      'npmAuthToken: mock-npm-token\n'
+    )
+
+    const verified = await verifyTrustedPublishing(
+      context,
+      [createPlan({ name: 'a' })],
+      { ...createPackageManager('yarn', true), version: '4.3.0' }
+    )
+
+    expect(verified.size).toBe(0)
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(logger.mock.calls).toEqual([])
+  })
+})
+
+test('warns and falls back to NPM_TOKEN when the npm exchange is rejected', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = {
+      NPM_TOKEN: 'mock-npm-token',
+      NPM_ID_TOKEN: 'mock-id-token',
+    }
+
+    mockExchange(404, { message: 'not configured' })
+
+    const verified = await verifyTrustedPublishing(
+      context,
+      [createPlan({ name: 'a' })],
+      createPackageManager('npm')
+    )
+
+    expect(verified.size).toBe(0)
+
+    expect(
+      infoMessages().filter((message) =>
+        message.includes(
+          'Trusted publishing could not be verified for "a@1.2.3" (HTTP 404: not configured): the release will publish with NPM_TOKEN or ambient registry credentials instead.'
+        )
+      )
+    ).toHaveLength(1)
+  })
+})
+
+test('warns and falls back to ambient registry credentials when the npm exchange is rejected', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_ID_TOKEN: 'mock-id-token' }
+
+    await writeFile(
+      path.join(cwd, '.npmrc'),
+      '//registry.npmjs.org/:_authToken=mock-ambient-token'
+    )
+
+    mockExchange(403, { message: 'workflow not allowed' })
+
+    const verified = await verifyTrustedPublishing(
+      context,
+      [createPlan({ name: 'a' })],
+      createPackageManager('npm')
+    )
+
+    expect(verified.size).toBe(0)
+
+    expect(
+      infoMessages().filter((message) =>
+        message.includes(
+          'Trusted publishing could not be verified for "a@1.2.3" (HTTP 403: workflow not allowed): the release will publish with NPM_TOKEN or ambient registry credentials instead.'
+        )
+      )
+    ).toHaveLength(1)
+  })
+})
+
+test('fails the release when the Yarn Berry exchange is rejected despite NPM_TOKEN', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = {
+      NPM_TOKEN: 'mock-npm-token',
+      NPM_ID_TOKEN: 'mock-id-token',
+      GITHUB_ACTIONS: 'true',
+    }
+
+    mockExchange(404, { message: 'not configured' })
+
+    await expect(
+      verifyTrustedPublishing(context, [createPlan({ name: 'a' })], {
+        ...createPackageManager('yarn', true),
+        version: '4.3.0',
+      })
+    ).rejects.toThrow(
+      'Trusted publishing could not be verified for "a@1.2.3" (HTTP 404: not configured).'
+    )
+  })
+})
+
+test('verifies only the plans of the calling plugin', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_ID_TOKEN: 'mock-id-token' }
+
+    mockExchange()
+
+    const verified = await verifyTrustedPublishing(
+      context,
+      [
+        createPlan({ name: 'a' }),
+        createPlan({ name: 'b', provider: 'other-plugin' }),
+      ],
+      createPackageManager('npm'),
+      'other-plugin'
+    )
+
+    expect(verified.size).toBe(1)
+    expect([...verified][0]?.package.name).toBe('b')
+
+    expect(fetchMock.mock.calls).toEqual([
+      [
+        exchangeEndpoint('b'),
+        {
+          method: 'POST',
+          headers: { authorization: 'Bearer mock-id-token' },
+          signal: expect.any(AbortSignal),
+        },
+      ],
+    ])
+  })
+})
+
+test('asserts the package manager can publish with OIDC trusted publishing', async () => {
+  await assertOidcCapablePackageManager(context, {
+    ...createPackageManager('npm'),
+    version: '11.5.1',
+  })
+
+  await assertOidcCapablePackageManager(context, {
+    ...createPackageManager('pnpm'),
+    version: '11.0.0',
+  })
+
+  await assertOidcCapablePackageManager(context, {
+    ...createPackageManager('yarn', true),
+    version: '4.3.0',
+  })
+
+  expect(logger.mock.calls).toEqual([])
+})
+
+test('queries the full version when the asserted package manager carries none', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_ID_TOKEN: 'mock-id-token' }
+
+    await assertOidcCapablePackageManager(context, createPackageManager('npm'))
+
+    expect(getPackageManagerFullVersionMock).toHaveBeenCalledWith(cwd, 'npm', {
+      env: { NPM_ID_TOKEN: 'mock-id-token' },
+      signal: undefined,
+    })
+  })
+})
+
+test('rejects the assertion when the Yarn Berry release predates OIDC support', async () => {
+  await expect(
+    assertOidcCapablePackageManager(context, {
+      ...createPackageManager('yarn', true),
+      version: '4.2.0',
+    })
+  ).rejects.toThrow(
+    'Trusted publishing requires yarn >= 4.3.0, but "4.2.0" was found.'
+  )
+})
+
+test('rejects the assertion when the package manager version is unknown', async () => {
+  getPackageManagerFullVersionMock.mockResolvedValue(undefined)
+
+  await expect(
+    assertOidcCapablePackageManager(context, createPackageManager('npm'))
+  ).rejects.toThrow(
+    'Trusted publishing requires npm >= 11.5.1, but "an unknown version" was found.'
+  )
 })

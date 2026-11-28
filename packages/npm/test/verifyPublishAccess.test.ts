@@ -1177,6 +1177,40 @@ test('verifies the injected token when NPM_TOKEN and OIDC tokens are both availa
   })
 })
 
+test('verifies configured credentials when Yarn Berry publishes with registry credentials on an OIDC platform', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = {
+      NPM_ID_TOKEN: 'mock-id-token',
+      GITHUB_ACTIONS: 'true',
+    }
+
+    await writeFile(
+      path.join(cwd, '.yarnrc.yml'),
+      'npmAuthToken: mock-configured-token\n'
+    )
+
+    const plan = createPlan({ name: 'a' })
+
+    mockRegistry({
+      whoami: 'mock-user',
+      packument: maintainedBy('mock-user'),
+    })
+
+    const verdicts = await verifyPublishAccess(context, [plan], {
+      ...createPackageManager('yarn', true),
+      version: '4.3.0',
+    })
+
+    expect(verdicts.get(plan)).toBe('allowed')
+
+    expect(execCommand.mock.calls.map((call) => [call[0], call[1]])).toEqual([
+      ['yarn', ['npm', 'info', 'a', '--json']],
+      ['yarn', ['npm', 'whoami', '--publish']],
+    ])
+  })
+})
+
 test('warns without running commands when no registry credentials are available', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd
@@ -1556,6 +1590,36 @@ test('resolves the Yarn Berry identity from the plan package directory', async (
     expect(execCommand.mock.calls[1]).toEqual([
       'yarn',
       ['npm', 'whoami', '--publish'],
+      expect.objectContaining({
+        cwd: path.resolve(cwd, 'packages/a'),
+      }),
+    ])
+  })
+})
+
+test('resolves the npm identity from the plan package directory', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_TOKEN: 'mock-npm-token' }
+
+    const plan = createPlan({ name: 'a', location: 'packages/a' })
+
+    mockRegistry({
+      whoami: 'mock-user',
+      packument: maintainedBy('mock-user'),
+    })
+
+    const verdicts = await verifyPublishAccess(
+      context,
+      [plan],
+      createPackageManager('npm')
+    )
+
+    expect(verdicts.get(plan)).toBe('allowed')
+
+    expect(execCommand.mock.calls[1]).toEqual([
+      'npm',
+      ['whoami', '--registry', NPMJS],
       expect.objectContaining({
         cwd: path.resolve(cwd, 'packages/a'),
       }),

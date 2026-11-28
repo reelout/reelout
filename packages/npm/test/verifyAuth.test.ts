@@ -3,7 +3,7 @@
 
 import '../../../test/mock/env'
 
-import { verifyAuth } from '@reelout/npm'
+import { verifyAuth, type PackageManagerInfo } from '@reelout/npm'
 import { writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { temporaryDirectoryTask } from 'tempy'
@@ -29,6 +29,16 @@ vi.mock(import('@reelout/npm/getPackageManagerVersion'), () => ({
 }))
 
 const NPMJS = 'https://registry.npmjs.org/'
+
+const yarnBerry = (version?: string): PackageManagerInfo => ({
+  name: 'yarn',
+  isNpm: false,
+  isPnpm: false,
+  isYarn: true,
+  isYarnClassic: false,
+  isYarnBerry: true,
+  ...(version === undefined ? {} : { version }),
+})
 
 beforeEach(() => {
   vi.resetAllMocks()
@@ -127,6 +137,7 @@ test('returns token and runs npm whoami when NPM_TOKEN is set and Yarn Classic i
         {
           cwd,
           env: {
+            NPM_AUTH_TOKEN: 'mock-npm-token',
             NPM_TOKEN: 'mock-npm-token',
             'npm_config_//registry.npmjs.org/:_authToken': 'mock-npm-token',
           },
@@ -368,5 +379,96 @@ test('verifies existing ambient credentials without injection when NPM_TOKEN is 
         { cwd, env: { NPM_TOKEN: 'mock-npm-token' } },
       ],
     ])
+  })
+})
+
+test('returns oidc when Yarn Berry publishes with OIDC trusted publishing on GitHub Actions', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_ID_TOKEN: 'mock-id-token', GITHUB_ACTIONS: 'true' }
+
+    expect(await verifyAuth(context, yarnBerry('4.3.0'))).toBe('oidc')
+
+    expect(execCommand).not.toHaveBeenCalled()
+  })
+})
+
+test('returns oidc when Yarn Berry publishes with OIDC trusted publishing on CircleCI', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_ID_TOKEN: 'mock-id-token', CIRCLECI: 'true' }
+
+    expect(await verifyAuth(context, yarnBerry('4.4.2'))).toBe('oidc')
+
+    expect(execCommand).not.toHaveBeenCalled()
+  })
+})
+
+test('returns none when Yarn Berry predates the CircleCI OIDC gate', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_ID_TOKEN: 'mock-id-token', CIRCLECI: 'true' }
+
+    expect(await verifyAuth(context, yarnBerry('4.3.0'))).toBe('none')
+
+    expect(execCommand).not.toHaveBeenCalled()
+  })
+})
+
+test('returns token when Yarn Berry registry credentials take precedence over OIDC tokens', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_ID_TOKEN: 'mock-id-token', GITHUB_ACTIONS: 'true' }
+
+    await writeFile(
+      path.join(cwd, '.yarnrc.yml'),
+      'npmAuthToken: mock-ambient-token\n'
+    )
+
+    expect(await verifyAuth(context, yarnBerry('4.3.0'))).toBe('token')
+
+    expect(execCommand.mock.calls).toEqual([
+      [
+        'yarn',
+        ['npm', 'whoami', '--publish'],
+        {
+          cwd,
+          env: { NPM_ID_TOKEN: 'mock-id-token', GITHUB_ACTIONS: 'true' },
+        },
+      ],
+    ])
+  })
+})
+
+test('returns none when Yarn Berry OIDC tokens lack a supported CI platform', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_ID_TOKEN: 'mock-id-token' }
+
+    expect(await verifyAuth(context, yarnBerry('4.3.0'))).toBe('none')
+
+    expect(execCommand).not.toHaveBeenCalled()
+  })
+})
+
+test('returns none when the Yarn Berry release predates OIDC trusted publishing', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_ID_TOKEN: 'mock-id-token', GITHUB_ACTIONS: 'true' }
+
+    expect(await verifyAuth(context, yarnBerry('4.2.0'))).toBe('none')
+
+    expect(execCommand).not.toHaveBeenCalled()
+  })
+})
+
+test('returns none when the Yarn Berry version is unknown', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_ID_TOKEN: 'mock-id-token', GITHUB_ACTIONS: 'true' }
+
+    expect(await verifyAuth(context, yarnBerry())).toBe('none')
+
+    expect(execCommand).not.toHaveBeenCalled()
   })
 })

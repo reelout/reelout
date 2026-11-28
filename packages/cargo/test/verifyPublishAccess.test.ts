@@ -43,6 +43,12 @@ const verify = (plans: readonly CompleteReleasePlan[]) =>
     index,
   })
 
+const verifyWithoutLogin = (plans: readonly CompleteReleasePlan[]) =>
+  verifyPublishAccess(context, plans, {
+    token: 'mock-token',
+    index,
+  })
+
 const ownersResponse = (users: unknown) =>
   fetchMock.mockResolvedValueOnce({
     ok: true,
@@ -71,6 +77,25 @@ test('allows new crates without an ownership check', async () => {
 
   expect(fetchMock).not.toHaveBeenCalled()
   expect(warnCalls()).toEqual([])
+})
+
+test('warns without an ownership request when no login is resolved', async () => {
+  getRecords.mockResolvedValue({
+    status: 'found',
+    records: [{ vers: '0.1.0', cksum: 'checksum-old', yanked: false }],
+  })
+
+  await verifyWithoutLogin([plan])
+
+  expect(fetchMock).not.toHaveBeenCalled()
+
+  expect(
+    warnCalls().some((message) =>
+      message.includes(
+        'Publish access could not be verified for "a@1.2.3": publishing will proceed and fail if access is missing.'
+      )
+    )
+  ).toBe(true)
 })
 
 test('allows versions that are already published', async () => {

@@ -41,7 +41,7 @@ export async function refreshCargoLock(context: ReleaseContext): Promise<void> {
     return
   }
 
-  const quiet = isQuietEnvironment(context)
+  const quiet = !context.debug && isQuietEnvironment(context)
 
   try {
     await execCommand('cargo', ['update', '--workspace'], {
