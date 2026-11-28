@@ -25,18 +25,11 @@ import { refreshCargoLock } from './refreshCargoLock'
 import { resolveCargoToken } from './resolveCargoToken'
 import { resolveGitRepositoryFromCargoManifest } from './resolveGitRepositoryFromCargoManifest'
 import { createSparseIndexClient } from './sparseIndex'
-import { verifyRegistryToken } from './verifyRegistryToken'
 import { verifyPublishAccess } from './verifyPublishAccess'
 import {
   hasTrustedPublishingAuth,
   verifyTrustedPublishing,
 } from './verifyTrustedPublishing'
-
-/** The verified registry credentials of a release. */
-interface RegistryAuth {
-  token: string
-  login: string
-}
 
 /**
  * Configuration options for the Cargo release plugin.
@@ -62,28 +55,29 @@ export interface PluginOptions {
  * @remarks
  * **Lifecycle Stages:**
  * - `configure`: Resolves and attaches Git repository metadata from the
- *   root Cargo manifest, verifies the crates.io registry token, and checks
- *   the `cargo` command, failing in strict mode or skipping the publish
- *   phase when credentials or the command are missing. Falls back to OIDC
- *   trusted publishing when no registry token exists but `CARGO_ID_TOKEN`
- *   or GitHub Actions OIDC tokens are configured. Repositories without a
- *   root `Cargo.toml` leave the plugin inactive.
+ *   root Cargo manifest, checks the `cargo` command, failing in strict
+ *   mode or skipping the publish phase when credentials or the command
+ *   are missing. Falls back to OIDC trusted publishing when no registry
+ *   token exists but `CARGO_ID_TOKEN` or GitHub Actions OIDC tokens are
+ *   configured. Repositories without a root `Cargo.toml` leave the
+ *   plugin inactive.
  * - `discover`: Discovers the crates of the Cargo workspace, filters them
  *   against the `filter` patterns, and loads crate metadata into context.
  * - `write`: Skips manifest updates when the plugin is inactive. Bumps
- *   crate versions and internal dependency requirements in
- *   `Cargo.toml` files (skipped in dry-run) and refreshes `Cargo.lock`
- *   with `cargo update --workspace` when a manifest changed.
- * - `publish`: Verifies the authenticated registry user may publish each
- *   planned crate, probes the sparse index for already published versions
- *   (skipping identical content and failing on different or unverifiable
- *   content), and publishes the remaining crates with `cargo publish`,
- *   recovering when an identical version was published concurrently.
- *   For trusted-publishing releases, exchanges the GitHub Actions OIDC
- *   identity token for a short-lived crates.io publish token and injects
- *   it into `cargo publish`, skipping the registry-user checks because
- *   trusted-publishing tokens carry no user. Skips entirely when
- *   configure-stage verification found no registry authentication.
+ *   crate versions and internal dependency requirements in `Cargo.toml`
+ *   files (skipped in dry-run) and refreshes `Cargo.lock` with
+ *   `cargo update --workspace` when a manifest changed.
+ * - `publish`: Checks each planned crate against the sparse index and
+ *   warns when publish access cannot be verified (skipping identical
+ *   content and failing on different or unverifiable content), then
+ *   publishes the remaining crates with `cargo publish`, where the
+ *   registry validates the credentials and recovers when an identical
+ *   version was published concurrently. For trusted-publishing releases,
+ *   exchanges the GitHub Actions OIDC identity token for a short-lived
+ *   crates.io publish token and injects it into `cargo publish`, skipping
+ *   the registry checks because trusted-publishing tokens carry no user.
+ *   Skips entirely when configure-stage verification found no registry
+ *   authentication.
  *
  * @param options Configuration options for Cargo workspace discovery and
  * publishing behavior.
@@ -93,7 +87,7 @@ export interface PluginOptions {
 const cargo = (options: PluginOptions = {}): ReleasePlugin => {
   let publishSkipped = false
 
-  let registryAuth: RegistryAuth | undefined
+  let registryToken: string | undefined
 
   let active = false
 
@@ -123,9 +117,7 @@ const cargo = (options: PluginOptions = {}): ReleasePlugin => {
       const trustedPublishing = !token && hasTrustedPublishingAuth(context.env)
 
       if (token) {
-        const login = await verifyRegistryToken(context, token)
-
-        registryAuth = { token, login }
+        registryToken = token
       } else if (!trustedPublishing) {
         if (context.strict) {
           throw new Error(
@@ -225,8 +217,6 @@ const cargo = (options: PluginOptions = {}): ReleasePlugin => {
         return next(context)
       }
 
-      const auth = registryAuth
-
       const index = createSparseIndexClient({ signal: context.signal })
 
       const publishable = context.plans.filter(isCompleteReleasePlan)
@@ -242,10 +232,9 @@ const cargo = (options: PluginOptions = {}): ReleasePlugin => {
           )
         }
 
-        if (auth) {
+        if (registryToken) {
           await verifyPublishAccess(context, publishable, {
-            token: auth.token,
-            login: auth.login,
+            token: registryToken,
             index,
           })
         } else if (context.dryRun) {

@@ -23,7 +23,13 @@ export type PublishAccessVerdict = 'allowed' | 'denied' | 'unknown'
 /** Inputs for the crates.io publish-access check. */
 export interface VerifyPublishAccessOptions {
   token: string
-  login: string
+
+  /**
+   * The login of the authenticated registry user, when it is known. The
+   * ownership check degrades to an unknown verdict without it, because
+   * the user owners cannot be matched.
+   */
+  login?: string | undefined
   index: SparseIndexClient
 }
 
@@ -142,10 +148,12 @@ async function resolveVerdict(
 /**
  * Resolve the publish-access verdict from a crate's owners.
  *
- * Queries the crates.io ownership endpoint with the verified token and
- * matches the user owners against the authenticated login. Team ownership
- * cannot be resolved through the registry token, so crates owned by teams
- * report unknown instead of a verdict.
+ * Queries the crates.io ownership endpoint with the registry token and
+ * matches the user owners against the authenticated login. Without a
+ * resolved login the verdict is unknown without a request, because no
+ * owner can be matched. Team ownership cannot be resolved through the
+ * registry token, so crates owned by teams report unknown instead of a
+ * verdict.
  *
  * @param context Release context containing environment and logger
  * @param plan The complete release plan to verify
@@ -158,6 +166,14 @@ async function resolveOwnersVerdict(
   options: VerifyPublishAccessOptions
 ): Promise<PublishAccessVerdict> {
   const target = `${plan.package.name}@${plan.release.version}`
+
+  if (options.login === undefined) {
+    context.logger.debug(
+      `Publish access could not be verified for "${target}": the authenticated registry user could not be resolved.`
+    )
+
+    return 'unknown'
+  }
 
   let data: unknown
 

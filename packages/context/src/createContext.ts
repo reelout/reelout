@@ -128,6 +128,7 @@ export async function createContext(
     allowEmpty: !!options.allowEmpty,
     dryRun: !!options.dryRun,
     strict: !!options.strict,
+    debug: !!options.debug,
     packages: [],
     plans: [],
     outcome: null,

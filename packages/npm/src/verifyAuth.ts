@@ -3,9 +3,14 @@
 
 import type { Package, ReleaseContext } from '@reelout/core'
 import { execCommand } from '@reelout/core'
-import { hasAuth, hasOIDCAuth } from './hasAuth'
 import {
-  inspectPackageManager,
+  hasAuth,
+  hasConfiguredAuth,
+  hasOIDCAuth,
+  usesYarnOidcTrustedPublishing,
+} from './hasAuth'
+import {
+  inspectVersionedPackageManager,
   type PackageManagerInfo,
 } from './inspectPackageManager'
 import { isCredentialsRejected } from './isCredentialsRejected'
@@ -30,23 +35,28 @@ export type AuthKind = 'none' | 'oidc' | 'token'
 /**
  * Verify that registry authentication is available for a release.
  *
- * Classifies the configured authentication as `oidc` when OIDC environment
- * tokens exist — taking precedence over `NPM_TOKEN` and ambient registry
- * credentials, mirroring the package managers' own preference — `token` when
- * `NPM_TOKEN` or ambient registry credentials exist, and `none` when no
- * credentials are configured. Yarn releases never classify as `oidc`: the
- * registry offers no OIDC exchange for Yarn, so their OIDC environment
- * tokens are ignored and token-shaped credentials decide. Token-shaped
- * credentials are validated with a `whoami` pre-flight against the publish
- * registry so expired tokens fail before packages are published, reporting
- * rejected credentials as invalid and other failures as an unreachable
- * registry; OIDC tokens are trusted without verification.
+ * Classifies the configured authentication as `oidc` when the release
+ * publishes with OIDC environment tokens — npm and pnpm releases
+ * whenever the tokens exist, mirroring their OIDC-first preference, and
+ * Yarn Berry releases only when a supported CI platform issued them, the
+ * resolved Yarn release is 4.3.0 or newer — 4.4.2 or newer on CircleCI,
+ * whose OIDC gate Yarn added later — and no ambient registry
+ * credentials take precedence — `token` when `NPM_TOKEN` or ambient
+ * registry credentials exist, and `none` when no credentials are
+ * configured. Yarn Classic releases never classify as `oidc`: the
+ * registry offers no OIDC exchange for Yarn Classic, so their OIDC
+ * environment tokens are ignored and token-shaped credentials decide.
+ * Token-shaped credentials are validated with a `whoami` pre-flight
+ * against the publish registry so expired tokens fail before packages
+ * are published, reporting rejected credentials as invalid and other
+ * failures as an unreachable registry; OIDC tokens are trusted without
+ * verification.
  *
- * The `oidc` classification is deliberately registry-agnostic. Verification
- * runs before packages are discovered, and a release may publish to several
- * registries, so no single registry could gate the classification; whether
- * OIDC trusted publishing applies to a package is decided later, once its
- * plans and publish registries are known.
+ * The `oidc` classification is deliberately registry-agnostic.
+ * Verification runs before packages are discovered, and a release may
+ * publish to several registries, so no single registry could gate the
+ * classification; whether OIDC trusted publishing applies to a package
+ * is decided later, once its plans and publish registries are known.
  *
  * @param context Release context containing environment and working directory
  * @param packageManager Information about the active package manager, inspected from the working directory when omitted
@@ -62,14 +72,16 @@ export async function verifyAuth(
   }
 
   const manager =
-    packageManager ??
-    (await inspectPackageManager(
-      context.cwd,
-      { env: context.env },
-      context.logger
-    ))
+    packageManager ?? (await inspectVersionedPackageManager(context))
 
-  if (!manager.isYarn && hasOIDCAuth(context.env)) {
+  if (manager.isYarnBerry) {
+    if (
+      usesYarnOidcTrustedPublishing(manager, context.env) &&
+      !(await hasConfiguredAuth(context, rootPackage, manager))
+    ) {
+      return 'oidc'
+    }
+  } else if (!manager.isYarn && hasOIDCAuth(context.env)) {
     return 'oidc'
   }
 

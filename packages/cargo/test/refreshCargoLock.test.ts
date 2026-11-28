@@ -87,7 +87,7 @@ test('runs cargo update --workspace when a lockfile exists', async () => {
   })
 })
 
-test('forwards output streams in loud environments', async () => {
+test('keeps cargo update output out of CI logs when debug is disabled', async () => {
   await temporaryDirectoryTask(async (cwd) => {
     context.cwd = cwd
     context.env = { CI: 'true' }
@@ -98,19 +98,56 @@ test('forwards output streams in loud environments', async () => {
 
     await refreshCargoLock(context)
 
-    expect(execCommand.mock.calls).toEqual([
-      [
-        'cargo',
-        ['update', '--workspace'],
-        {
-          cwd,
-          env: { CI: 'true' },
-          signal: undefined,
-          stdout: context.stdout,
-          stderr: context.stderr,
-        },
-      ],
-    ])
+    expect(execCommand.mock.calls[0]?.[2]).toEqual({
+      cwd,
+      env: { CI: 'true' },
+      signal: undefined,
+      stdout: undefined,
+      stderr: undefined,
+    })
+  })
+})
+
+test('streams cargo update output when attached to a terminal', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    Object.assign(context.stdout, { isTTY: true })
+
+    await writeFile(path.join(cwd, 'Cargo.lock'), '')
+
+    hasCargoCommand.mockResolvedValue(true)
+
+    await refreshCargoLock(context)
+
+    expect(execCommand.mock.calls[0]?.[2]).toEqual({
+      cwd,
+      env: {},
+      signal: undefined,
+      stdout: context.stdout,
+      stderr: context.stderr,
+    })
+  })
+})
+
+test('streams cargo update output into the CI job log when debug is enabled', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { CI: 'true' }
+    context.debug = true
+
+    await writeFile(path.join(cwd, 'Cargo.lock'), '')
+
+    hasCargoCommand.mockResolvedValue(true)
+
+    await refreshCargoLock(context)
+
+    expect(execCommand.mock.calls[0]?.[2]).toEqual({
+      cwd,
+      env: { CI: 'true' },
+      signal: undefined,
+      stdout: context.stdout,
+      stderr: context.stderr,
+    })
   })
 })
 

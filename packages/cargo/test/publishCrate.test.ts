@@ -147,8 +147,45 @@ test('injects the trusted-publishing registry token into the environment', async
   })
 })
 
-test('forwards output streams in loud environments', async () => {
+test('keeps publish output out of CI logs when debug is disabled', async () => {
   context.env = { CI: 'true' }
+
+  await publishCrate(
+    context,
+    createPlan({ name: 'a', releaseVersion: '1.2.3' }),
+    {}
+  )
+
+  expect(execCommand.mock.calls[0]?.[2]).toEqual({
+    cwd: '/repo',
+    env: { CI: 'true' },
+    signal: undefined,
+    stdout: undefined,
+    stderr: undefined,
+  })
+})
+
+test('streams publish output when attached to a terminal', async () => {
+  Object.assign(context.stdout, { isTTY: true })
+
+  await publishCrate(
+    context,
+    createPlan({ name: 'a', releaseVersion: '1.2.3' }),
+    {}
+  )
+
+  expect(execCommand.mock.calls[0]?.[2]).toEqual({
+    cwd: '/repo',
+    env: {},
+    signal: undefined,
+    stdout: context.stdout,
+    stderr: context.stderr,
+  })
+})
+
+test('streams publish output into the CI job log when debug is enabled', async () => {
+  context.env = { CI: 'true' }
+  context.debug = true
 
   await publishCrate(
     context,

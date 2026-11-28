@@ -43,10 +43,12 @@ run it without side effects. When it activates, the npm plugin stays inactive
 instead, so packages publish through Yarn. The plugin accepts `workspace`,
 `access`, `provenance`, and `stage` options.
 
-Yarn releases authenticate with registry credentials only: an `NPM_TOKEN`
+Yarn releases authenticate with registry credentials: an `NPM_TOKEN`
 environment variable, ambient `.npmrc` authentication (Yarn Classic), or
-`.yarnrc.yml` credentials (Yarn Berry). The registry offers no OIDC exchange
-for Yarn, so OIDC identity tokens are not used.
+`.yarnrc.yml` credentials (Yarn Berry). Yarn Berry 4.3.0 and newer can also
+publish through OIDC trusted publishing on supported CI platforms, exchanging
+an identity token with the same registry endpoint as the npm CLI; Yarn
+Classic cannot.
 
 The `stage` option controls staged publishing: `true` stages every package
 for later approval instead of publishing it immediately, `false` publishes
@@ -69,7 +71,9 @@ publish permission for each scheduled package. It checks existing packages
 against their maintainers, new scoped packages against the user or
 organization owning the scope, and remaining scoped packages through npm
 collaborator and team permissions. A missing permission fails the release
-before anything is published; inconclusive checks only warn.
+before anything is published; inconclusive checks only warn. Releases
+publishing through OIDC trusted publishing carry no static registry
+credentials, so their access checks stay inconclusive and only warn.
 
 ## API
 

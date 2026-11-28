@@ -6,6 +6,8 @@ import '../../../test/mock/env'
 import type { Package, ReleasePlan } from '@reelout/core'
 import type { PackageManagerInfo } from '@reelout/npm'
 import { probePublishedVersion } from '@reelout/npm'
+import path from 'node:path'
+import { temporaryDirectoryTask } from 'tempy'
 import { expect, test, vi } from 'vitest'
 import { context } from '../../../test/mock/context'
 
@@ -21,6 +23,12 @@ vi.mock(import('@reelout/npm/prepareAuth'), () => ({
 }))
 
 const packageManager = { name: 'npm' } as PackageManagerInfo
+
+const yarnBerryPackageManager = {
+  name: 'yarn',
+  isYarn: true,
+  isYarnBerry: true,
+} as PackageManagerInfo
 
 const pkg = { name: 'a', location: 'a' } as Package
 
@@ -120,5 +128,64 @@ test('defaults to empty dist-tags when the manifest omits them', async () => {
   expect(probe).toEqual({
     status: 'published',
     distTags: {},
+  })
+})
+
+test('passes the publish registry through the environment when probing with Yarn Berry', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+
+    execCommand.mockImplementationOnce(async () =>
+      JSON.stringify({
+        name: 'a',
+        version: '1.2.3',
+        dist: { tarball: 'https://registry.yarnpkg.com/a/-/a-1.2.3.tgz' },
+        'dist-tags': { latest: '1.2.3' },
+      })
+    )
+
+    const probe = await probePublishedVersion(
+      context,
+      plan,
+      yarnBerryPackageManager
+    )
+
+    expect(probe).toEqual({
+      status: 'published',
+      tarballUrl: 'https://registry.yarnpkg.com/a/-/a-1.2.3.tgz',
+      integrity: undefined,
+      distTags: { latest: '1.2.3' },
+    })
+
+    expect(execCommand).toHaveBeenCalledWith(
+      'yarn',
+      ['npm', 'info', 'a@1.2.3', '--json'],
+      {
+        cwd: path.resolve(cwd, 'a'),
+        env: { YARN_NPM_REGISTRY_SERVER: 'https://registry.yarnpkg.com/' },
+      }
+    )
+  })
+})
+
+test('reports absent when Yarn Berry falls back to the latest manifest', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+
+    execCommand.mockImplementationOnce(async () =>
+      JSON.stringify({
+        name: 'a',
+        version: '1.0.0',
+        'dist-tags': { latest: '1.0.0' },
+      })
+    )
+
+    const probe = await probePublishedVersion(
+      context,
+      plan,
+      yarnBerryPackageManager
+    )
+
+    expect(probe).toEqual({ status: 'absent' })
   })
 })

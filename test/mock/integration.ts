@@ -22,6 +22,7 @@ vi.mock(import('@reelout/npm/verifyPublishAccess'), () => ({
 // publishing is mocked out to keep the registry's token exchange
 // unreached.
 vi.mock(import('@reelout/npm/verifyTrustedPublishing'), () => ({
+  assertOidcCapablePackageManager: vi.fn(async (): Promise<void> => {}),
   verifyTrustedPublishing: vi.fn(
     async (): Promise<Set<CompleteReleasePlan>> => new Set()
   ),

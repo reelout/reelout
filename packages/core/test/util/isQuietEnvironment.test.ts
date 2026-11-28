@@ -24,11 +24,11 @@ test('stays quiet when a plain pipe is used outside of CI', () => {
   expect(isQuietEnvironment(createContext(createStream(false)))).toBe(true)
 })
 
-test('stays loud in CI even without a TTY so the job log keeps the output', () => {
+test('stays quiet in CI even when a pseudo-terminal is attached', () => {
   const env = { CI: 'true' }
 
-  expect(isQuietEnvironment(createContext(createStream(), env))).toBe(false)
-  expect(isQuietEnvironment(createContext(createStream(true), env))).toBe(false)
+  expect(isQuietEnvironment(createContext(createStream(), env))).toBe(true)
+  expect(isQuietEnvironment(createContext(createStream(true), env))).toBe(true)
 })
 
 test('treats a falsy CI value as not running in CI', () => {

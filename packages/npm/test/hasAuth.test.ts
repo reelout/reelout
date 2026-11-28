@@ -2,7 +2,11 @@
 // Copyright (c) 2026 Fai
 
 import type { Package } from '@reelout/core'
-import { hasAuth, type PackageManagerInfo } from '@reelout/npm'
+import {
+  hasAuth,
+  hasConfiguredAuth,
+  type PackageManagerInfo,
+} from '@reelout/npm'
 import { writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { temporaryDirectoryTask } from 'tempy'
@@ -564,5 +568,170 @@ test('returns true when a scoped package successfully matches both the custom sc
     )
 
     expect(await hasAuth(context, pkg2, yarn2)).toBe(true)
+  })
+})
+
+test('returns true when Yarn Berry publishes with OIDC trusted publishing on GitHub Actions', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_ID_TOKEN: 'mock-id-token', GITHUB_ACTIONS: 'true' }
+
+    expect(await hasAuth(context, pkg1, { ...yarn2, version: '4.3.0' })).toBe(
+      true
+    )
+  })
+})
+
+test('returns true when Yarn Berry publishes with OIDC trusted publishing against the npm registry', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_ID_TOKEN: 'mock-id-token', GITHUB_ACTIONS: 'true' }
+
+    const yarnrc = path.join(cwd, '.yarnrc.yml')
+
+    await writeFile(yarnrc, stringify({ npmRegistryServer: NPMJS }))
+
+    expect(await hasAuth(context, pkg1, { ...yarn2, version: '4.3.0' })).toBe(
+      true
+    )
+  })
+})
+
+test('returns true when Yarn Berry publishes with OIDC trusted publishing on GitLab CI', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_ID_TOKEN: 'mock-id-token', GITLAB_CI: 'true' }
+
+    expect(await hasAuth(context, pkg1, { ...yarn2, version: '4.3.0' })).toBe(
+      true
+    )
+  })
+})
+
+test('returns true when Yarn Berry publishes with OIDC trusted publishing on CircleCI', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_ID_TOKEN: 'mock-id-token', CIRCLECI: 'true' }
+
+    expect(await hasAuth(context, pkg1, { ...yarn2, version: '4.4.2' })).toBe(
+      true
+    )
+  })
+})
+
+test('returns false when Yarn Berry predates the CircleCI OIDC gate', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_ID_TOKEN: 'mock-id-token', CIRCLECI: 'true' }
+
+    expect(await hasAuth(context, pkg1, { ...yarn2, version: '4.3.0' })).toBe(
+      false
+    )
+  })
+})
+
+test('returns false when Yarn Berry OIDC tokens lack a supported CI platform', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_ID_TOKEN: 'mock-id-token' }
+
+    expect(await hasAuth(context, pkg1, { ...yarn2, version: '4.3.0' })).toBe(
+      false
+    )
+  })
+})
+
+test('returns false when the Yarn Berry release predates OIDC trusted publishing', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_ID_TOKEN: 'mock-id-token', GITHUB_ACTIONS: 'true' }
+
+    expect(await hasAuth(context, pkg1, { ...yarn2, version: '4.2.0' })).toBe(
+      false
+    )
+  })
+})
+
+test('returns false when the Yarn Berry version is unknown', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_ID_TOKEN: 'mock-id-token', GITHUB_ACTIONS: 'true' }
+
+    expect(await hasAuth(context, pkg1, yarn2)).toBe(false)
+  })
+})
+
+test('returns false when Yarn Berry OIDC tokens target a custom publish registry', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_ID_TOKEN: 'mock-id-token', GITHUB_ACTIONS: 'true' }
+
+    const yarnrc = path.join(cwd, '.yarnrc.yml')
+
+    await writeFile(yarnrc, stringify({ npmRegistryServer: GITHUB }))
+
+    expect(await hasAuth(context, pkg1, { ...yarn2, version: '4.3.0' })).toBe(
+      false
+    )
+  })
+})
+
+test('hasConfiguredAuth ignores OIDC environment tokens', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_ID_TOKEN: 'mock-id-token' }
+
+    expect(await hasConfiguredAuth(context, pkg1, {})).toBe(false)
+    expect(await hasAuth(context, pkg1, {})).toBe(true)
+  })
+})
+
+test('hasConfiguredAuth detects npm registry credentials', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+
+    const npmrc = path.join(cwd, '.npmrc')
+
+    await writeFile(npmrc, '//registry.npmjs.org/:_authToken=mock-npm-token')
+
+    expect(await hasConfiguredAuth(context, pkg1, {})).toBe(true)
+  })
+})
+
+test('hasConfiguredAuth detects Yarn Berry registry credentials', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+
+    const yarnrc = path.join(cwd, '.yarnrc.yml')
+
+    await writeFile(yarnrc, stringify({ npmAuthToken: 'mock-npm-token' }))
+
+    expect(await hasConfiguredAuth(context, pkg1, yarn2)).toBe(true)
+  })
+})
+
+test('expands NPM_TOKEN in .npmrc authentication tokens from the environment', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = { NPM_TOKEN: 'mock-npm-token' }
+
+    const npmrc = path.join(cwd, '.npmrc')
+
+    await writeFile(npmrc, '//registry.npmjs.org/:_authToken=${NPM_TOKEN}')
+
+    expect(await hasAuth(context, pkg1, {})).toBe(true)
+  })
+})
+
+test('treats an unexpanded ${NPM_TOKEN} placeholder in .npmrc as ambient credentials', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+    context.env = {}
+
+    const npmrc = path.join(cwd, '.npmrc')
+
+    await writeFile(npmrc, '//registry.npmjs.org/:_authToken=${NPM_TOKEN}')
+
+    expect(await hasAuth(context, pkg1, {})).toBe(true)
   })
 })

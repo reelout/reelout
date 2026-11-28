@@ -63,20 +63,21 @@ publish permission for each scheduled package. It checks existing packages
 against their maintainers, new scoped packages against the user or
 organization owning the scope, and remaining scoped packages through npm
 collaborator and team permissions. A missing permission fails the release
-before anything is published; inconclusive checks, such as OIDC trusted
-publishing, only warn.
+before anything is published; checks that cannot reach a verdict, such as
+registries without npm's access endpoints, only warn. OIDC trusted
+publishing is verified beforehand through the registry's token exchange.
 
 ## API
 
 Key exports include:
 
 - **Plugin** — `npm` (default export).
-- **Publishing** — `publishPackage`, `prepareAuth`, `resolvePublishRegistry`, and `verifyPublishAccess`.
+- **Publishing** — `publishPackage`, `prepareAuth`, `resolvePublishRegistry`, `verifyPublishAccess`, `probePublishedVersion`, `downloadPublishedTarball`, and `proveSamePublication`.
 - **Manifests** — `readPackageJson`, `writePackageJson`, `updatePackageJson`, `removePackageJson`, `bumpPackageDependencies`.
 - **Workspaces** — `resolveWorkspaceMembers`, `loadWorkspacePackages`, `loadPackages`, `loadRootPackage`.
-- **Package managers** — `resolvePackageManager`, `inspectPackageManager`, and `getPackageManagerVersion`.
-- **Registry** — `normalizeRegistry`, `getAuthTokenKey`, `resolveGitRepositoryFromPackage`.
-- **Registry auth** — `hasAuth` (registry authentication detection) and `verifyAuth` (credential verification).
+- **Package managers** — `resolvePackageManager`, `inspectPackageManager`, `inspectVersionedPackageManager`, `getPackageManagerVersion`, and `getPackageManagerFullVersion`.
+- **Registry** — `normalizeRegistry`, `getRegistryCredentialAliases`, `getAuthTokenKey`, `loadConfig`, `loadYarnConfig`, and `resolveGitRepositoryFromPackage`.
+- **Registry auth** — `hasAuth` (registry authentication detection), `hasConfiguredAuth` (ambient credential detection), `verifyAuth` (credential verification), `isCredentialsRejected` (credential-rejection detection), and the OIDC trusted-publishing helpers: `verifyTrustedPublishing`, `assertOidcCapablePackageManager`, `hasOIDCAuth`, `hasOidcPlatform`, `usesOidcTrustedPublishing`, `usesYarnOidcTrustedPublishing`, and `MINIMUM_YARN_OIDC_VERSION`.
 
 ## Documentation
 

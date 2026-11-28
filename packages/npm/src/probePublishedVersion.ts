@@ -36,12 +36,16 @@ export const NOT_FOUND_PATTERN =
  * Probe the publish registry for a plan's target package version.
  *
  * Queries `<name>@<version>` with the package manager's metadata command in
- * the plan's package directory, using the same authentication environment a
- * publish would use. A not-found response reports the version as absent,
- * while any other command failure propagates so authentication and network
- * problems surface before anything is published. Yarn Berry reports missing
- * versions by falling back to the latest manifest, so a manifest whose
- * version differs from the target counts as absent as well.
+ * the plan's package directory, targeting the plan's resolved publish
+ * registry and using the same authentication environment a publish would
+ * use. Yarn Berry receives its registry through the environment, because
+ * `yarn npm info` otherwise resolves its own default registry instead of
+ * the manifest's publish registry. A not-found response reports the
+ * version as absent, while any other command failure propagates so
+ * authentication and network problems surface before anything is
+ * published. Yarn Berry reports missing versions by falling back to the
+ * latest manifest, so a manifest whose version differs from the target
+ * counts as absent as well.
  *
  * @param context Release context containing environment and working directory
  * @param plan Release plan whose package version is probed
@@ -68,6 +72,12 @@ export async function probePublishedVersion(
 
   const packageDir = path.resolve(context.cwd, plan.package.location)
 
+  const registry = await resolvePublishRegistry(
+    context,
+    plan.package,
+    packageManager
+  )
+
   await using env = await prepareAuth(context, plan.package, packageManager)
 
   let stdout: string
@@ -76,16 +86,10 @@ export async function probePublishedVersion(
     if (packageManager.isYarnBerry) {
       stdout = await execCommand('yarn', ['npm', 'info', target, '--json'], {
         cwd: packageDir,
-        env: { ...context.env, ...env },
+        env: { ...context.env, ...env, YARN_NPM_REGISTRY_SERVER: registry },
         signal: context.signal,
       })
     } else {
-      const registry = await resolvePublishRegistry(
-        context,
-        plan.package,
-        packageManager
-      )
-
       stdout = await execCommand(
         packageManager.isPnpm ? 'pnpm' : 'npm',
         ['view', target, '--json', '--registry', registry],

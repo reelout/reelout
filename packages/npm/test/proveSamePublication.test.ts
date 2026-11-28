@@ -11,9 +11,13 @@ import { context } from '../../../test/mock/context'
 
 const TARBALL_URL = 'https://registry.npmjs.org/a/-/a-1.2.3.tgz'
 
+const PUBLISH_REGISTRY = 'https://registry.npmjs.org/'
+
 const packLocalTarball = vi.hoisted(() => vi.fn())
 
 const downloadPublishedTarball = vi.hoisted(() => vi.fn())
+
+const resolvePublishRegistry = vi.hoisted(() => vi.fn())
 
 const isTarballIntegrityMatch = vi.hoisted(() => vi.fn())
 
@@ -25,6 +29,10 @@ vi.mock(import('@reelout/npm/packLocalTarball'), () => ({
 
 vi.mock(import('@reelout/npm/downloadPublishedTarball'), () => ({
   downloadPublishedTarball,
+}))
+
+vi.mock(import('@reelout/npm/resolvePublishRegistry'), () => ({
+  resolvePublishRegistry,
 }))
 
 vi.mock(import('@reelout/npm/isTarballIntegrityMatch'), () => ({
@@ -59,6 +67,7 @@ const publishedTarball = Buffer.from('published tarball')
 beforeEach(() => {
   vi.clearAllMocks()
   packLocalTarball.mockResolvedValue(localTarball)
+  resolvePublishRegistry.mockResolvedValue(PUBLISH_REGISTRY)
 })
 
 test('reports the publication as unverified when the local tarball cannot be packed', async () => {
@@ -94,6 +103,7 @@ test('verifies the publication through the recorded integrity without downloadin
     localTarball,
     'sha512-recorded-digest'
   )
+  expect(resolvePublishRegistry).not.toHaveBeenCalled()
   expect(downloadPublishedTarball).not.toHaveBeenCalled()
 })
 
@@ -133,7 +143,26 @@ test('reports the publication as unverified when the published tarball cannot be
     context,
     plan,
     packageManager,
-    TARBALL_URL
+    TARBALL_URL,
+    { publishRegistry: PUBLISH_REGISTRY }
+  )
+})
+
+test('falls back to URL-derived credentials when the publish registry cannot be resolved', async () => {
+  resolvePublishRegistry.mockRejectedValueOnce(new Error('resolution failed'))
+  downloadPublishedTarball.mockResolvedValueOnce(publishedTarball)
+  isPackageTarballIdentical.mockReturnValueOnce(true)
+
+  await expect(
+    proveSamePublication(context, plan, packageManager, TARBALL_URL, undefined)
+  ).resolves.toBe(true)
+
+  expect(downloadPublishedTarball).toHaveBeenCalledWith(
+    context,
+    plan,
+    packageManager,
+    TARBALL_URL,
+    { publishRegistry: undefined }
   )
 })
 

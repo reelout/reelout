@@ -44,8 +44,8 @@ changes in the packaged files, and `noVerify` skips cargo's verification
 build. Dry runs imply `allowDirty`, because they upload nothing.
 
 Crates are published with the token from the `CARGO_REGISTRY_TOKEN`
-environment variable or `~/.cargo/credentials.toml` (honoring `CARGO_HOME`),
-verified against crates.io before anything is published. On GitHub Actions
+environment variable or `~/.cargo/credentials.toml` (honoring `CARGO_HOME`);
+crates.io validates the token when the publish is uploaded. On GitHub Actions
 without a registry token, crates.io trusted publishing exchanges the
 workflow's OIDC identity token for a short-lived publish token; outside
 GitHub Actions, the same flow runs when `CARGO_ID_TOKEN` is set. Versions
@@ -61,7 +61,7 @@ Key exports include:
 - **Publishing** — `publishCrate`, `packLocalCrate`, `probeCrateReleasePlan`, and `recoverFromCratePublishOverRejection`.
 - **Manifests** — `readCargoToml`, `bumpCargoManifests`, and `loadCargoPackages`.
 - **Lockfile** — `refreshCargoLock`.
-- **Registry** — `resolveCargoToken`, `verifyRegistryToken`, `verifyTrustedPublishing`, `verifyPublishAccess`, and `createSparseIndexClient`.
+- **Registry** — `resolveCargoToken`, `verifyTrustedPublishing`, `verifyPublishAccess`, and `createSparseIndexClient`.
 
 ## Documentation
 

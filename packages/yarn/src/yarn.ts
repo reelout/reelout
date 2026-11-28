@@ -14,7 +14,7 @@ import {
 import {
   bumpPackageDependencies,
   hasPackageManifest,
-  inspectPackageManager,
+  inspectVersionedPackageManager,
   isCompleteReleasePlan,
   loadPackages,
   probeReleasePlan,
@@ -24,6 +24,7 @@ import {
   resolveWorkspaceMembers,
   verifyAuth,
   verifyPublishAccess,
+  verifyTrustedPublishing,
   type PublishAccess,
   type PublishPackageOptions,
 } from '@reelout/npm'
@@ -55,8 +56,12 @@ export interface PluginOptions {
  * - `write`: Skips manifest updates when the plugin is inactive. Bumps
  *   internal workspace dependency versions in `package.json` files (skipped
  *   in dry-run).
- * - `publish`: Verifies each publishable package's publish permission
- *   against its resolved registry, failing when access is definitively
+ * - `publish`: For OIDC-authenticated Yarn Berry releases — Yarn 4.3.0 or
+ *   newer on a supported CI platform targeting the public npm registry —
+ *   verifies trusted publishing through the registry's token exchange
+ *   before anything is published, failing when the registry rejects it.
+ *   Verifies each publishable package's publish permission against its
+ *   resolved registry, failing when access is definitively
  *   missing and warning when it cannot be confirmed. Then authenticates
  *   and probes each publishable package version before publishing,
  *   skipping versions the registry already holds with identical content
@@ -90,13 +95,7 @@ const yarn = (options: PluginOptions = {}): ReleasePlugin => {
         return next(context)
       }
 
-      const packageManager = await inspectPackageManager(
-        context.cwd,
-        {
-          env: context.env,
-        },
-        context.logger
-      )
+      const packageManager = await inspectVersionedPackageManager(context)
 
       if (!packageManager.isYarn) {
         inactive = true
@@ -212,21 +211,25 @@ const yarn = (options: PluginOptions = {}): ReleasePlugin => {
 
       const packageManager =
         publishable.length > 0
-          ? await inspectPackageManager(
-              context.cwd,
-              { env: context.env },
-              context.logger
-            )
+          ? await inspectVersionedPackageManager(context)
           : undefined
 
       const skipped = new Set<ReleasePlan>()
 
       if (packageManager) {
-        await verifyPublishAccess(
+        const trustedPublishing = await verifyTrustedPublishing(
           context,
           publishable,
           packageManager,
           PLUGIN_NAME
+        )
+
+        await verifyPublishAccess(
+          context,
+          publishable,
+          packageManager,
+          PLUGIN_NAME,
+          trustedPublishing
         )
 
         for (const plan of publishable) {

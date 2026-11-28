@@ -44,3 +44,49 @@ test('resolves merged Yarn config from project and user sources', async () => {
     )
   })
 })
+
+test('parses handwritten Yarn configuration files with comments and quoted values', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    using _ = vi
+      .spyOn(folderUtils, 'getHomeFolder')
+      .mockReturnValue(npath.toPortablePath(HOME_DIR))
+
+    await writeFile(
+      path.join(HOME_DIR, '.yarnrc.yml'),
+      [
+        '# User-level Yarn configuration.',
+        'npmRegistryServer: "https://registry.npmmirror.com/"',
+        'npmRegistries:',
+        '  "https://npm.pkg.github.com/":',
+        '    npmAuthToken: "ghp_mock-token"',
+      ].join('\n')
+    )
+
+    await writeFile(
+      path.join(cwd, '.yarnrc.yml'),
+      [
+        '# Project-level Yarn configuration.',
+        'npmScopes:',
+        '  "scope":',
+        '    npmRegistryServer: "https://npm.pkg.github.com/"',
+      ].join('\n')
+    )
+
+    const config = await loadYarnConfig(cwd)
+
+    expect(config.get('npmRegistryServer')).toBe(
+      'https://registry.npmmirror.com/'
+    )
+
+    expect(
+      config
+        .get('npmRegistries')
+        .get('https://npm.pkg.github.com')
+        ?.get('npmAuthToken')
+    ).toBe('ghp_mock-token')
+
+    expect(config.get('npmScopes').get('scope')?.get('npmRegistryServer')).toBe(
+      'https://npm.pkg.github.com/'
+    )
+  })
+})

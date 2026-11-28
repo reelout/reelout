@@ -7,7 +7,7 @@ import { formatError } from '@reelout/core'
  * Match registry errors that report rejected credentials.
  */
 const AUTH_REJECTED_PATTERN =
-  /E401|ENEEDAUTH|401 Unauthorized|Response Code: 401|Unable to authenticate|not logged in/i
+  /E401|ENEEDAUTH|401 Unauthorized|Response Code: 401|Unable to authenticate|not logged in|ERR_PNPM_WHOAMI_UNAUTHORIZED|ERR_PNPM_WHOAMI_FAILED/i
 
 /**
  * Determine whether an error reports that the registry rejected the

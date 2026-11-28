@@ -10,7 +10,7 @@ import { readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { temporaryDirectoryTask } from 'tempy'
 import { beforeEach, expect, test, vi } from 'vitest'
-import { context } from '../../../test/mock/context'
+import { context, logger } from '../../../test/mock/context'
 
 vi.mock(import('@npmcli/config'), async (importActual) => importActual())
 
@@ -103,6 +103,7 @@ test('returns npm configuration environment variables when package manager is cl
 
     expect(env).toMatchInlineSnapshot(`
       {
+        "NPM_AUTH_TOKEN": "mock-npm-token",
         "npm_config_//registry.npmjs.org/:_authToken": "mock-npm-token",
       }
     `)
@@ -122,5 +123,109 @@ test('returns YARN_NPM_AUTH_TOKEN environment variable when package manager is y
         "YARN_NPM_AUTH_TOKEN": "mock-npm-token",
       }
     `)
+  })
+})
+
+test('skips YARN_NPM_AUTH_TOKEN injection when the publish registry is outside the Yarn defaults', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+
+    context.env = { NPM_TOKEN: 'mock-npm-token' }
+
+    await writeFile(
+      path.join(cwd, 'package.json'),
+      JSON.stringify({
+        name: 'a',
+        version: '1.2.3',
+        publishConfig: { registry: 'https://npm.pkg.github.com' },
+      })
+    )
+
+    expect(
+      await prepareAuth(context, pkg1, { isYarnBerry: true })
+    ).toBeUndefined()
+
+    expect(
+      logger.mock.calls.filter(
+        ([message]) =>
+          typeof message === 'string' &&
+          message.includes(
+            'NPM_TOKEN was not injected for "https://npm.pkg.github.com/": Yarn Berry would apply it to every registry without its own credentials.'
+          )
+      )
+    ).toHaveLength(1)
+  })
+})
+
+test('warns about an unmatched publish registry only once per registry', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+
+    context.env = { NPM_TOKEN: 'mock-npm-token' }
+
+    await writeFile(
+      path.join(cwd, 'package.json'),
+      JSON.stringify({
+        name: 'a',
+        version: '1.2.3',
+        publishConfig: { registry: 'https://registry.npmmirror.com' },
+      })
+    )
+
+    expect(
+      await prepareAuth(context, pkg1, { isYarnBerry: true })
+    ).toBeUndefined()
+
+    expect(
+      await prepareAuth(context, pkg1, { isYarnBerry: true })
+    ).toBeUndefined()
+
+    expect(
+      logger.mock.calls.filter(
+        ([message]) =>
+          typeof message === 'string' &&
+          message.includes(
+            'NPM_TOKEN was not injected for "https://registry.npmmirror.com/": Yarn Berry would apply it to every registry without its own credentials.'
+          )
+      )
+    ).toHaveLength(1)
+  })
+})
+
+test('returns YARN_NPM_AUTH_TOKEN when the publish registry matches the configured Yarn registry', async () => {
+  await temporaryDirectoryTask(async (cwd) => {
+    context.cwd = cwd
+
+    context.env = { NPM_TOKEN: 'mock-npm-token' }
+
+    await writeFile(
+      path.join(cwd, 'package.json'),
+      JSON.stringify({
+        name: 'a',
+        version: '1.2.3',
+        publishConfig: { registry: 'https://npm.pkg.github.com' },
+      })
+    )
+
+    await writeFile(
+      path.join(cwd, '.yarnrc.yml'),
+      'npmRegistryServer: https://npm.pkg.github.com\n'
+    )
+
+    await using env = await prepareAuth(context, pkg1, { isYarnBerry: true })
+
+    expect(env).toMatchInlineSnapshot(`
+      {
+        "YARN_NPM_AUTH_TOKEN": "mock-npm-token",
+      }
+    `)
+
+    expect(
+      logger.mock.calls.filter(
+        ([message]) =>
+          typeof message === 'string' &&
+          message.includes('NPM_TOKEN was not injected for')
+      )
+    ).toHaveLength(0)
   })
 })
